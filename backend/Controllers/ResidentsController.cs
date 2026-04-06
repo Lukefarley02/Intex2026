@@ -20,7 +20,6 @@ public class ResidentsController : ControllerBase
     public async Task<ActionResult<IEnumerable<Resident>>> GetResidents()
     {
         return await _context.Residents
-            .Include(r => r.Safehouse)
             .ToListAsync();
     }
 
@@ -28,7 +27,6 @@ public class ResidentsController : ControllerBase
     public async Task<ActionResult<Resident>> GetResident(int id)
     {
         var resident = await _context.Residents
-            .Include(r => r.Safehouse)
             .FirstOrDefaultAsync(r => r.ResidentId == id);
 
         if (resident == null) return NotFound();
