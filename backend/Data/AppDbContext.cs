@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Models;
 
 namespace Intex2026.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<IdentityUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -19,11 +21,14 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(modelBuilder);  // Required — configures Identity tables
 
         // Configure table names, keys, and relationships here as you build out
         modelBuilder.Entity<Supporter>().ToTable("supporters");
         modelBuilder.Entity<Donation>().ToTable("donations");
+        modelBuilder.Entity<Donation>()
+            .Property(d => d.Amount)
+            .HasColumnType("decimal(12,2)");
         modelBuilder.Entity<Safehouse>().ToTable("safehouses");
         modelBuilder.Entity<Resident>().ToTable("residents");
         modelBuilder.Entity<ProcessRecording>().ToTable("process_recordings");
