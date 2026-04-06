@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.db
+appsettings.*.local.json
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Environment
+.env
+*.local
