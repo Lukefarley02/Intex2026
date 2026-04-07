@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Flame, Menu, X } from "lucide-react";
+import { Flame, Menu, X, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
+import { useAuth, landingFor } from "@/api/AuthContext";
 
 const PublicNav = () => {
   const [open, setOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+  const dashboardHref = landingFor(user?.roles);
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
@@ -18,9 +21,17 @@ const PublicNav = () => {
           <a href="#mission" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Mission</a>
           <a href="#impact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Impact</a>
           <a href="#safehouses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safehouses</a>
-          <Link to="/login">
-            <Button variant="ghost" size="sm">Log in</Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link to={dashboardHref}>
+              <Button variant="ghost" size="sm" className="gap-1.5">
+                <LayoutDashboard className="w-4 h-4" /> My Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" size="sm">Log in</Button>
+            </Link>
+          )}
           <Link to="/donate">
             <Button variant="hero" size="sm">Support a girl</Button>
           </Link>
@@ -35,7 +46,17 @@ const PublicNav = () => {
         <div className="md:hidden bg-card border-b p-4 space-y-3">
           <a href="#mission" className="block text-sm font-medium text-muted-foreground">Mission</a>
           <a href="#impact" className="block text-sm font-medium text-muted-foreground">Impact</a>
-          <Link to="/login" className="block"><Button variant="ghost" className="w-full">Log in</Button></Link>
+          {isAuthenticated ? (
+            <Link to={dashboardHref} className="block">
+              <Button variant="ghost" className="w-full gap-1.5">
+                <LayoutDashboard className="w-4 h-4" /> My Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login" className="block">
+              <Button variant="ghost" className="w-full">Log in</Button>
+            </Link>
+          )}
           <Link to="/donate" className="block"><Button variant="hero" className="w-full">Support a girl</Button></Link>
         </div>
       )}

@@ -13,7 +13,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (role: string) => boolean;
@@ -76,9 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data: LoginResponse = await res.json();
+    const nextUser: User = { email: data.email, roles: data.roles };
     setToken(data.token);
-    setUser({ email: data.email, roles: data.roles });
+    setUser(nextUser);
     sessionStorage.setItem("jwt", data.token);
+    return nextUser;
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
@@ -138,4 +140,15 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside an AuthProvider");
   return ctx;
+}
+
+// Pick the right landing page for a user based on their roles.
+// Admin and Staff land on the admin/staff dashboard; donors (without an
+// elevated role) land on their donor portal. Unauthenticated / unknown
+// falls back to the public home page.
+export function landingFor(roles: string[] | undefined): string {
+  if (!roles || roles.length === 0) return "/";
+  if (roles.includes("Admin") || roles.includes("Staff")) return "/dashboard";
+  if (roles.includes("Donor")) return "/my-impact";
+  return "/";
 }
