@@ -14,7 +14,7 @@ Website/Intex2026/
 │
 ├── backend/                         # .NET 10 Web API
 │   ├── Intex2026.Api.csproj
-│   ├── Program.cs                   # Entry point — Identity, JWT, middleware, role seeder
+│   ├── Program.cs                   # Entry point — Identity, JWT, middleware, auto-migration, role seeder
 │   ├── appsettings.json             # Connection string, JWT Issuer/Audience/Expiration
 │   ├── appsettings.Development.json # JWT SecretKey + SeedAdmin credentials (dev only)
 │   ├── Properties/
@@ -29,8 +29,7 @@ Website/Intex2026/
 │   ├── Data/
 │   │   └── AppDbContext.cs          # IdentityDbContext<IdentityUser> (6 of 17 tables wired)
 │   ├── Migrations/                  # EF Core migration history
-│   │   ├── *_AddIdentity.cs
-│   │   └── *_FixDecimalPrecision.cs
+│   │   └── 20260406233041_InitialCreate.cs
 │   └── Models/                      # Entity classes
 │       ├── Supporter.cs
 │       ├── Donation.cs
@@ -114,6 +113,12 @@ npm run dev
 
 ## Key middleware (Program.cs)
 
+**Startup (before middleware):**
+- Auto-applies pending EF Core migrations (`db.Database.MigrateAsync()`)
+- Seeds Admin/Staff/Donor roles and default admin user
+- Wrapped in try-catch — logs errors but lets app continue starting
+
+**Middleware pipeline:**
 1. Swagger (dev only)
 2. HTTPS redirection
 3. Content-Security-Policy header (IS 414)
@@ -130,27 +135,28 @@ npm run dev
 - **Frontend storage:** `sessionStorage` (cleared on tab close)
 - **Password policy:** Min 12 chars, 3 unique, uppercase + lowercase + digit + special required
 - **Lockout:** 15 min lockout after 5 failed attempts
-- **Role seeding:** On startup, creates Admin/Staff/Donor roles + seeds a default admin user from `SeedAdmin` config section
+- **Auto-migration:** On startup, checks for pending EF Core migrations and applies them automatically; wrapped in try-catch so the app still starts if the DB is unreachable
+- **Role seeding:** After migration, creates Admin/Staff/Donor roles + seeds a default admin user from `SeedAdmin` config section
 - **Sensitive field filtering:** `notesRestricted` on Residents is nulled out for non-Admin users via anonymous projection in the controller
 
 ---
 
 ## Schema gap — models vs database
 
-The skeleton has 6 simplified models. The full `lighthouse_schema.sql` has 17 tables with many more columns. The following tables still need models + controllers:
+6 of 17 tables have complete models with all columns mapped. The remaining 11 tables still need models + controllers.
 
 | Table | Status |
 |---|---|
-| safehouses | Model exists (simplified) |
+| safehouses | **Complete** — all columns mapped, `[Column]` attributes, in AppDbContext |
+| supporters | **Complete** — all columns mapped, controller exists |
+| donations | **Complete** — all columns mapped, no controller yet |
+| residents | **Complete** — all 42+ columns mapped, controller exists, Safehouse navigation |
+| process_recordings | **Complete** — all columns mapped, no controller yet |
+| home_visitations | **Complete** — all columns mapped, no controller yet |
 | partners | **Missing** |
 | partner_assignments | **Missing** |
-| supporters | Model exists (simplified — missing display_name, organization_name, relationship_type, region, country, status, acquisition_channel) |
-| donations | Model exists (simplified — missing is_recurring, channel_source, currency_code, estimated_value, impact_unit, referral_post_id) |
 | donation_allocations | **Missing** |
 | in_kind_donation_items | **Missing** |
-| residents | Model exists (simplified — missing ~30 columns from schema) |
-| process_recordings | Model exists (simplified — missing session_duration_minutes, emotional states, interventions, follow-up, concerns, referral flags) |
-| home_visitations | Model exists (simplified — missing location, family members, cooperation level, safety concerns, outcome) |
 | education_records | **Missing** |
 | health_wellbeing_records | **Missing** |
 | intervention_plans | **Missing** |

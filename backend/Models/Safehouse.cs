@@ -19,20 +19,20 @@ public class Safehouse
     [Column("region")]
     public string? Region { get; set; }
 
-    [Column("city")]
-    public string? City { get; set; }
-
     [Column("province")]
     public string? Province { get; set; }
+
+    [Column("city")]
+    public string? City { get; set; }
 
     [Column("country")]
     public string? Country { get; set; }
 
-    [Column("open_date")]
-    public DateTime? OpenDate { get; set; }
-
     [Column("status")]
     public string? Status { get; set; }
+
+    [Column("open_date")]
+    public DateTime? OpenDate { get; set; }
 
     [Column("capacity_girls")]
     public int? CapacityGirls { get; set; }

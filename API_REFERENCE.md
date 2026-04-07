@@ -34,15 +34,22 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 ```json
 {
   "supporterId": 1,
+  "supporterType": "string",
+  "displayName": "string",
+  "organizationName": "string | null",
   "firstName": "string",
   "lastName": "string",
-  "email": "string | null",
+  "email": "string",
   "phone": "string | null",
-  "supporterType": "string | null"
+  "country": "string",
+  "region": "string",
+  "relationshipType": "string",
+  "acquisitionChannel": "string | null",
+  "firstDonationDate": "datetime | null",
+  "status": "string | null",
+  "createdAt": "datetime | null"
 }
 ```
-
-**Note:** The current model is simplified. The full schema includes additional fields: `displayName`, `organizationName`, `relationshipType`, `region`, `country`, `status`, `createdAt`, `firstDonationDate`, `acquisitionChannel`. These will be added when the model is expanded.
 
 ---
 
@@ -56,23 +63,25 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 | PUT | `/api/residents/{id}` | Admin, Staff | Update a resident |
 | DELETE | `/api/residents/{id}` | Admin | Delete a resident |
 
-**GET response shape:**
+**GET response shape (anonymous projection — subset of full model):**
 ```json
 {
   "residentId": 1,
   "safehouseId": 1,
-  "firstName": "string",
-  "lastName": "string",
-  "dateOfBirth": "2010-01-15",
-  "admissionDate": "2024-03-01",
-  "status": "active | reintegrated | transferred",
-  "riskLevel": "low | medium | high | critical",
+  "caseControlNo": "string | null",
+  "internalCode": "string | null",
+  "caseStatus": "string | null",
+  "dateOfBirth": "datetime | null",
+  "dateOfAdmission": "datetime | null",
+  "currentRiskLevel": "string | null",
   "notesRestricted": "string | null (admin-only)",
   "safehouse": { "name": "string" }
 }
 ```
 
-**Security note:** `notesRestricted` is stripped from responses for non-Admin roles. This is implemented in `ResidentsController.cs` using anonymous projections that null out the field when the requesting user lacks the Admin role.
+The full Resident model has 42+ columns (all sub-category flags, family flags, dates, etc.). The controller returns a projected subset; Admin users also receive `notesRestricted`.
+
+**Security note:** `notesRestricted` is stripped from responses for non-Admin roles. This is implemented in `ResidentsController.cs` using anonymous projections that omit the field when the requesting user lacks the Admin role.
 
 ---
 

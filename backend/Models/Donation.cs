@@ -16,8 +16,17 @@ public class Donation
     [Column("donation_type")]
     public string? DonationType { get; set; }
 
+    [Column("amount")]
+    public decimal? Amount { get; set; }
+
     [Column("donation_date")]
     public DateTime? DonationDate { get; set; }
+
+    [Column("currency_code")]
+    public string? CurrencyCode { get; set; }
+
+    [Column("estimated_value")]
+    public decimal? EstimatedValue { get; set; }
 
     [Column("is_recurring")]
     public bool? IsRecurring { get; set; }
@@ -27,15 +36,6 @@ public class Donation
 
     [Column("channel_source")]
     public string? ChannelSource { get; set; }
-
-    [Column("currency_code")]
-    public string? CurrencyCode { get; set; }
-
-    [Column("amount")]
-    public decimal? Amount { get; set; }
-
-    [Column("estimated_value")]
-    public decimal? EstimatedValue { get; set; }
 
     [Column("impact_unit")]
     public string? ImpactUnit { get; set; }
