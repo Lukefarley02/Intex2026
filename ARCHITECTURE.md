@@ -200,8 +200,8 @@ npm run test:run      # Single-pass (CI-style)
 | supporters | **Complete** — all columns mapped, controller exists |
 | donations | **Complete** — all columns mapped, no controller yet |
 | residents | **Complete** — all 42+ columns mapped, controller exists, Safehouse navigation |
-| process_recordings | **Complete** — all columns mapped, no controller yet |
-| home_visitations | **Complete** — all columns mapped, no controller yet |
+| process_recordings | **Complete** — all columns mapped, `ProcessRecordingsController` with full CRUD (Admin/Staff read+write, Admin-only delete; `notes_restricted` admin-only) |
+| home_visitations | **Complete** — all columns mapped, `HomeVisitationsController` with full CRUD (Admin/Staff read+write, Admin-only delete) |
 | partners | **Missing** |
 | partner_assignments | **Missing** |
 | donation_allocations | **Missing** |
@@ -219,5 +219,4 @@ npm run test:run      # Single-pass (CI-style)
 ## Data files
 
 - `lighthouse_schema.sql` — full SQL Server DDL for all 17 tables with indexes and FKs
-- `lighthouse_csv_v7/` — 17 CSV files matching the schema, ready for seeding
-- Row counts: supporters (60), donations (420), residents (60), process_recordings (2,819), home_visitations (1,337), social_media_posts (812), and mo
+- `light

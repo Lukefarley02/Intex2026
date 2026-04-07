@@ -20,6 +20,8 @@ import Reports from "./pages/Reports";
 import StaffPortal from "./pages/StaffPortal";
 import DonorPortal from "./pages/DonorPortal";
 import Admin from "./pages/Admin";
+import ProcessRecording from "./pages/ProcessRecording";
+import HomeVisitation from "./pages/HomeVisitation";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,22 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
                   <Residents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/process-recording"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <ProcessRecording />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home-visitation"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <HomeVisitation />
                 </ProtectedRoute>
               }
             />

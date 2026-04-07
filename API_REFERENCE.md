@@ -344,6 +344,32 @@ ASP.NET Identity + JWT. Register and Login are `[AllowAnonymous]`; `/me` require
 
 ---
 
+## Process Recordings
+
+Counseling session notes per resident. IS 413 requirement.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/processrecordings` | Admin, Staff | List all recordings; supports optional `?residentId=#` filter. Sorted by `sessionDate` desc. `notesRestricted` returned only for Admin. |
+| GET | `/api/processrecordings/{id}` | Admin, Staff | Single recording. |
+| POST | `/api/processrecordings` | Admin, Staff | Create a new recording (server generates `recordingId`). |
+| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording. |
+| DELETE | `/api/processrecordings/{id}` | Admin | Delete a recording. |
+
+## Home Visitations
+
+Home visits, field assessments, and case conferences per resident. IS 413 requirement.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/homevisitations` | Admin, Staff | List all visits; supports optional `?residentId=#` filter. Sorted by `visitDate` desc. |
+| GET | `/api/homevisitations/{id}` | Admin, Staff | Single visit. |
+| POST | `/api/homevisitations` | Admin, Staff | Create a new visit (server generates `visitationId`). |
+| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visit. |
+| DELETE | `/api/homevisitations/{id}` | Admin | Delete a visit. |
+
+---
+
 ## Conventions for new endpoints
 
 - Route: `api/[controller]` (auto from controller name)
