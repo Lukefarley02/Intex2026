@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
 
 // ---- Types ----
 
@@ -39,22 +39,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // On mount, check if we have a stored token and validate it
   useEffect(() => {
-    const stored = sessionStorage.getItem('jwt');
+    const stored = sessionStorage.getItem("jwt");
     if (stored) {
       setToken(stored);
-      // Validate by calling /api/auth/me
-      fetch('/api/auth/me', {
+      fetch("/api/auth/me", {
         headers: { Authorization: `Bearer ${stored}` },
       })
         .then((res) => {
-          if (!res.ok) throw new Error('Token expired');
+          if (!res.ok) throw new Error("Token expired");
           return res.json();
         })
         .then((data: { email: string; roles: string[] }) => {
           setUser({ email: data.email, roles: data.roles });
         })
         .catch(() => {
-          sessionStorage.removeItem('jwt');
+          sessionStorage.removeItem("jwt");
           setToken(null);
           setUser(null);
         })
@@ -65,55 +64,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Login failed.' }));
-      throw new Error(err.message ?? 'Login failed.');
+      const err = await res.json().catch(() => ({ message: "Login failed." }));
+      throw new Error(err.message ?? "Login failed.");
     }
 
     const data: LoginResponse = await res.json();
     setToken(data.token);
     setUser({ email: data.email, roles: data.roles });
-    sessionStorage.setItem('jwt', data.token);
+    sessionStorage.setItem("jwt", data.token);
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: 'Registration failed.' }));
-      // Flatten Identity error messages
+      const err = await res.json().catch(() => ({ message: "Registration failed." }));
       const messages = Object.values(err)
         .flat()
-        .filter((v): v is string => typeof v === 'string');
-      throw new Error(messages.join(' ') || 'Registration failed.');
+        .filter((v): v is string => typeof v === "string");
+      throw new Error(messages.join(" ") || "Registration failed.");
     }
   }, []);
 
   const logout = useCallback(() => {
     if (token) {
-      fetch('/api/auth/logout', {
-        method: 'POST',
+      fetch("/api/auth/logout", {
+        method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
     }
     setToken(null);
     setUser(null);
-    sessionStorage.removeItem('jwt');
+    sessionStorage.removeItem("jwt");
   }, [token]);
 
   const hasRole = useCallback(
     (role: string) => user?.roles.includes(role) ?? false,
-    [user]
+    [user],
   );
 
   return (
@@ -138,6 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used inside an AuthProvider");
   return ctx;
 }

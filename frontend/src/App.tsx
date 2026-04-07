@@ -1,52 +1,119 @@
-import { Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
-import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import DonorsPage from './pages/DonorsPage';
-import ResidentsPage from './pages/ResidentsPage';
-import PrivacyPage from './pages/PrivacyPage';
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/api/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-function App() {
-  return (
-    <Routes>
-      <Route element={<Layout />}>
-        {/* Public routes */}
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Donate from "./pages/Donate";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Privacy from "./pages/Privacy";
+import Dashboard from "./pages/Dashboard";
+import Donors from "./pages/Donors";
+import Safehouses from "./pages/Safehouses";
+import Residents from "./pages/Residents";
+import Reports from "./pages/Reports";
+import StaffPortal from "./pages/StaffPortal";
+import DonorPortal from "./pages/DonorPortal";
+import Admin from "./pages/Admin";
 
-        {/* Authenticated routes — Admin and Staff only */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute roles={['Admin', 'Staff']}>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/donors"
-          element={
-            <ProtectedRoute roles={['Admin', 'Staff']}>
-              <DonorsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/residents"
-          element={
-            <ProtectedRoute roles={['Admin', 'Staff']}>
-              <ResidentsPage />
-            </ProtectedRoute>
-          }
-        />
-      </Route>
-    </Routes>
-  );
-}
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<Index />} />
+            <Route path="/donate" element={<Donate />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/privacy" element={<Privacy />} />
+
+            {/* Admin + Staff */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/donors"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <Donors />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/safehouses"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <Safehouses />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/residents"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <Residents />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <Reports />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/staff"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <StaffPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Donor */}
+            <Route
+              path="/my-impact"
+              element={
+                <ProtectedRoute roles={["Admin", "Donor"]}>
+                  <DonorPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin only */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute roles={["Admin"]}>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

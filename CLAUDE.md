@@ -109,8 +109,12 @@ causes every future agent to make wrong assumptions and waste time.
 | Layer | Technology |
 |---|---|
 | Backend | .NET 10 / C# / EF Core |
-| Frontend | React 19 + TypeScript + Vite 6 |
-| Routing | react-router-dom v7 |
+| Frontend | React 18 + TypeScript + Vite 6 |
+| Routing | react-router-dom v6 |
+| Styling | Tailwind CSS 3 + shadcn/ui (Radix primitives) |
+| Icons | lucide-react |
+| Server state | @tanstack/react-query |
+| Forms | react-hook-form + zod |
 | Database | SQL Server (Azure SQL for production) |
 | Auth | ASP.NET Identity + JWT Bearer (fully implemented & audited) |
 | Swagger | Swashbuckle.AspNetCore 7.2.0 |
@@ -128,52 +132,22 @@ causes every future agent to make wrong assumptions and waste time.
 
 ### Frontend (TypeScript/React)
 - Functional components only — no class components
-- Hooks for state: `useState`, `useEffect`
-- Pages in `src/pages/`, shared components in `src/components/`
-- API calls go through `src/api/client.ts` using `apiFetch<T>()`
-- File naming: PascalCase for components (e.g., `DonorsPage.tsx`)
+- Hooks for state: `useState`, `useEffect`; server state via `@tanstack/react-query`
+- Pages in `src/pages/`, shared components in `src/components/`, shadcn primitives in `src/components/ui/`
+- Use the `@/` path alias (configured in `tsconfig.json` and `vite.config.ts`) for all internal imports
+- Styling is **Tailwind utility classes only** — do not write custom CSS files. Use the theme tokens from `src/index.css` (e.g. `bg-primary`, `text-secondary`, `gradient-ember`) instead of hardcoded colors so the Ember palette stays consistent
+- Use shadcn/ui components from `@/components/ui/*` (Button, Card, Input, Label, Dialog, etc.) instead of building from scratch
+- Authenticated pages should be wrapped in `<ProtectedRoute roles={[...]}>` in `App.tsx` and use `<DashboardLayout title="...">` for the sidebar shell
+- Public pages should use `<PublicNav />` at the top
+- Auth state via `useAuth()` from `@/api/AuthContext`; data fetching via `apiFetch<T>()` from `@/api/client` (auto-attaches the JWT)
 
-## How to run locally
+## Frontend rewrite history (Apr 7 2026)
 
-```bash
-# Terminal 1 — Backend
-cd backend && dotnet restore && dotnet run
+The original plain-CSS frontend was wholesale replaced with the **ember-hope-flow** design system to give the app a polished, donor-facing look. The previous `src/` is preserved at `frontend/src_old_backup/` if anything needs to be recovered.
 
-# Terminal 2 — Frontend
-cd frontend && npm install && npm run dev
-```
-
-Backend: https://localhost:5001 | Swagger: https://localhost:5001/swagger
-Frontend: http://localhost:5173 (proxies /api/* to backend)
-
-## Auth status (as of Apr 6 2026)
-
-Authentication is **fully implemented and audited**. Do not rebuild or rewire auth. Key facts:
-
-- ASP.NET Identity + JWT Bearer tokens (HmacSha256)
-- Pending EF Core migrations are auto-applied on startup (`db.Database.MigrateAsync()`), wrapped in try-catch
-- 3 roles seeded on startup: Admin, Staff, Donor
-- Default admin seeded from `appsettings.Development.json` → `SeedAdmin` section
-- Password policy: min 12 chars, 3 unique, all complexity flags, lockout after 5 failures
-- Frontend stores JWT in `sessionStorage`, attaches via `apiFetch()` in `src/api/client.ts`
-- `AuthContext.tsx` provides `login()`, `register()`, `logout()`, `hasRole()` to all components
-- `ProtectedRoute.tsx` guards routes by authentication + optional role check
-- `notesRestricted` field is stripped for non-Admin users in ResidentsController
-- Identity tables coexist with business tables in the same database (managed by EF Core migrations)
-- **Critical:** `Program.cs` explicitly sets all three default auth schemes to `JwtBearerDefaults.AuthenticationScheme` to override Identity's cookie defaults. Do not remove this.
-
-## Common tasks
-
-### Add a new database table/model
-See CONTRIBUTING.md and DATA_DICTIONARY.md. Pattern: create Model (with `[Table]` and `[Column]` attributes) → register in AppDbContext → add migration → add Controller → add frontend page. Migrations are auto-applied on startup, so teammates just need to `dotnet run`.
-
-### Add a new page
-1. Create `frontend/src/pages/NewPage.tsx`
-2. Add route in `frontend/src/App.tsx` (wrap in `<ProtectedRoute>` if auth required)
-3. Add nav link in `frontend/src/components/Layout.tsx` (conditionally shown based on role)
-
-### Add a new API endpoint
-1. Create or edit controller in `backend/Controllers/`
-2. Follow existing CRUD pattern (see SupportersController.cs as reference)
-3. Add `[Authorize(Roles = "Admin,Staff")]` or `[Authorize(Roles = "Admin")]` as appropriate (IS 414)
-4. For restricted fields, use the anonymous projection pattern from ResidentsController
+What changed:
+- Tailwind + shadcn/ui added; Inter font, Ember palette (warm orange primary, deep teal secondary, gold accent), gradient utilities
+- 12 new pages from ember-hope-flow ported into `src/pages/` (Index, Donate, Login, Dashboard, Donors, Safehouses, Residents, Reports, StaffPortal, DonorPortal, Admin, NotFound), plus `Register.tsx` and `Privacy.tsx` rewritten in the new style
+- React downgraded 19 → 18 and react-router 7 → 6 to match shadcn/ui ecosystem expectations
+- `AuthProvider` moved inside `BrowserRouter` so `Login` can call `useNavigate` on success
+- Only `Login.tsx` and `Register.tsx` are wired to the real backend right now. All staff/admin/donor pages still render mock data and need follow-up work to swap mock data for `apiFetch()` calls against the existing controllers.
