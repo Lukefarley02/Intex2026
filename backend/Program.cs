@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Intex2026.Api.Data;
+using Intex2026.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,7 +75,6 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Description = "Enter 'Bearer' followed by your JWT token. Example: Bearer eyJhbG..."
     });
-
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -91,11 +91,16 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// CORS — allow Vite dev server during development
+// CORS — reads allowed origins from configuration so the same binary works
+// in development (localhost:5173) and in Azure (the deployed frontend URL).
+// Add your Azure frontend URL to AllowedOrigins in appsettings.json before deploying.
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173", "https://localhost:5173" };
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevCors", policy =>
-        policy.WithOrigins("http://localhost:5173")
+    options.AddPolicy("AppCors", policy =>
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials());
@@ -107,7 +112,6 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
     try
     {
         // Apply any pending EF Core migrations automatically
@@ -136,7 +140,6 @@ using (var scope = app.Services.CreateScope())
         // Seed a default admin user (change password after first login!)
         var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@intex2026.org";
         var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!@#Pass";
-
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin == null)
         {
@@ -153,6 +156,25 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
+        // Ensure donor@ember.org has a Supporters row so DonorPortal works
+        var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        const string donorEmail = "donor@ember.org";
+        if (!appDb.Supporters.Any(s => s.Email == donorEmail))
+        {
+            var maxId = appDb.Supporters.Any() ? appDb.Supporters.Max(s => s.SupporterId) : 0;
+            appDb.Supporters.Add(new Supporter
+            {
+                SupporterId    = maxId + 1,
+                Email          = donorEmail,
+                FirstName      = "Test",
+                LastName       = "Donor",
+                SupporterType  = "MonetaryDonor",
+                Status         = "Active",
+            });
+            await appDb.SaveChangesAsync();
+            logger.LogInformation("Seeded supporter row for {Email}.", donorEmail);
+        }
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
@@ -162,7 +184,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ---------- Middleware ----------
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -181,11 +202,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseCors("DevCors");
-
+app.UseCors("AppCors");
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 // Seed roles and test users on startup
