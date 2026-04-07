@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/api/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import CookieConsent from "@/components/CookieConsent";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -32,6 +33,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CookieConsent />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
@@ -110,28 +112,4 @@ const App = () => (
             <Route
               path="/my-impact"
               element={
-                <ProtectedRoute roles={["Admin", "Donor"]}>
-                  <DonorPortal />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin only */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute roles={["Admin"]}>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+       
