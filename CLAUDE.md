@@ -40,6 +40,8 @@ plan.md                     Single source of truth — all decisions, progress, 
 8. **No secrets in the repo.** Connection strings with real credentials go in appsettings.*.local.json (gitignored) or environment variables. Never commit .env files.
 9. **lighthouse_schema.sql is the canonical schema.** When expanding models, match column names, types, and constraints from that file exactly.
 10. **Frontend proxy assumes backend on https://localhost:5001.** If the backend port changes, update `frontend/vite.config.ts` proxy target.
+11. **Frontend build is `tsc --noEmit && vite build`, NOT `tsc -b`.** `tsc -b` is build mode for composite projects with references; our `tsconfig.json` is flat. Do not change this script back.
+12. **Do not run `npm audit fix --force`.** It wants to upgrade vitest 2 → 4 (a two-major-version jump) to silence 5 moderate advisories that all trace back to a single esbuild dev-server flaw (GHSA-67mh-4wv8-2f99). The flaw is dev-only and does not ship to production. Decision is to defer until after submission. See the "Known dependency advisories" note below.
 
 ## Documentation maintenance — required after every change
 
@@ -115,6 +117,7 @@ causes every future agent to make wrong assumptions and waste time.
 | Icons | lucide-react |
 | Server state | @tanstack/react-query |
 | Forms | react-hook-form + zod |
+| Testing (frontend) | Vitest 2 + @testing-library/react + jsdom |
 | Database | SQL Server (Azure SQL for production) |
 | Auth | ASP.NET Identity + JWT Bearer (fully implemented & audited) |
 | Swagger | Swashbuckle.AspNetCore 7.2.0 |
@@ -151,3 +154,23 @@ What changed:
 - React downgraded 19 → 18 and react-router 7 → 6 to match shadcn/ui ecosystem expectations
 - `AuthProvider` moved inside `BrowserRouter` so `Login` can call `useNavigate` on success
 - Only `Login.tsx` and `Register.tsx` are wired to the real backend right now. All staff/admin/donor pages still render mock data and need follow-up work to swap mock data for `apiFetch()` calls against the existing controllers.
+
+---
+
+## Frontend test infrastructure (Apr 7 2026)
+
+Vitest is wired up in `frontend/vite.config.ts` using `jsdom` as the test environment, with `src/test/setup.ts` loaded before each test file (the setup imports `@testing-library/jest-dom` so matchers like `.toBeInTheDocument()` are available globally). `globals: true` is enabled so tests can use `describe`/`it`/`expect` without importing them, though explicit imports also work. The `types` array in `tsconfig.json` lists `vitest/globals` and `@testing-library/jest-dom` so TypeScript picks up the right ambient types.
+
+Run tests with `npm test` (watch mode) or `npm run test:run` (single pass). Only a placeholder `src/test/example.test.ts` exists right now — real component tests still need to be written.
+
+---
+
+## Known dependency advisories (deferred)
+
+`npm audit` reports 5 moderate-severity advisories, all stemming from a single root cause: **GHSA-67mh-4wv8-2f99** in `esbuild <=0.24.2`. The other 4 entries (`vite`, `vite-node`, `@vitest/mocker`, `vitest`) are transitive parents of the same vulnerable `esbuild`.
+
+**Scope:** The vulnerability affects esbuild's development server only. It allows a malicious webpage visited in the same browser as a running Vite dev server to read responses from that server. It does not affect production builds, which are static assets served from Azure.
+
+**Impact on this project:** Development-only; no production exposure. The dev server binds to localhost and is only running during active development on the team's machines.
+
+**Remediation path:** npm's proposed fix (`npm audit fix --force`) upgrades vitest from 2.x to 4.x, a two-major-version breaking change. We accepted the dev-only risk rather than take a high-probability breaking change days before the submission deadline. The upgrade can be performed post-submission.

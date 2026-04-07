@@ -38,8 +38,8 @@ Website/Intex2026/
 │
 └── frontend/                        # React + Vite + TypeScript + Tailwind + shadcn/ui
     ├── package.json
-    ├── vite.config.ts               # Dev proxy: /api/* → https://localhost:5001; "@" alias → src/
-    ├── tsconfig.json                # paths: { "@/*": ["./src/*"] }
+    ├── vite.config.ts               # Dev proxy: /api/* → https://localhost:5001; "@" alias → src/; vitest test config (jsdom env, setup file)
+    ├── tsconfig.json                # paths: { "@/*": ["./src/*"] }; types: node, vite/client, vitest/globals, @testing-library/jest-dom
     ├── tailwind.config.ts           # Ember theme tokens (primary, secondary, gold, sidebar, gradients)
     ├── postcss.config.js            # tailwindcss + autoprefixer
     ├── components.json              # shadcn/ui config (style: default, alias: @/components)
@@ -60,6 +60,9 @@ Website/Intex2026/
         ├── hooks/
         │   ├── use-mobile.tsx
         │   └── use-toast.ts
+        ├── test/
+        │   ├── setup.ts             # Loaded before each test; imports @testing-library/jest-dom + mocks window.matchMedia
+        │   └── example.test.ts      # Placeholder smoke test
         ├── components/
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
         │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated staff/admin pages (Flame logo, nav, sign out)
@@ -116,6 +119,9 @@ Website/Intex2026/
 | @tanstack/react-query | Server-state cache (provider wired in App.tsx) |
 | react-hook-form, @hookform/resolvers, zod | Form state + schema validation |
 | sonner, next-themes, cmdk, vaul, embla-carousel-react, recharts, date-fns, react-day-picker, input-otp, react-resizable-panels | Misc shadcn/ui dependencies (toasts, themes, command palette, drawer, carousel, charts, dates, OTP, panels) |
+| vitest (^2.1) | Test runner (Vite-native, jest-compatible API) |
+| @testing-library/react, @testing-library/user-event, @testing-library/jest-dom | React component testing + DOM matchers |
+| jsdom (^25) | Fake DOM environment for vitest |
 
 ---
 
@@ -138,6 +144,13 @@ npm install
 npm run dev
 # → http://localhost:5173
 # → /api/* calls proxy to backend automatically
+
+# Production build (used by "Before pushing" checklist):
+npm run build         # Runs "tsc --noEmit && vite build"
+
+# Tests:
+npm test              # Vitest watch mode
+npm run test:run      # Single-pass (CI-style)
 ```
 
 ---

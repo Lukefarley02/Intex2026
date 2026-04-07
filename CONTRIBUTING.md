@@ -75,15 +75,16 @@ public class EducationRecordsController : ControllerBase
 ### Step 4 — Create the Frontend Page
 
 ```
-frontend/src/pages/EducationRecordsPage.tsx
+frontend/src/pages/EducationRecords.tsx
 ```
 
-Follow the pattern in `DonorsPage.tsx`:
+Follow the pattern in `Donors.tsx` (an existing mock-data page in `src/pages/` — NOT `src_old_backup/`):
 1. Define a TypeScript interface matching the API response
-2. `useEffect` + `apiFetch<T[]>('/api/educationrecords')` to load data
-3. Render a table or card layout
-4. Add the route in `App.tsx`
-5. Add the nav link in `Layout.tsx`
+2. Wrap the page in `<DashboardLayout title="Education Records">` for the sidebar shell
+3. `useEffect` + `apiFetch<T[]>('/api/educationrecords')` to load data (or use `@tanstack/react-query` if you prefer)
+4. Render using shadcn/ui `Table`, `Card`, etc. from `@/components/ui/*`
+5. Add the route in `App.tsx`, wrapped in `<ProtectedRoute roles={["Admin","Staff"]}>` as appropriate
+6. Add the nav entry in `DashboardLayout.tsx` (sidebar) for authenticated pages, or `PublicNav.tsx` for public pages
 
 ### Step 5 — Test
 
@@ -98,10 +99,11 @@ Follow the pattern in `DonorsPage.tsx`:
 
 If you're adding a page that uses existing API endpoints:
 
-1. Create the page component in `frontend/src/pages/`
-2. Add the route in `App.tsx`
-3. Add nav link in `Layout.tsx` (if it should appear in the header)
-4. Use `apiFetch<T>()` from `src/api/client.ts` for data
+1. Create the page component in `frontend/src/pages/` (name like `MyPage.tsx`, no `Page` suffix — matches existing pages)
+2. Add the route in `App.tsx`, wrapped in `<ProtectedRoute>` if authenticated
+3. Wrap the page body in `<DashboardLayout title="...">` for authenticated pages, or use `<PublicNav />` at the top for public pages
+4. Add nav entry in `DashboardLayout.tsx` sidebar (authenticated) or `PublicNav.tsx` (public)
+5. Use `apiFetch<T>()` from `@/api/client` for data (auto-attaches the JWT)
 
 ---
 
@@ -112,10 +114,12 @@ If you're adding a page that uses existing API endpoints:
 **Commit messages:** Start with a verb — `Add education records model and controller`, `Fix CORS config for production`, `Wire up login form to Identity endpoint`
 
 **Before pushing:**
-- `cd frontend && npx tsc --noEmit` — TypeScript must compile clean
-- `cd frontend && npm run build` — Vite build must succeed
+- `cd frontend && npm run build` — runs `tsc --noEmit && vite build`; both must succeed
+- `cd frontend && npm run test:run` — vitest must pass (once real tests are added)
 - `cd backend && dotnet build` — Backend must compile
-- Never commit `node_modules/`, `bin/`, `obj/`, `dist/`, or `.env`
+- Never commit `node_modules/`, `bin/`, `obj/`, `dist/`, `.env`, or `*.tsbuildinfo`
+
+> **Note on the build script:** it's `tsc --noEmit && vite build`, NOT `tsc -b`. `tsc -b` is build mode for composite projects and doesn't fit our flat `tsconfig.json`. Don't change it back.
 
 ---
 
@@ -127,8 +131,9 @@ If you're adding a page that uses existing API endpoints:
 | `backend/Data/AppDbContext.cs` | DbSet + table mapping |
 | `backend/Controllers/YourController.cs` | CRUD endpoints |
 | `frontend/src/pages/YourPage.tsx` | New page component |
-| `frontend/src/App.tsx` | Route entry |
-| `frontend/src/components/Layout.tsx` | Nav link (if visible in header) |
+| `frontend/src/App.tsx` | Route entry (wrap in `<ProtectedRoute>` if needed) |
+| `frontend/src/components/DashboardLayout.tsx` | Sidebar nav entry (authenticated pages) |
+| `frontend/src/components/PublicNav.tsx` | Top nav entry (public pages only) |
 | `ARCHITECTURE.md` | Update schema gap table |
 | `DATA_DICTIONARY.md` | Mark table status as implemented |
 | `API_REFERENCE.md` | Document new endpoints |
@@ -147,3 +152,5 @@ If you're adding a page that uses existing API endpoints:
 8. **Identity + JWT conflict?** ASP.NET Identity registers cookie schemes internally. Our `Program.cs` explicitly overrides `DefaultScheme`, `DefaultAuthenticateScheme`, and `DefaultChallengeScheme` to `JwtBearerDefaults.AuthenticationScheme`. Do not remove these overrides.
 9. **New teammate setup?** After cloning, run `dotnet restore` then `dotnet run` in the backend folder. The app auto-applies pending EF Core migrations on startup, so no manual `dotnet ef database update` is needed. It will create the database tables (both Identity and business) automatically.
 10. **Migration/seed errors on startup?** The migration and seeding code in `Program.cs` is wrapped in a try-catch. If the database is unreachable, the error is logged but the app still starts — check the console output for details.
+11. **`npm audit` shows 5 moderate vulnerabilities?** Expected. They all trace to `esbuild <=0.24.2` (GHSA-67mh-4wv8-2f99), a dev-server-only flaw. **Do NOT run `npm audit fix --force`** — it upgrades vitest 2 → 4, a breaking change. See the "Known dependency advisories" section in `CLAUDE.md` for the decision record.
+12. **`npm run build` fails with `Cannot find module 'vitest'`?** You probably pulled without running `npm install`. The test packages (`vitest`, `@testing-library/*`, `jsdom`) were added on Apr 7 2026 — run `npm install` to pick them up. Alternatively, someone may have put `tsc -b` back in the build script; it should be `tsc --noEmit && vite build`.
