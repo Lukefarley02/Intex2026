@@ -76,6 +76,63 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 ---
 
+## Donor Portal
+
+All endpoints require authentication with the Donor role. The current user's identity 
+is determined from their JWT token — donors can only ever see their own data.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/donorportal/me` | Donor | Get current donor's supporter profile |
+| GET | `/api/donorportal/me/donations` | Donor | Get current donor's full donation history |
+| GET | `/api/donorportal/me/impact` | Donor | Get aggregated impact stats for current donor |
+
+**GET /api/donorportal/me response shape:**
+```json
+{
+  "supporterId": 1,
+  "displayName": "string",
+  "firstName": "string",
+  "lastName": "string",
+  "email": "string",
+  "supporterType": "string",
+  "status": "string",
+  "firstDonationDate": "2024-01-01",
+  "acquisitionChannel": "string"
+}
+```
+
+**GET /api/donorportal/me/donations response shape:**
+```json
+[
+  {
+    "donationId": 1,
+    "donationType": "string",
+    "donationDate": "2024-01-01",
+    "amount": 150.00,
+    "estimatedValue": 150.00,
+    "impactUnit": "pesos",
+    "campaignName": "string",
+    "isRecurring": true,
+    "channelSource": "string"
+  }
+]
+```
+
+**GET /api/donorportal/me/impact response shape:**
+```json
+{
+  "totalDonated": 1800.00,
+  "totalEstimatedValue": 1800.00,
+  "donationCount": 12,
+  "firstDonationDate": "2023-01-15",
+  "mostRecentDonationDate": "2024-03-01",
+  "campaignsSupported": ["Year-End Hope", "Back to School"]
+}
+```
+
+---
+
 ## Endpoints still needed
 
 These controllers do not exist yet. When building them, follow the CRUD pattern in `SupportersController.cs`.

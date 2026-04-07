@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Data;
@@ -7,6 +8,7 @@ namespace Intex2026.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin,Staff")]
 public class SupportersController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -48,6 +50,7 @@ public class SupportersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteSupporter(int id)
     {
         var supporter = await _context.Supporters.FindAsync(id);

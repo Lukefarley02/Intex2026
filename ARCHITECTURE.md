@@ -20,7 +20,8 @@ Website/Intex2026/
 │   ├── Controllers/
 │   │   ├── HealthController.cs      # GET /api/health — smoke test
 │   │   ├── SupportersController.cs  # Full CRUD /api/supporters
-│   │   └── ResidentsController.cs   # Full CRUD /api/residents
+│   │   ├── ResidentsController.cs   # Full CRUD /api/residents
+│   │   └── DonorPortalController.cs # Donor-only portal: /api/donorportal/me, /me/donations, /me/impact
 │   ├── Data/
 │   │   └── AppDbContext.cs          # EF Core context (6 of 17 tables wired)
 │   └── Models/                      # Entity classes

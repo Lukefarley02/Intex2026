@@ -41,6 +41,69 @@ plan.md                     Single source of truth — all decisions, progress, 
 9. **lighthouse_schema.sql is the canonical schema.** When expanding models, match column names, types, and constraints from that file exactly.
 10. **Frontend proxy assumes backend on https://localhost:5001.** If the backend port changes, update `frontend/vite.config.ts` proxy target.
 
+## Documentation maintenance — required after every change
+
+Any AI agent or developer working on this project MUST update the relevant documentation 
+files after making any change. Do not consider a task complete until the docs reflect 
+the current state of the code.
+
+### When to update each file
+
+**Update `CLAUDE.md`** when:
+- A new technology, tool, or package is added to the project
+- A new critical rule needs to be enforced
+- The current state section changes (something moves from 🔲 to ✅)
+- A new role, test account, or auth pattern is added
+- The project structure changes significantly
+- Any new convention or pattern is established that future agents should follow
+
+**Update `ARCHITECTURE.md`** when:
+- A new file or folder is created
+- A new controller is added
+- A new model is created
+- A package is added or removed
+- The schema gap table changes (a table moves from Missing to Stub to Complete)
+
+**Update `API_REFERENCE.md`** when:
+- A new endpoint is created
+- An existing endpoint's request or response shape changes
+- Auth requirements change on any endpoint
+- An endpoint is deleted or deprecated
+
+**Update `DATA_DICTIONARY.md`** when:
+- A model is expanded to include more columns
+- A table's status changes (Missing → Stub → Complete)
+- A new model is created
+- Column mappings change
+
+**Update `CONTRIBUTING.md`** when:
+- The process for adding a new feature changes
+- New steps are required in the development workflow
+- New gotchas or common errors are discovered
+
+### How to update
+
+At the end of every task, before reporting completion:
+1. Review which files were created or modified
+2. Identify which documentation files are affected using the guide above
+3. Update those documentation files to reflect the current state
+4. In your completion summary, explicitly list which docs were updated and what changed
+
+### Current state tracking
+
+The "Current state" section in CLAUDE.md uses this format:
+- ✅ = fully built and tested
+- 🔲 = not yet started or not yet complete
+
+Always update this section to reflect reality. If something is partially done, 
+keep it as 🔲 and add a note explaining what's left.
+
+### Never leave docs stale
+
+If you find that the documentation doesn't match the code, fix the documentation 
+as part of your current task even if you weren't asked to. Stale documentation 
+causes every future agent to make wrong assumptions and waste time.
+
 ## Tech stack (locked — do not suggest alternatives)
 
 | Layer | Technology |
