@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-using System.Security.Claims;
->>>>>>> b896bfea2bd812da95f6cc6a7983738cab0ea8c6
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,11 +8,7 @@ namespace Intex2026.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-<<<<<<< HEAD
 [Authorize(Roles = "Admin,Staff")]
-=======
-[Authorize]
->>>>>>> b896bfea2bd812da95f6cc6a7983738cab0ea8c6
 public class ResidentsController : ControllerBase
 {
     private readonly AppDbContext _context;

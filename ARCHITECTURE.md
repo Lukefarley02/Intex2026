@@ -20,19 +20,10 @@ Website/Intex2026/
 │   ├── Properties/
 │   │   └── launchSettings.json      # Forces ASPNETCORE_ENVIRONMENT=Development
 │   ├── Controllers/
-<<<<<<< HEAD
 │   │   ├── HealthController.cs      # GET /api/health — smoke test
 │   │   ├── SupportersController.cs  # Full CRUD /api/supporters
 │   │   ├── ResidentsController.cs   # Full CRUD /api/residents
 │   │   └── DonorPortalController.cs # Donor-only portal: /api/donorportal/me, /me/donations, /me/impact
-=======
-│   │   ├── AuthController.cs        # POST register/login/logout, GET me — JWT issuance
-│   │   ├── HealthController.cs      # GET /api/health — smoke test [AllowAnonymous]
-│   │   ├── SupportersController.cs  # Full CRUD /api/supporters [Authorize]
-│   │   └── ResidentsController.cs   # Full CRUD /api/residents [Authorize] + field filtering
-│   ├── DTOs/
-│   │   └── AuthDtos.cs              # RegisterDto, LoginDto, AuthResponseDto, UserInfoDto
->>>>>>> b896bfea2bd812da95f6cc6a7983738cab0ea8c6
 │   ├── Data/
 │   │   └── AppDbContext.cs          # IdentityDbContext<IdentityUser> (6 of 17 tables wired)
 │   ├── Migrations/                  # EF Core migration history
