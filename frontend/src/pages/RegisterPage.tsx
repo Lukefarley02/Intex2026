@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../api/AuthContext';
 
-function LoginPage() {
+function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login, isAuthenticated } = useAuth();
+  const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, redirect to dashboard
   if (isAuthenticated) {
     navigate('/dashboard', { replace: true });
     return null;
@@ -20,13 +20,20 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      await register(email, password);
+      // After successful registration, redirect to login
+      navigate('/login');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed.');
+      setError(err instanceof Error ? err.message : 'Registration failed.');
     } finally {
       setLoading(false);
     }
@@ -34,7 +41,7 @@ function LoginPage() {
 
   return (
     <div style={{ maxWidth: 400, margin: '2rem auto' }}>
-      <h1>Login</h1>
+      <h1>Register</h1>
 
       {error && (
         <div style={{ background: '#fee', color: '#c00', padding: '0.75rem', borderRadius: 4, marginTop: '1rem' }}>
@@ -63,7 +70,23 @@ function LoginPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
-            autoComplete="current-password"
+            minLength={12}
+            autoComplete="new-password"
+            style={{ width: '100%', padding: '0.5rem', borderRadius: 4, border: '1px solid #ccc' }}
+          />
+          <small style={{ color: '#888' }}>
+            Minimum 12 characters, must include uppercase, lowercase, digit, and special character.
+          </small>
+        </div>
+        <div>
+          <label htmlFor="confirmPassword" style={{ display: 'block', marginBottom: 4 }}>Confirm Password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            required
+            autoComplete="new-password"
             style={{ width: '100%', padding: '0.5rem', borderRadius: 4, border: '1px solid #ccc' }}
           />
         </div>
@@ -80,15 +103,15 @@ function LoginPage() {
             fontWeight: 'bold',
           }}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? 'Creating account...' : 'Create Account'}
         </button>
       </form>
 
       <p style={{ marginTop: '1rem', textAlign: 'center', color: '#666' }}>
-        Don't have an account? <Link to="/register">Register here</Link>
+        Already have an account? <Link to="/login">Sign in</Link>
       </p>
     </div>
   );
 }
 
-export default LoginPage;
+export default RegisterPage;

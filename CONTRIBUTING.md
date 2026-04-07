@@ -63,11 +63,12 @@ public class EducationRecordsController : ControllerBase
 }
 ```
 
-**Security (IS 414):**
-- Public GET endpoints: no attribute needed (or `[AllowAnonymous]`)
+**Security (IS 414) — auth is already wired, just add attributes:**
+- Public endpoints (health, landing data): `[AllowAnonymous]`
 - Authenticated GET endpoints: `[Authorize]`
 - Create/Update: `[Authorize(Roles = "Admin,Staff")]`
 - Delete: `[Authorize(Roles = "Admin")]` — and frontend must show confirmation dialog
+- If the entity has a `notes_restricted` or `medical_notes_restricted` column, strip it for non-Admin users (see `ResidentsController.cs` for the pattern)
 
 ### Step 4 — Create the Frontend Page
 
@@ -139,3 +140,7 @@ If you're adding a page that uses existing API endpoints:
 3. **API returns 500?** Check the connection string in `appsettings.json`. If the database isn't set up yet, controllers that hit the DB will fail — the Health endpoint (`/api/health`) works without a DB.
 4. **TypeScript errors?** Run `npx tsc --noEmit` in the frontend folder to see all errors. Fix before committing.
 5. **Navigation property causes circular JSON?** Add `[JsonIgnore]` or use DTOs to avoid serializing navigation loops.
+6. **JWT SecretKey not configured?** Ensure `ASPNETCORE_ENVIRONMENT=Development` is set (check `Properties/launchSettings.json`). The secret key lives in `appsettings.Development.json` under `Jwt:SecretKey`.
+7. **401 Unauthorized on endpoints that should work?** The JWT token expires (default 60 min). Frontend `apiFetch` auto-clears token and redirects to `/login` on 401. Check that `Authorization: Bearer <token>` header is being sent.
+8. **Identity + JWT conflict?** ASP.NET Identity registers cookie schemes internally. Our `Program.cs` explicitly overrides `DefaultScheme`, `DefaultAuthenticateScheme`, and `DefaultChallengeScheme` to `JwtBearerDefaults.AuthenticationScheme`. Do not remove these overrides.
+9. **New teammate setup?** After cloning, run `dotnet restore` then `dotnet ef database update` in the backend folder. This creates the LocalDB database with both Identity tables and business tables. No manual SQL needed.
