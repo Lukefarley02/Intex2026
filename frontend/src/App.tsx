@@ -112,4 +112,28 @@ const App = () => (
             <Route
               path="/my-impact"
               element={
-       
+                <ProtectedRoute roles={["Admin", "Staff", "Donor"]}>
+                  <DonorPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Admin only */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute roles={["Admin"]}>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+export default App;
