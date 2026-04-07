@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/api/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import CookieConsent from "@/components/CookieConsent";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -20,6 +21,8 @@ import Reports from "./pages/Reports";
 import StaffPortal from "./pages/StaffPortal";
 import DonorPortal from "./pages/DonorPortal";
 import Admin from "./pages/Admin";
+import ProcessRecording from "./pages/ProcessRecording";
+import HomeVisitation from "./pages/HomeVisitation";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +33,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <CookieConsent />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
@@ -72,6 +76,22 @@ const App = () => (
               }
             />
             <Route
+              path="/process-recording"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <ProcessRecording />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/home-visitation"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <HomeVisitation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/reports"
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
@@ -92,28 +112,4 @@ const App = () => (
             <Route
               path="/my-impact"
               element={
-                <ProtectedRoute roles={["Admin", "Donor"]}>
-                  <DonorPortal />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin only */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute roles={["Admin"]}>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+       

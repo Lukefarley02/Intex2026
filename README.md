@@ -1,8 +1,13 @@
 # Intex 2026
 
-## Admin Sign-In (Dev)
+## Test Accounts (Dev)
 
-- **Email:** admin@intex2026.org
-- **Password:** Admin123!@#Pass
+All accounts are seeded automatically on startup.
 
-This account is seeded automatically on startup. It has the **Admin** role.
+| Email           |    Password     |     Role      |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| admin@ember.org | AdminEmber2026! | Admin + Donor |
+| staff@ember.org | StaffEmber2026! | Staff + Donor |
+| donor@ember.org | DonorEmber2026! | Donor         |
+| admin@intex2026.org | Admin123!@#Pass | Admin     ||
+ 
