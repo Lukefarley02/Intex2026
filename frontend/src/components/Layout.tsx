@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../api/AuthContext';
+import CookieConsent from './CookieConsent';
 
 function Layout() {
   const { isAuthenticated, user, logout, hasRole } = useAuth();
@@ -78,7 +79,9 @@ function Layout() {
         <span style={{ margin: '0 0.5rem' }}>|</span>
         &copy; {new Date().getFullYear()} Intex 2026
       </footer>
+      <CookieConsent />
     </div>
+    
   );
 }
 

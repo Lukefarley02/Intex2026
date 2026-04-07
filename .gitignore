@@ -6,6 +6,7 @@ obj/
 *.db
 appsettings.*.local.json
 
+
 # Node / Vite
 frontend/node_modules/
 frontend/dist/
