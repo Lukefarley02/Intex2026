@@ -24,25 +24,40 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/supporters` | TBD | List all supporters |
-| GET | `/api/supporters/{id}` | TBD | Get supporter by ID |
-| POST | `/api/supporters` | TBD | Create a new supporter |
-| PUT | `/api/supporters/{id}` | TBD | Update a supporter |
+| GET | `/api/supporters?types=MonetaryDonor,InKindDonor` | Admin, Staff | List supporters with aggregated donation totals |
+| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID |
+| POST | `/api/supporters` | Admin, Staff | Create a new supporter |
+| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter |
 | DELETE | `/api/supporters/{id}` | Admin | Delete a supporter |
 
-**GET response shape:**
-```json
-{
-  "supporterId": 1,
-  "firstName": "string",
-  "lastName": "string",
-  "email": "string | null",
-  "phone": "string | null",
-  "supporterType": "string | null"
-}
-```
+**Query parameter:** `types` is an optional comma-separated list of `supporter_type` values. Per Appendix A of the case doc the allowed values are `MonetaryDonor`, `InKindDonor`, `Volunteer`, `SkillsContributor`, `SocialMediaAdvocate`, `PartnerOrganization`. When omitted, all supporters are returned.
 
-**Note:** The current model is simplified. The full schema includes additional fields: `displayName`, `organizationName`, `relationshipType`, `region`, `country`, `status`, `createdAt`, `firstDonationDate`, `acquisitionChannel`. These will be added when the model is expanded.
+**GET response shape (list):**
+```json
+[
+  {
+    "supporterId": 1,
+    "supporterType": "MonetaryDonor",
+    "displayName": "Sarah Mitchell",
+    "organizationName": null,
+    "firstName": "Sarah",
+    "lastName": "Mitchell",
+    "email": "sarah@example.com",
+    "phone": "+1-555-0100",
+    "region": "West",
+    "country": "US",
+    "relationshipType": "International",
+    "status": "Active",
+    "acquisitionChannel": "Website",
+    "createdAt": "2024-01-05T00:00:00Z",
+    "firstDonationDate": "2024-01-10T00:00:00Z",
+    "totalDonated": 12500.00,
+    "donationCount": 5,
+    "lastGiftDate": "2026-03-15T00:00:00Z"
+  }
+]
+```
+`totalDonated`, `donationCount`, and `lastGiftDate` are computed via a LEFT JOIN on the donations table and will be `0` / `0` / `null` for supporters who have never given. Results are ordered by `totalDonated` descending, then `displayName` ascending.
 
 ---
 
@@ -140,16 +155,158 @@ Returns zeros and empty array if no donations found. Never throws 404.
 
 ---
 
+## Dashboard (Admin/Staff)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/dashboard/stats` | Admin, Staff | Aggregated KPIs for the admin dashboard |
+
+**GET `/api/dashboard/stats` response:**
+```json
+{
+  "activeDonors": 142,
+  "donorsThisMonth": 8,
+  "donationsYtd": 187432.50,
+  "donationsYtdChangePct": 0.12,
+  "donationsThisMonth": 32610.00,
+  "donationsMonthChangePct": 0.05,
+  "donorRetention": 0.78,
+  "recentActivity": [
+    {
+      "supporterName": "Sarah Mitchell",
+      "amount": 500.00,
+      "date": "2026-04-05T00:00:00Z",
+      "campaign": "Spring Hope Drive"
+    }
+  ]
+}
+```
+Active donors falls back to total supporter count when the `status` column is not populated. `donationsYtdChangePct` and `donationsMonthChangePct` are `null` when the comparison period had zero donations. Retention is computed as the share of donors who gave between 12–24 months ago who also gave in the last 12 months. Recent activity returns the 6 most recent donations joined to the supporter's display name.
+
+---
+
+## Campaigns
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/campaigns` | Any authenticated | Distinct campaigns aggregated from the donations table |
+
+**GET `/api/campaigns` response:**
+```json
+[
+  {
+    "name": "Spring Hope Drive",
+    "description": "Supporting our mission through the Spring Hope Drive initiative.",
+    "raised": 32400.00,
+    "goal": 50000.00,
+    "donationCount": 42,
+    "endDate": "2026-06-15"
+  }
+]
+```
+There is no dedicated campaigns table in the current schema, so this endpoint groups donations by `campaign_name`, sums `amount` (or `estimated_value` as fallback), and synthesizes a display-only goal (1.5× raised, rounded up to the nearest $5k) and an end date (3 months after the most recent donation to that campaign). Returns the top 10 campaigns by raised amount.
+
+---
+
+## Safehouses
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/safehouses` | Admin, Staff | List all safehouses with live resident counts |
+| GET | `/api/safehouses/{id}` | Admin, Staff | Get a single safehouse |
+| POST | `/api/safehouses` | Admin, Staff | Create a new safehouse |
+| PUT | `/api/safehouses/{id}` | Admin, Staff | Update a safehouse |
+| DELETE | `/api/safehouses/{id}` | Admin | Delete a safehouse |
+
+**GET response shape (list):**
+```json
+[
+  {
+    "safehouseId": 1,
+    "safehouseCode": "SH-001",
+    "name": "Casa Esperanza",
+    "region": "Central Visayas",
+    "province": "Cebu",
+    "city": "Cebu City",
+    "country": "Philippines",
+    "status": "Active",
+    "openDate": "2022-01-15",
+    "capacityGirls": 12,
+    "capacityStaff": 4,
+    "storedOccupancy": 9,
+    "activeResidents": 9
+  }
+]
+```
+`activeResidents` is a LEFT JOIN count of residents whose `case_status` is `Active`/`Open` or whose `date_closed` is null. `storedOccupancy` mirrors the `current_occupancy` column on the safehouses table as a fallback.
+
+---
+
+## Admin Users (Admin only)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/adminusers` | Admin | List every ASP.NET Identity account with role membership |
+
+**Response:**
+```json
+[
+  {
+    "id": "b3d0...",
+    "email": "admin@ember.org",
+    "emailConfirmed": true,
+    "lockedOut": false,
+    "roles": ["Admin"]
+  }
+]
+```
+
+---
+
+## Public (anonymous) endpoints
+
+These power the marketing landing page. They return aggregated, non-sensitive data only — no resident identifiers are ever exposed.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/public/stats` | None | Headline numbers for the hero pills |
+| GET | `/api/public/safehouses` | None | Minimal safehouse list (name, city, capacity, active count) |
+
+**GET `/api/public/stats` response:**
+```json
+{
+  "safehouseCount": 4,
+  "girlsSupported": 247,
+  "activeGirls": 36,
+  "retentionRate": 0.87
+}
+```
+
+**GET `/api/public/safehouses` response:**
+```json
+[
+  {
+    "safehouseId": 1,
+    "name": "Casa Esperanza",
+    "city": "Cebu City",
+    "region": "Central Visayas",
+    "capacity": 12,
+    "activeResidents": 9
+  }
+]
+```
+
+---
+
 ## Endpoints still needed
 
 These controllers do not exist yet. When building them, follow the CRUD pattern in `SupportersController.cs`.
 
 | Resource | Route | Priority | Schema table |
 |---|---|---|---|
-| Donations | `/api/donations` | Must | donations |
+| Donations (CRUD) | `/api/donations` | Must | donations |
 | Donation Allocations | `/api/donationallocations` | Should | donation_allocations |
 | In-Kind Items | `/api/inkinditems` | Should | in_kind_donation_items |
-| Safehouses | `/api/safehouses` | Must | safehouses |
 | Partners | `/api/partners` | Should | partners |
 | Partner Assignments | `/api/partnerassignments` | Could | partner_assignments |
 | Process Recordings | `/api/processrecordings` | Must | process_recordings |

@@ -21,8 +21,13 @@ Website/Intex2026/
 │   │   └── launchSettings.json      # Forces ASPNETCORE_ENVIRONMENT=Development
 │   ├── Controllers/
 │   │   ├── HealthController.cs      # GET /api/health — smoke test
-│   │   ├── SupportersController.cs  # Full CRUD /api/supporters
+│   │   ├── SupportersController.cs  # Full CRUD /api/supporters (Admin/Staff)
 │   │   ├── ResidentsController.cs   # Full CRUD /api/residents
+│   │   ├── DashboardController.cs   # GET /api/dashboard/stats — admin KPIs (live SQL)
+│   │   ├── CampaignsController.cs   # GET /api/campaigns — aggregates from donations
+│   │   ├── SafehousesController.cs  # Full CRUD /api/safehouses with live resident counts
+│   │   ├── AdminUsersController.cs  # GET /api/adminusers — Identity users + roles (Admin only)
+│   │   ├── PublicController.cs      # /api/public/stats + /api/public/safehouses (anonymous landing)
 │   │   └── DonorPortalController.cs # Donor-only portal: /api/donorportal/me, /me/donations, /me/impact
 │   ├── Data/
 │   │   └── AppDbContext.cs          # IdentityDbContext<IdentityUser> (6 of 17 tables wired)

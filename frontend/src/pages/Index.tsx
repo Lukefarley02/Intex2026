@@ -5,6 +5,8 @@ import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
 import heroImage from "@/assets/hero-image.jpg";
 import { Eye, Bell, FileText, Heart, MapPin, Home, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/api/client";
 
 const features = [
   { icon: Eye, title: "Real-time safehouse visibility", description: "Monitor capacity, residents, and staff across all locations from one dashboard." },
@@ -12,14 +14,37 @@ const features = [
   { icon: FileText, title: "Automated impact reports", description: "Generate beautiful donor reports in seconds with real program data." },
 ];
 
-const safehouses = [
-  { name: "Casa Esperanza", location: "Cebu City", capacity: 12, current: 9 },
-  { name: "Haven of Hope", location: "Manila", capacity: 15, current: 14 },
-  { name: "Sunrise Home", location: "Davao", capacity: 10, current: 7 },
-  { name: "Safe Harbor", location: "Iloilo", capacity: 8, current: 6 },
-];
+interface PublicStats {
+  safehouseCount: number;
+  girlsSupported: number;
+  activeGirls: number;
+  retentionRate: number; // 0..1
+}
 
-const Index = () => (
+interface PublicSafehouse {
+  safehouseId: number;
+  name: string;
+  city: string | null;
+  region: string | null;
+  capacity: number;
+  activeResidents: number;
+}
+
+const Index = () => {
+  const statsQuery = useQuery<PublicStats>({
+    queryKey: ["public-stats"],
+    queryFn: () => apiFetch<PublicStats>("/api/public/stats"),
+  });
+
+  const safehousesQuery = useQuery<PublicSafehouse[]>({
+    queryKey: ["public-safehouses"],
+    queryFn: () => apiFetch<PublicSafehouse[]>("/api/public/safehouses"),
+  });
+
+  const stats = statsQuery.data;
+  const safehouses = safehousesQuery.data ?? [];
+
+  return (
   <div className="min-h-screen bg-background">
     <PublicNav />
 
@@ -50,9 +75,20 @@ const Index = () => (
             </a>
           </div>
           <div className="flex flex-wrap gap-3 pt-4">
-            <StatPill value="247" label="girls supported" />
-            <StatPill value="4" label="safehouses" />
-            <StatPill value="92%" label="retention rate" />
+            <StatPill
+              value={stats ? String(stats.girlsSupported) : "…"}
+              label="girls supported"
+            />
+            <StatPill
+              value={stats ? String(stats.safehouseCount) : "…"}
+              label="safehouses"
+            />
+            <StatPill
+              value={
+                stats ? `${Math.round(stats.retentionRate * 100)}%` : "…"
+              }
+              label="retention rate"
+            />
           </div>
         </div>
       </div>
@@ -86,35 +122,63 @@ const Index = () => (
           <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-2">Our reach</p>
           <h2 className="text-3xl md:text-4xl font-bold">Active safehouses across the Philippines</h2>
         </div>
+        {safehousesQuery.isLoading && (
+          <p className="text-center text-sm text-muted-foreground">
+            Loading safehouses…
+          </p>
+        )}
+        {safehousesQuery.isError && (
+          <p className="text-center text-sm text-muted-foreground">
+            Safehouse information is temporarily unavailable.
+          </p>
+        )}
         <div id="safehouses" className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {safehouses.map((sh) => (
-            <Card key={sh.name} className="rounded-xl border shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Home className="w-5 h-5 text-secondary" />
-                  <h3 className="font-semibold">{sh.name}</h3>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="w-3.5 h-3.5" /> {sh.location}
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Capacity</span>
-                    <span className="font-medium">{sh.current}/{sh.capacity}</span>
+          {safehouses.map((sh) => {
+            const pct =
+              sh.capacity > 0
+                ? Math.min((sh.activeResidents / sh.capacity) * 100, 100)
+                : 0;
+            const location = [sh.city, sh.region]
+              .filter((p): p is string => !!p && p.trim().length > 0)
+              .join(", ") || "Philippines";
+            return (
+              <Card
+                key={sh.safehouseId}
+                className="rounded-xl border shadow-sm hover:shadow-md transition-shadow"
+              >
+                <CardContent className="p-6 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-5 h-5 text-secondary" />
+                    <h3 className="font-semibold">{sh.name}</h3>
                   </div>
-                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${(sh.current / sh.capacity) * 100}%`,
-                        backgroundColor: (sh.current / sh.capacity) > 0.9 ? 'hsl(var(--primary))' : 'hsl(var(--secondary))',
-                      }}
-                    />
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <MapPin className="w-3.5 h-3.5" /> {location}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Capacity</span>
+                      <span className="font-medium">
+                        {sh.activeResidents}
+                        {sh.capacity > 0 ? `/${sh.capacity}` : ""}
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor:
+                            pct > 90
+                              ? "hsl(var(--primary))"
+                              : "hsl(var(--secondary))",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -169,6 +233,7 @@ const Index = () => (
       </div>
     </footer>
   </div>
-);
+  );
+};
 
 export default Index;
