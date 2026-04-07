@@ -1,23 +1,25 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Flame } from "lucide-react";
-import { useAuth } from "@/api/AuthContext";
+import { useAuth, landingFor } from "@/api/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // If the user is already signed in, render a <Navigate> element instead
+  // of calling navigate() during render. The old code called navigate() at
+  // render time and returned null, which just showed a blank white page.
   if (isAuthenticated) {
-    navigate("/dashboard", { replace: true });
-    return null;
+    return <Navigate to={landingFor(user?.roles)} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,8 +27,8 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      navigate("/dashboard");
+      const loggedInUser = await login(email, password);
+      navigate(landingFor(loggedInUser.roles), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
