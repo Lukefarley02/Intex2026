@@ -9,7 +9,7 @@ namespace Intex2026.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize]  // All endpoints require authentication by default
 public class ResidentsController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -29,19 +29,21 @@ public class ResidentsController : ControllerBase
             .Include(r => r.Safehouse)
             .ToListAsync();
 
+        // Strip restricted fields for non-admin users
         if (!isAdmin)
         {
             return residents.Select(r => new
             {
                 r.ResidentId,
                 r.SafehouseId,
-                r.CaseControlNo,
-                r.InternalCode,
-                r.CaseStatus,
+                r.FirstName,
+                r.LastName,
                 r.DateOfBirth,
-                r.DateOfAdmission,
-                r.CurrentRiskLevel,
+                r.AdmissionDate,
+                r.Status,
+                r.RiskLevel,
                 Safehouse = r.Safehouse == null ? null : new { r.Safehouse.Name }
+                // NotesRestricted intentionally excluded
             }).ToList<object>();
         }
 
@@ -49,12 +51,12 @@ public class ResidentsController : ControllerBase
         {
             r.ResidentId,
             r.SafehouseId,
-            r.CaseControlNo,
-            r.InternalCode,
-            r.CaseStatus,
+            r.FirstName,
+            r.LastName,
             r.DateOfBirth,
-            r.DateOfAdmission,
-            r.CurrentRiskLevel,
+            r.AdmissionDate,
+            r.Status,
+            r.RiskLevel,
             r.NotesRestricted,
             Safehouse = r.Safehouse == null ? null : new { r.Safehouse.Name }
         }).ToList<object>();
@@ -78,12 +80,12 @@ public class ResidentsController : ControllerBase
             {
                 resident.ResidentId,
                 resident.SafehouseId,
-                resident.CaseControlNo,
-                resident.InternalCode,
-                resident.CaseStatus,
+                resident.FirstName,
+                resident.LastName,
                 resident.DateOfBirth,
-                resident.DateOfAdmission,
-                resident.CurrentRiskLevel,
+                resident.AdmissionDate,
+                resident.Status,
+                resident.RiskLevel,
                 Safehouse = resident.Safehouse == null ? null : new { resident.Safehouse.Name }
             };
         }
@@ -92,12 +94,12 @@ public class ResidentsController : ControllerBase
         {
             resident.ResidentId,
             resident.SafehouseId,
-            resident.CaseControlNo,
-            resident.InternalCode,
-            resident.CaseStatus,
+            resident.FirstName,
+            resident.LastName,
             resident.DateOfBirth,
-            resident.DateOfAdmission,
-            resident.CurrentRiskLevel,
+            resident.AdmissionDate,
+            resident.Status,
+            resident.RiskLevel,
             resident.NotesRestricted,
             Safehouse = resident.Safehouse == null ? null : new { resident.Safehouse.Name }
         };
@@ -123,7 +125,7 @@ public class ResidentsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]  // Only admins can delete
     public async Task<IActionResult> DeleteResident(int id)
     {
         var resident = await _context.Residents.FindAsync(id);

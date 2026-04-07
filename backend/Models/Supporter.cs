@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Intex2026.Api.Models;
@@ -6,7 +5,6 @@ namespace Intex2026.Api.Models;
 [Table("supporters")]
 public class Supporter
 {
-    [Key]
     [Column("supporter_id")]
     public int SupporterId { get; set; }
 
@@ -25,30 +23,30 @@ public class Supporter
     [Column("last_name")]
     public string LastName { get; set; } = string.Empty;
 
+    [Column("relationship_type")]
+    public string RelationshipType { get; set; } = string.Empty;
+
+    [Column("region")]
+    public string Region { get; set; } = string.Empty;
+
+    [Column("country")]
+    public string Country { get; set; } = string.Empty;
+
     [Column("email")]
     public string Email { get; set; } = string.Empty;
 
     [Column("phone")]
     public string? Phone { get; set; }
 
-    [Column("country")]
-    public string Country { get; set; } = string.Empty;
-
-    [Column("region")]
-    public string Region { get; set; } = string.Empty;
-
-    [Column("relationship_type")]
-    public string RelationshipType { get; set; } = string.Empty;
-
-    [Column("acquisition_channel")]
-    public string? AcquisitionChannel { get; set; }
-
-    [Column("first_donation_date")]
-    public DateTime? FirstDonationDate { get; set; }
-
     [Column("status")]
     public string? Status { get; set; }
 
     [Column("created_at")]
     public DateTime? CreatedAt { get; set; }
+
+    [Column("first_donation_date")]
+    public DateTime? FirstDonationDate { get; set; }
+
+    [Column("acquisition_channel")]
+    public string? AcquisitionChannel { get; set; }
 }

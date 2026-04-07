@@ -81,61 +81,39 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ---------- Apply pending migrations and seed on startup ----------
+// ---------- Seed roles and default admin on startup ----------
 using (var scope = app.Services.CreateScope())
 {
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-    try
+    string[] roles = ["Admin", "Staff", "Donor"];
+    foreach (var role in roles)
     {
-        // Apply any pending EF Core migrations automatically
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var pending = await db.Database.GetPendingMigrationsAsync();
-        if (pending.Any())
+        if (!await roleManager.RoleExistsAsync(role))
         {
-            logger.LogInformation("Applying {Count} pending migration(s)...", pending.Count());
-            await db.Database.MigrateAsync();
-            logger.LogInformation("Migrations applied successfully.");
+            await roleManager.CreateAsync(new IdentityRole(role));
         }
-
-        // Seed roles
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-
-        string[] roles = ["Admin", "Staff", "Donor"];
-        foreach (var role in roles)
-        {
-            if (!await roleManager.RoleExistsAsync(role))
-            {
-                await roleManager.CreateAsync(new IdentityRole(role));
-            }
-        }
-
-        // Seed a default admin user (change password after first login!)
-        var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@intex2026.org";
-        var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!@#Pass";
-
-        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
-        if (existingAdmin == null)
-        {
-            var adminUser = new IdentityUser
-            {
-                UserName = adminEmail,
-                Email = adminEmail,
-                EmailConfirmed = true
-            };
-            var result = await userManager.CreateAsync(adminUser, adminPassword);
-            if (result.Succeeded)
-            {
-                await userManager.AddToRoleAsync(adminUser, "Admin");
-            }
-        }
-
-        logger.LogInformation("Database seeding completed.");
     }
-    catch (Exception ex)
+
+    // Seed a default admin user (change password after first login!)
+    var adminEmail = builder.Configuration["SeedAdmin:Email"] ?? "admin@intex2026.org";
+    var adminPassword = builder.Configuration["SeedAdmin:Password"] ?? "Admin123!@#Pass";
+
+    var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+    if (existingAdmin == null)
     {
-        logger.LogError(ex, "An error occurred while migrating/seeding the database. The app will continue starting.");
+        var adminUser = new IdentityUser
+        {
+            UserName = adminEmail,
+            Email = adminEmail,
+            EmailConfirmed = true
+        };
+        var result = await userManager.CreateAsync(adminUser, adminPassword);
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
     }
 }
 

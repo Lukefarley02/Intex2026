@@ -18,23 +18,23 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 ## Domain 1: Core / Infrastructure
 
 ### safehouses (9 rows)
-**Status: Complete** — Model has all columns mapped with `[Column]` attributes, no controller yet
+**Status: Stub** — Model exists, missing from controllers
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
 | safehouse_id | SafehouseId | Yes |
-| safehouse_code | SafehouseCode | Yes |
+| safehouse_code | — | No |
 | name | Name | Yes |
-| region | Region | Yes |
-| city | City | Yes |
-| province | Province | Yes |
-| country | Country | Yes |
-| open_date | OpenDate | Yes |
+| region | — | No |
+| city | — | No |
+| province | — | No |
+| country | — | No |
+| open_date | — | No |
 | status | Status | Yes |
-| capacity_girls | CapacityGirls | Yes |
-| capacity_staff | CapacityStaff | Yes |
-| current_occupancy | CurrentOccupancy | Yes |
-| notes | Notes | Yes |
+| capacity_girls | Capacity | Partial (renamed, should split girls/staff) |
+| capacity_staff | — | No |
+| current_occupancy | — | No |
+| notes | — | No |
 
 ### partners (30 rows)
 **Status: Missing**
@@ -47,28 +47,28 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 ## Domain 2: Donor & Support
 
 ### supporters (60 rows)
-**Status: Complete** — Model + controller exist, all columns mapped
+**Status: Stub** — Model + controller exist, simplified
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
 | supporter_id | SupporterId | Yes |
 | supporter_type | SupporterType | Yes |
-| display_name | DisplayName | Yes |
-| organization_name | OrganizationName | Yes |
+| display_name | — | No |
+| organization_name | — | No |
 | first_name | FirstName | Yes |
 | last_name | LastName | Yes |
-| relationship_type | RelationshipType | Yes |
-| region | Region | Yes |
-| country | Country | Yes |
+| relationship_type | — | No |
+| region | — | No |
+| country | — | No |
 | email | Email | Yes |
 | phone | Phone | Yes |
-| status | Status | Yes |
-| created_at | CreatedAt | Yes |
-| first_donation_date | FirstDonationDate | Yes |
-| acquisition_channel | AcquisitionChannel | Yes |
+| status | — | No |
+| created_at | — | No |
+| first_donation_date | FirstContactDate | Renamed (should be FirstDonationDate) |
+| acquisition_channel | — | No |
 
 ### donations (420 rows)
-**Status: Complete** — Model exists with all columns, no controller yet
+**Status: Stub** — Model exists, no controller
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
@@ -76,15 +76,15 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 | supporter_id | SupporterId | Yes |
 | donation_type | DonationType | Yes |
 | donation_date | DonationDate | Yes |
-| is_recurring | IsRecurring | Yes |
-| campaign_name | CampaignName | Yes |
-| channel_source | ChannelSource | Yes |
-| currency_code | CurrencyCode | Yes |
+| is_recurring | — | No |
+| campaign_name | Campaign | Renamed (should be CampaignName) |
+| channel_source | — | No |
+| currency_code | — | No |
 | amount | Amount | Yes |
-| estimated_value | EstimatedValue | Yes |
-| impact_unit | ImpactUnit | Yes |
-| notes | Notes | Yes |
-| referral_post_id | ReferralPostId | Yes |
+| estimated_value | — | No |
+| impact_unit | — | No |
+| notes | — | No |
+| referral_post_id | — | No |
 
 ### donation_allocations (521 rows)
 **Status: Missing**
@@ -97,100 +97,87 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 ## Domain 3: Case Management
 
 ### residents (60 rows)
-**Status: Complete** — Model + controller exist, all columns mapped, Safehouse navigation property
+**Status: Stub** — Model + controller exist, heavily simplified
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
 | resident_id | ResidentId | Yes |
-| case_control_no | CaseControlNo | Yes |
-| internal_code | InternalCode | Yes |
+| case_control_no | — | No |
+| internal_code | — | No |
 | safehouse_id | SafehouseId | Yes |
-| case_status | CaseStatus | Yes |
-| sex | Sex | Yes |
+| case_status | Status | Renamed |
+| sex | — | No |
 | date_of_birth | DateOfBirth | Yes |
-| birth_status | BirthStatus | Yes |
-| place_of_birth | PlaceOfBirth | Yes |
-| religion | Religion | Yes |
-| case_category | CaseCategory | Yes |
-| sub_cat_physical_abuse | SubCatPhysicalAbuse | Yes |
-| sub_cat_sexual_abuse | SubCatSexualAbuse | Yes |
-| sub_cat_child_labor | SubCatChildLabor | Yes |
-| sub_cat_trafficked | SubCatTrafficked | Yes |
-| sub_cat_osaec | SubCatOsaec | Yes |
-| sub_cat_cicl | SubCatCicl | Yes |
-| sub_cat_orphaned | SubCatOrphaned | Yes |
-| sub_cat_street_child | SubCatStreetChild | Yes |
-| sub_cat_at_risk | SubCatAtRisk | Yes |
-| sub_cat_child_with_hiv | SubCatChildWithHiv | Yes |
-| is_pwd | IsPwd | Yes |
-| pwd_type | PwdType | Yes |
-| has_special_needs | HasSpecialNeeds | Yes |
-| special_needs_diagnosis | SpecialNeedsDiagnosis | Yes |
-| family_solo_parent | FamilySoloParent | Yes |
-| family_indigenous | FamilyIndigenous | Yes |
-| family_is_4ps | FamilyIs4ps | Yes |
-| family_informal_settler | FamilyInformalSettler | Yes |
-| family_parent_pwd | FamilyParentPwd | Yes |
-| date_of_admission | DateOfAdmission | Yes |
-| age_upon_admission | AgeUponAdmission | Yes |
-| present_age | PresentAge | Yes |
-| length_of_stay | LengthOfStay | Yes |
-| referral_source | ReferralSource | Yes |
-| referring_agency_person | ReferringAgencyPerson | Yes |
-| date_colb_registered | DateColbRegistered | Yes |
-| date_colb_obtained | DateColbObtained | Yes |
-| assigned_social_worker | AssignedSocialWorker | Yes |
-| initial_case_assessment | InitialCaseAssessment | Yes |
-| date_case_study_prepared | DateCaseStudyPrepared | Yes |
-| reintegration_type | ReintegrationType | Yes |
-| reintegration_status | ReintegrationStatus | Yes |
-| initial_risk_level | InitialRiskLevel | Yes |
-| current_risk_level | CurrentRiskLevel | Yes |
-| date_enrolled | DateEnrolled | Yes |
-| date_closed | DateClosed | Yes |
-| created_at | CreatedAt | Yes |
+| birth_status | — | No |
+| place_of_birth | — | No |
+| religion | — | No |
+| case_category | — | No |
+| sub_cat_* (10 flags) | — | No (none of the 10 sub-category booleans) |
+| is_pwd | — | No |
+| pwd_type | — | No |
+| has_special_needs | — | No |
+| special_needs_diagnosis | — | No |
+| family_* (5 flags) | — | No |
+| date_of_admission | AdmissionDate | Yes |
+| age_upon_admission | — | No |
+| present_age | — | No |
+| length_of_stay | — | No |
+| referral_source | — | No |
+| referring_agency_person | — | No |
+| date_colb_registered | — | No |
+| date_colb_obtained | — | No |
+| assigned_social_worker | — | No |
+| initial_case_assessment | — | No |
+| date_case_study_prepared | — | No |
+| reintegration_type | — | No |
+| reintegration_status | — | No |
+| initial_risk_level | — | No |
+| current_risk_level | RiskLevel | Renamed |
+| date_enrolled | — | No |
+| date_closed | — | No |
+| created_at | — | No |
 | notes_restricted | NotesRestricted | Yes (admin-only) |
 
 ### process_recordings (2,819 rows)
-**Status: Complete** — Model exists with all columns, no controller yet
+**Status: Stub** — Model exists, no controller
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
-| recording_id | RecordingId | Yes |
+| recording_id | ProcessRecordingId | Renamed |
 | resident_id | ResidentId | Yes |
 | session_date | SessionDate | Yes |
-| social_worker | SocialWorker | Yes |
+| social_worker | CreatedBy | Renamed |
 | session_type | SessionType | Yes |
-| session_duration_minutes | SessionDurationMinutes | Yes |
-| emotional_state_observed | EmotionalStateObserved | Yes |
-| emotional_state_end | EmotionalStateEnd | Yes |
-| session_narrative | SessionNarrative | Yes |
-| interventions_applied | InterventionsApplied | Yes |
-| follow_up_actions | FollowUpActions | Yes |
-| progress_noted | ProgressNoted | Yes |
-| concerns_flagged | ConcernsFlagged | Yes |
-| referral_made | ReferralMade | Yes |
-| notes_restricted | NotesRestricted | Yes |
+| session_duration_minutes | — | No |
+| emotional_state_observed | — | No |
+| emotional_state_end | — | No |
+| session_narrative | Notes | Renamed |
+| interventions_applied | — | No |
+| follow_up_actions | — | No |
+| progress_noted | — | No |
+| concerns_flagged | — | No |
+| referral_made | — | No |
+| notes_restricted | — | No |
 
 ### home_visitations (1,337 rows)
-**Status: Complete** — Model exists with all columns, no controller yet
+**Status: Stub** — Model exists, no controller
 
 | SQL Column | C# Property | In Model? |
 |---|---|---|
-| visitation_id | VisitationId | Yes |
+| visitation_id | HomeVisitationId | Renamed |
 | resident_id | ResidentId | Yes |
 | visit_date | VisitDate | Yes |
-| social_worker | SocialWorker | Yes |
+| social_worker | ConductedBy | Renamed |
 | visit_type | VisitType | Yes |
-| location_visited | LocationVisited | Yes |
-| family_members_present | FamilyMembersPresent | Yes |
-| purpose | Purpose | Yes |
-| observations | Observations | Yes |
-| family_cooperation_level | FamilyCooperationLevel | Yes |
-| safety_concerns_noted | SafetyConcernsNoted | Yes |
-| follow_up_needed | FollowUpNeeded | Yes |
-| follow_up_notes | FollowUpNotes | Yes |
-| visit_outcome | VisitOutcome | Yes |
+| location_visited | — | No |
+| family_members_present | — | No |
+| purpose | — | No |
+| observations | Findings | Renamed |
+| family_cooperation_level | — | No |
+| safety_concerns_noted | — | No |
+| follow_up_needed | — | No |
+| follow_up_notes | — | No |
+| visit_outcome | — | No |
 
 ### education_records (534 rows)
 **Status: Missing**
@@ -227,7 +214,8 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 
 | Status | Count | Tables |
 |---|---|---|
-| Complete | 6 | safehouses, supporters, donations, residents, process_recordings, home_visitations |
+| Stub | 6 | safehouses, supporters, donations, residents, process_recordings, home_visitations |
 | Missing | 11 | partners, partner_assignments, donation_allocations, in_kind_donation_items, education_records, health_wellbeing_records, intervention_plans, incident_reports, social_media_posts, safehouse_monthly_metrics, public_impact_snapshots |
+| Complete | 0 | — |
 
-**Next priority:** Build controllers for the 4 complete models that lack them (donations, safehouses, process_recordings, home_visitations), then build the 11 missing models starting with the "Must" priority tables from API_REFERENCE.md.
+**Next priority:** Expand the 6 stubs to match the full schema, then build the 11 missing models starting with the "Must" priority tables from API_REFERENCE.md.
