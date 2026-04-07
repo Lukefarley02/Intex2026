@@ -16,9 +16,6 @@ public class ProcessRecording
     [Column("session_date")]
     public DateTime? SessionDate { get; set; }
 
-    [Column("social_worker")]
-    public string? SocialWorker { get; set; }
-
     [Column("session_type")]
     public string? SessionType { get; set; }
 
@@ -37,9 +34,6 @@ public class ProcessRecording
     [Column("interventions_applied")]
     public string? InterventionsApplied { get; set; }
 
-    [Column("follow_up_actions")]
-    public string? FollowUpActions { get; set; }
-
     [Column("progress_noted")]
     public bool? ProgressNoted { get; set; }
 
@@ -49,6 +43,12 @@ public class ProcessRecording
     [Column("referral_made")]
     public bool? ReferralMade { get; set; }
 
+    [Column("follow_up_actions")]
+    public string? FollowUpActions { get; set; }
+
     [Column("notes_restricted")]
     public string? NotesRestricted { get; set; }
+
+    [Column("social_worker")]
+    public string? SocialWorker { get; set; }
 }

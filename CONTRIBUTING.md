@@ -30,9 +30,11 @@ public class EducationRecord
 ```
 
 **Rules:**
-- PascalCase C# properties map to snake_case SQL columns (EF Core convention or explicit mapping)
+- Use `[Column("snake_case_name")]` attributes on every property to explicitly map to SQL column names
+- Use `[Table("table_name")]` on the class to map to the SQL table
+- PascalCase C# properties, snake_case SQL columns
 - Use `string.Empty` for non-nullable strings, `string?` for nullable
-- Add navigation properties for foreign keys
+- Add navigation properties for foreign keys (with `[ForeignKey]` attribute)
 - One class per file, file name = class name
 
 ### Step 2 — Register in AppDbContext
@@ -143,4 +145,5 @@ If you're adding a page that uses existing API endpoints:
 6. **JWT SecretKey not configured?** Ensure `ASPNETCORE_ENVIRONMENT=Development` is set (check `Properties/launchSettings.json`). The secret key lives in `appsettings.Development.json` under `Jwt:SecretKey`.
 7. **401 Unauthorized on endpoints that should work?** The JWT token expires (default 60 min). Frontend `apiFetch` auto-clears token and redirects to `/login` on 401. Check that `Authorization: Bearer <token>` header is being sent.
 8. **Identity + JWT conflict?** ASP.NET Identity registers cookie schemes internally. Our `Program.cs` explicitly overrides `DefaultScheme`, `DefaultAuthenticateScheme`, and `DefaultChallengeScheme` to `JwtBearerDefaults.AuthenticationScheme`. Do not remove these overrides.
-9. **New teammate setup?** After cloning, run `dotnet restore` then `dotnet ef database update` in the backend folder. This creates the LocalDB database with both Identity tables and business tables. No manual SQL needed.
+9. **New teammate setup?** After cloning, run `dotnet restore` then `dotnet run` in the backend folder. The app auto-applies pending EF Core migrations on startup, so no manual `dotnet ef database update` is needed. It will create the database tables (both Identity and business) automatically.
+10. **Migration/seed errors on startup?** The migration and seeding code in `Program.cs` is wrapped in a try-catch. If the database is unreachable, the error is logged but the app still starts — check the console output for details.

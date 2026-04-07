@@ -58,8 +58,8 @@ plan.md                     Single source of truth — all decisions, progress, 
 
 ### Backend (C#)
 - Namespace: `Intex2026.Api.*` (e.g., `Intex2026.Api.Models`, `Intex2026.Api.Controllers`)
-- Models: PascalCase properties, one class per file, file name matches class name
-- Table mapping: `modelBuilder.Entity<X>().ToTable("snake_case_table_name")` in AppDbContext
+- Models: PascalCase properties, one class per file, file name matches class name, `[Table]` and `[Column]` attributes for explicit SQL mapping
+- Table mapping: `modelBuilder.Entity<X>().ToTable("snake_case_table_name")` in AppDbContext (plus `[Column("snake_case")]` on each property)
 - Controllers: RESTful, `[ApiController]` attribute, route pattern `api/[controller]`
 - All async — use `async Task<ActionResult<T>>` pattern
 
@@ -88,6 +88,7 @@ Frontend: http://localhost:5173 (proxies /api/* to backend)
 Authentication is **fully implemented and audited**. Do not rebuild or rewire auth. Key facts:
 
 - ASP.NET Identity + JWT Bearer tokens (HmacSha256)
+- Pending EF Core migrations are auto-applied on startup (`db.Database.MigrateAsync()`), wrapped in try-catch
 - 3 roles seeded on startup: Admin, Staff, Donor
 - Default admin seeded from `appsettings.Development.json` → `SeedAdmin` section
 - Password policy: min 12 chars, 3 unique, all complexity flags, lockout after 5 failures
@@ -101,7 +102,7 @@ Authentication is **fully implemented and audited**. Do not rebuild or rewire au
 ## Common tasks
 
 ### Add a new database table/model
-See CONTRIBUTING.md and DATA_DICTIONARY.md. Pattern: create Model → register in AppDbContext → add migration → add Controller → add frontend page.
+See CONTRIBUTING.md and DATA_DICTIONARY.md. Pattern: create Model (with `[Table]` and `[Column]` attributes) → register in AppDbContext → add migration → add Controller → add frontend page. Migrations are auto-applied on startup, so teammates just need to `dotnet run`.
 
 ### Add a new page
 1. Create `frontend/src/pages/NewPage.tsx`
