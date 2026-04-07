@@ -112,7 +112,7 @@ causes every future agent to make wrong assumptions and waste time.
 | Frontend | React 19 + TypeScript + Vite 6 |
 | Routing | react-router-dom v7 |
 | Database | SQL Server (Azure SQL for production) |
-| Auth | ASP.NET Identity + JWT Bearer (fully implemented & audited) |
+| Auth | ASP.NET Identity (username/password + RBAC) |
 | Swagger | Swashbuckle.AspNetCore 7.2.0 |
 | Deployment | Microsoft Azure |
 | ML | Python / Jupyter notebooks (separate ml-pipelines/ folder) |
@@ -121,8 +121,8 @@ causes every future agent to make wrong assumptions and waste time.
 
 ### Backend (C#)
 - Namespace: `Intex2026.Api.*` (e.g., `Intex2026.Api.Models`, `Intex2026.Api.Controllers`)
-- Models: PascalCase properties, one class per file, file name matches class name, `[Table]` and `[Column]` attributes for explicit SQL mapping
-- Table mapping: `modelBuilder.Entity<X>().ToTable("snake_case_table_name")` in AppDbContext (plus `[Column("snake_case")]` on each property)
+- Models: PascalCase properties, one class per file, file name matches class name
+- Table mapping: `modelBuilder.Entity<X>().ToTable("snake_case_table_name")` in AppDbContext
 - Controllers: RESTful, `[ApiController]` attribute, route pattern `api/[controller]`
 - All async — use `async Task<ActionResult<T>>` pattern
 
@@ -146,34 +146,17 @@ cd frontend && npm install && npm run dev
 Backend: https://localhost:5001 | Swagger: https://localhost:5001/swagger
 Frontend: http://localhost:5173 (proxies /api/* to backend)
 
-## Auth status (as of Apr 6 2026)
-
-Authentication is **fully implemented and audited**. Do not rebuild or rewire auth. Key facts:
-
-- ASP.NET Identity + JWT Bearer tokens (HmacSha256)
-- Pending EF Core migrations are auto-applied on startup (`db.Database.MigrateAsync()`), wrapped in try-catch
-- 3 roles seeded on startup: Admin, Staff, Donor
-- Default admin seeded from `appsettings.Development.json` → `SeedAdmin` section
-- Password policy: min 12 chars, 3 unique, all complexity flags, lockout after 5 failures
-- Frontend stores JWT in `sessionStorage`, attaches via `apiFetch()` in `src/api/client.ts`
-- `AuthContext.tsx` provides `login()`, `register()`, `logout()`, `hasRole()` to all components
-- `ProtectedRoute.tsx` guards routes by authentication + optional role check
-- `notesRestricted` field is stripped for non-Admin users in ResidentsController
-- Identity tables coexist with business tables in the same database (managed by EF Core migrations)
-- **Critical:** `Program.cs` explicitly sets all three default auth schemes to `JwtBearerDefaults.AuthenticationScheme` to override Identity's cookie defaults. Do not remove this.
-
 ## Common tasks
 
 ### Add a new database table/model
-See CONTRIBUTING.md and DATA_DICTIONARY.md. Pattern: create Model (with `[Table]` and `[Column]` attributes) → register in AppDbContext → add migration → add Controller → add frontend page. Migrations are auto-applied on startup, so teammates just need to `dotnet run`.
+See CONTRIBUTING.md and DATA_DICTIONARY.md. Pattern: create Model → register in AppDbContext → add Controller → add frontend page.
 
 ### Add a new page
 1. Create `frontend/src/pages/NewPage.tsx`
-2. Add route in `frontend/src/App.tsx` (wrap in `<ProtectedRoute>` if auth required)
-3. Add nav link in `frontend/src/components/Layout.tsx` (conditionally shown based on role)
+2. Add route in `frontend/src/App.tsx`
+3. Add nav link in `frontend/src/components/Layout.tsx`
 
 ### Add a new API endpoint
 1. Create or edit controller in `backend/Controllers/`
 2. Follow existing CRUD pattern (see SupportersController.cs as reference)
-3. Add `[Authorize(Roles = "Admin,Staff")]` or `[Authorize(Roles = "Admin")]` as appropriate (IS 414)
-4. For restricted fields, use the anonymous projection pattern from ResidentsController
+3. Add `[Authorize(Roles = "Admin")]` or `[Authorize]` as appropriate (IS 414)

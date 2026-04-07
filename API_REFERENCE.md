@@ -24,13 +24,69 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/supporters` | Admin, Staff | List all supporters |
-| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID |
-| POST | `/api/supporters` | Admin, Staff | Create a new supporter |
-| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter |
+| GET | `/api/supporters` | TBD | List all supporters |
+| GET | `/api/supporters/{id}` | TBD | Get supporter by ID |
+| POST | `/api/supporters` | TBD | Create a new supporter |
+| PUT | `/api/supporters/{id}` | TBD | Update a supporter |
 | DELETE | `/api/supporters/{id}` | Admin | Delete a supporter |
 
 **GET response shape:**
+```json
+{
+  "supporterId": 1,
+  "firstName": "string",
+  "lastName": "string",
+  "email": "string | null",
+  "phone": "string | null",
+  "supporterType": "string | null"
+}
+```
+
+**Note:** The current model is simplified. The full schema includes additional fields: `displayName`, `organizationName`, `relationshipType`, `region`, `country`, `status`, `createdAt`, `firstDonationDate`, `acquisitionChannel`. These will be added when the model is expanded.
+
+---
+
+## Residents
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/residents` | TBD | List all residents (includes safehouse) |
+| GET | `/api/residents/{id}` | TBD | Get resident by ID (includes safehouse) |
+| POST | `/api/residents` | TBD | Create a new resident |
+| PUT | `/api/residents/{id}` | TBD | Update a resident |
+| DELETE | `/api/residents/{id}` | Admin | Delete a resident |
+
+**GET response shape:**
+```json
+{
+  "residentId": 1,
+  "safehouseId": 1,
+  "firstName": "string",
+  "lastName": "string",
+  "dateOfBirth": "2010-01-15",
+  "admissionDate": "2024-03-01",
+  "status": "active | reintegrated | transferred",
+  "riskLevel": "low | medium | high | critical",
+  "notesRestricted": "string | null (admin-only)",
+  "safehouse": { "name": "string" }
+}
+```
+
+**Security note:** `notesRestricted` must be excluded from responses for non-Admin roles. This is not yet implemented — requires auth + DTO or projection.
+
+---
+
+## Donor Portal
+
+All three endpoints require a valid JWT token with the `Donor` role. The current user's identity is read from JWT claims — no user ID is accepted as a URL parameter.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/donorportal/me` | Donor | Current donor's supporter profile |
+| GET | `/api/donorportal/me/donations` | Donor | Current donor's full donation history |
+| GET | `/api/donorportal/me/impact` | Donor | Aggregated giving stats for current donor |
+
+**GET `/api/donorportal/me` response:**
 ```json
 {
   "supporterId": 1,
@@ -39,106 +95,48 @@ Swagger UI (dev): `https://localhost:5001/swagger`
   "organizationName": "string | null",
   "firstName": "string",
   "lastName": "string",
+  "relationshipType": "string",
+  "region": "string",
+  "country": "string",
   "email": "string",
   "phone": "string | null",
-  "country": "string",
-  "region": "string",
-  "relationshipType": "string",
-  "acquisitionChannel": "string | null",
-  "firstDonationDate": "datetime | null",
   "status": "string | null",
-  "createdAt": "datetime | null"
+  "createdAt": "2024-01-01T00:00:00Z | null",
+  "firstDonationDate": "2024-01-01T00:00:00Z | null",
+  "acquisitionChannel": "string | null"
 }
 ```
 
----
-
-## Residents
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/residents` | Admin, Staff | List all residents (includes safehouse) |
-| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID (includes safehouse) |
-| POST | `/api/residents` | Admin, Staff | Create a new resident |
-| PUT | `/api/residents/{id}` | Admin, Staff | Update a resident |
-| DELETE | `/api/residents/{id}` | Admin | Delete a resident |
-
-**GET response shape (anonymous projection — subset of full model):**
-```json
-{
-  "residentId": 1,
-  "safehouseId": 1,
-  "caseControlNo": "string | null",
-  "internalCode": "string | null",
-  "caseStatus": "string | null",
-  "dateOfBirth": "datetime | null",
-  "dateOfAdmission": "datetime | null",
-  "currentRiskLevel": "string | null",
-  "notesRestricted": "string | null (admin-only)",
-  "safehouse": { "name": "string" }
-}
-```
-
-The full Resident model has 42+ columns (all sub-category flags, family flags, dates, etc.). The controller returns a projected subset; Admin users also receive `notesRestricted`.
-
-**Security note:** `notesRestricted` is stripped from responses for non-Admin roles. This is implemented in `ResidentsController.cs` using anonymous projections that omit the field when the requesting user lacks the Admin role.
-
----
-
-## Donor Portal
-
-All endpoints require authentication with the Donor role. The current user's identity 
-is determined from their JWT token — donors can only ever see their own data.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/donorportal/me` | Donor | Get current donor's supporter profile |
-| GET | `/api/donorportal/me/donations` | Donor | Get current donor's full donation history |
-| GET | `/api/donorportal/me/impact` | Donor | Get aggregated impact stats for current donor |
-
-**GET /api/donorportal/me response shape:**
-```json
-{
-  "supporterId": 1,
-  "displayName": "string",
-  "firstName": "string",
-  "lastName": "string",
-  "email": "string",
-  "supporterType": "string",
-  "status": "string",
-  "firstDonationDate": "2024-01-01",
-  "acquisitionChannel": "string"
-}
-```
-
-**GET /api/donorportal/me/donations response shape:**
+**GET `/api/donorportal/me/donations` response:**
 ```json
 [
   {
     "donationId": 1,
-    "donationType": "string",
-    "donationDate": "2024-01-01",
-    "amount": 150.00,
-    "estimatedValue": 150.00,
+    "donationType": "Monetary",
+    "donationDate": "2025-12-31T00:00:00Z",
+    "amount": 717.18,
+    "estimatedValue": 717.18,
     "impactUnit": "pesos",
-    "campaignName": "string",
-    "isRecurring": true,
-    "channelSource": "string"
+    "campaignName": "string | null",
+    "isRecurring": false,
+    "channelSource": "Campaign"
   }
 ]
 ```
+Returns empty array `[]` if no donations found. Ordered by `donationDate` descending.
 
-**GET /api/donorportal/me/impact response shape:**
+**GET `/api/donorportal/me/impact` response:**
 ```json
 {
-  "totalDonated": 1800.00,
-  "totalEstimatedValue": 1800.00,
-  "donationCount": 12,
-  "firstDonationDate": "2023-01-15",
-  "mostRecentDonationDate": "2024-03-01",
-  "campaignsSupported": ["Year-End Hope", "Back to School"]
+  "total_donated": 1500.00,
+  "total_estimated_value": 1500.00,
+  "donation_count": 3,
+  "first_donation_date": "2023-07-02T00:00:00Z",
+  "most_recent_donation_date": "2025-12-31T00:00:00Z",
+  "campaigns_supported": ["Campaign A", "Campaign B"]
 }
 ```
+Returns zeros and empty array if no donations found. Never throws 404.
 
 ---
 
@@ -163,40 +161,29 @@ These controllers do not exist yet. When building them, follow the CRUD pattern 
 | Social Media Posts | `/api/socialmediaposts` | Must | social_media_posts |
 | Monthly Metrics | `/api/monthlymetrics` | Should | safehouse_monthly_metrics |
 | Impact Snapshots | `/api/impactsnapshots` | Must | public_impact_snapshots |
+| Auth | `/api/auth/login`, `/register`, `/logout` | Must | ASP.NET Identity tables |
+
 ---
 
-## Authentication (implemented)
+## Auth
 
-ASP.NET Identity + JWT Bearer authentication is fully wired. Tokens are issued on login and must be sent as `Authorization: Bearer <token>` on all protected endpoints. Roles: **Admin**, **Staff**, **Donor**. Default admin is seeded on startup from `appsettings.Development.json`.
+ASP.NET Identity + JWT. Register and Login are `[AllowAnonymous]`; `/me` requires a valid token.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | None | Create new user account (assigned Donor role) |
-| POST | `/api/auth/login` | None | Authenticate and return JWT |
-| POST | `/api/auth/logout` | Authenticated | Stateless — client discards token |
-| GET | `/api/auth/me` | Authenticated | Returns email + roles for current user |
+| POST | `/api/auth/register` | None | Create new user account, returns JWT |
+| POST | `/api/auth/login` | None | Authenticate, returns JWT + email + roles |
+| POST | `/api/auth/logout` | None | Stateless — instructs client to discard token |
+| GET | `/api/auth/me` | Any role | Returns current user email and roles |
 
-**POST /api/auth/register request:**
+**POST `/api/auth/login` response:**
 ```json
-{ "email": "user@example.com", "password": "SecurePass123!" }
+{
+  "token": "eyJhbG...",
+  "email": "donor@ember.org",
+  "roles": ["Donor"]
+}
 ```
-
-**POST /api/auth/login request:**
-```json
-{ "email": "user@example.com", "password": "SecurePass123!" }
-```
-
-**POST /api/auth/login response:**
-```json
-{ "token": "eyJhbG...", "email": "user@example.com", "roles": ["Donor"] }
-```
-
-**GET /api/auth/me response:**
-```json
-{ "email": "user@example.com", "roles": ["Admin"] }
-```
-
-**Password policy (IS 414):** Min 12 chars, 3 unique chars, requires uppercase + lowercase + digit + special. Account locks for 15 min after 5 failed attempts.
 
 ---
 
