@@ -24,10 +24,10 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/supporters` | Admin, Staff | List all supporters |
-| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID |
-| POST | `/api/supporters` | Admin, Staff | Create a new supporter |
-| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter |
+| GET | `/api/supporters` | TBD | List all supporters |
+| GET | `/api/supporters/{id}` | TBD | Get supporter by ID |
+| POST | `/api/supporters` | TBD | Create a new supporter |
+| PUT | `/api/supporters/{id}` | TBD | Update a supporter |
 | DELETE | `/api/supporters/{id}` | Admin | Delete a supporter |
 
 **GET response shape:**
@@ -50,10 +50,10 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/residents` | Admin, Staff | List all residents (includes safehouse) |
-| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID (includes safehouse) |
-| POST | `/api/residents` | Admin, Staff | Create a new resident |
-| PUT | `/api/residents/{id}` | Admin, Staff | Update a resident |
+| GET | `/api/residents` | TBD | List all residents (includes safehouse) |
+| GET | `/api/residents/{id}` | TBD | Get resident by ID (includes safehouse) |
+| POST | `/api/residents` | TBD | Create a new resident |
+| PUT | `/api/residents/{id}` | TBD | Update a resident |
 | DELETE | `/api/residents/{id}` | Admin | Delete a resident |
 
 **GET response shape:**
@@ -72,7 +72,7 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 }
 ```
 
-**Security note:** `notesRestricted` is stripped from responses for non-Admin roles. This is implemented in `ResidentsController.cs` using anonymous projections that null out the field when the requesting user lacks the Admin role.
+**Security note:** `notesRestricted` must be excluded from responses for non-Admin roles. This is not yet implemented — requires auth + DTO or projection.
 
 ---
 
@@ -97,40 +97,20 @@ These controllers do not exist yet. When building them, follow the CRUD pattern 
 | Social Media Posts | `/api/socialmediaposts` | Must | social_media_posts |
 | Monthly Metrics | `/api/monthlymetrics` | Should | safehouse_monthly_metrics |
 | Impact Snapshots | `/api/impactsnapshots` | Must | public_impact_snapshots |
+| Auth | `/api/auth/login`, `/register`, `/logout` | Must | ASP.NET Identity tables |
+
 ---
 
-## Authentication (implemented)
+## Auth endpoints (planned — not yet implemented)
 
-ASP.NET Identity + JWT Bearer authentication is fully wired. Tokens are issued on login and must be sent as `Authorization: Bearer <token>` on all protected endpoints. Roles: **Admin**, **Staff**, **Donor**. Default admin is seeded on startup from `appsettings.Development.json`.
+These will be created when ASP.NET Identity is wired up:
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/register` | None | Create new user account (assigned Donor role) |
-| POST | `/api/auth/login` | None | Authenticate and return JWT |
-| POST | `/api/auth/logout` | Authenticated | Stateless — client discards token |
-| GET | `/api/auth/me` | Authenticated | Returns email + roles for current user |
-
-**POST /api/auth/register request:**
-```json
-{ "email": "user@example.com", "password": "SecurePass123!" }
-```
-
-**POST /api/auth/login request:**
-```json
-{ "email": "user@example.com", "password": "SecurePass123!" }
-```
-
-**POST /api/auth/login response:**
-```json
-{ "token": "eyJhbG...", "email": "user@example.com", "roles": ["Donor"] }
-```
-
-**GET /api/auth/me response:**
-```json
-{ "email": "user@example.com", "roles": ["Admin"] }
-```
-
-**Password policy (IS 414):** Min 12 chars, 3 unique chars, requires uppercase + lowercase + digit + special. Account locks for 15 min after 5 failed attempts.
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Create new user account |
+| POST | `/api/auth/login` | Authenticate and return token/cookie |
+| POST | `/api/auth/logout` | End session |
+| GET | `/api/auth/me` | Get current user info + role |
 
 ---
 
