@@ -16,11 +16,11 @@ public class HomeVisitation
     [Column("visit_date")]
     public DateTime? VisitDate { get; set; }
 
-    [Column("social_worker")]
-    public string? SocialWorker { get; set; }
-
     [Column("visit_type")]
     public string? VisitType { get; set; }
+
+    [Column("purpose")]
+    public string? Purpose { get; set; }
 
     [Column("location_visited")]
     public string? LocationVisited { get; set; }
@@ -28,14 +28,11 @@ public class HomeVisitation
     [Column("family_members_present")]
     public string? FamilyMembersPresent { get; set; }
 
-    [Column("purpose")]
-    public string? Purpose { get; set; }
+    [Column("family_cooperation_level")]
+    public string? FamilyCooperationLevel { get; set; }
 
     [Column("observations")]
     public string? Observations { get; set; }
-
-    [Column("family_cooperation_level")]
-    public string? FamilyCooperationLevel { get; set; }
 
     [Column("safety_concerns_noted")]
     public bool? SafetyConcernsNoted { get; set; }
@@ -48,4 +45,7 @@ public class HomeVisitation
 
     [Column("visit_outcome")]
     public string? VisitOutcome { get; set; }
+
+    [Column("social_worker")]
+    public string? SocialWorker { get; set; }
 }

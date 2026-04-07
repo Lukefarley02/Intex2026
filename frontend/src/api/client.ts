@@ -1,14 +1,37 @@
 // Lightweight API client — calls go through the Vite proxy in dev
+// Automatically attaches JWT Bearer token from sessionStorage
+
 const BASE_URL = '';  // empty = same origin (proxy handles /api)
 
 export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
+  const token = sessionStorage.getItem('jwt');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string> ?? {}),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${BASE_URL}${endpoint}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers,
   });
+
+  // If 401, the token is expired or invalid — clear it
+  if (res.status === 401) {
+    sessionStorage.removeItem('jwt');
+    // Optionally redirect to login
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    throw new Error('Session expired. Please log in again.');
+  }
 
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
