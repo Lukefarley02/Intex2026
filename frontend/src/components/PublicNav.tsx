@@ -10,10 +10,10 @@ const PublicNav = () => {
   const dashboardHref = landingFor(user?.roles);
 
   return (
-    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
+    <nav aria-label="Main navigation" className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
-          <Flame className="w-7 h-7" />
+          <Flame className="w-7 h-7" aria-hidden="true" />
           Ember
         </Link>
 
@@ -37,13 +37,19 @@ const PublicNav = () => {
           </Link>
         </div>
 
-        <button className="md:hidden" onClick={() => setOpen(!open)}>
-          {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        <button
+          className="md:hidden"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          aria-controls="mobile-menu"
+          onClick={() => setOpen(!open)}
+        >
+          {open ? <X className="w-6 h-6" aria-hidden="true" /> : <Menu className="w-6 h-6" aria-hidden="true" />}
         </button>
       </div>
 
       {open && (
-        <div className="md:hidden bg-card border-b p-4 space-y-3">
+        <div id="mobile-menu" className="md:hidden bg-card border-b p-4 space-y-3">
           <a href="#mission" className="block text-sm font-medium text-muted-foreground">Mission</a>
           <a href="#impact" className="block text-sm font-medium text-muted-foreground">Impact</a>
           {isAuthenticated ? (

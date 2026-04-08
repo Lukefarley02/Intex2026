@@ -69,12 +69,129 @@ public class PublicController : ControllerBase
             ? 0
             : (double)priorDonors.Intersect(recentDonors).Count() / priorDonors.Count;
 
+        var reintegratedGirls = await _context.Residents
+            .AsNoTracking()
+            .Where(r => r.ReintegrationStatus != null && r.ReintegrationStatus != "")
+            .CountAsync();
+
+        var totalRaised = await _context.Donations
+            .AsNoTracking()
+            .SumAsync(d => (decimal?)(d.Amount ?? d.EstimatedValue ?? 0m)) ?? 0m;
+
         return Ok(new
         {
             safehouseCount,
             girlsSupported,
             activeGirls,
+            reintegratedGirls,
+            totalRaised,
             retentionRate = retention
+        });
+    }
+
+    // GET /api/public/donations
+    // Returns total donations raised and a breakdown by campaign for the
+    // landing page donut chart. No donor names or personal data included.
+    [HttpGet("donations")]
+    public async Task<IActionResult> GetDonations()
+    {
+        var all = await _context.Donations.AsNoTracking().ToListAsync();
+
+        var totalRaised = all.Sum(d => d.Amount ?? d.EstimatedValue ?? 0m);
+
+        var byCampaign = all
+            .Where(d => !string.IsNullOrWhiteSpace(d.CampaignName))
+            .GroupBy(d => d.CampaignName!)
+            .Select(g => new
+            {
+                name = g.Key,
+                amount = g.Sum(d => d.Amount ?? d.EstimatedValue ?? 0m)
+            })
+            .OrderByDescending(c => c.amount)
+            .Take(6)
+            .ToList();
+
+        // Bucket everything else into "Other"
+        var topTotal = byCampaign.Sum(c => c.amount);
+        var other = totalRaised - topTotal;
+
+        var breakdown = byCampaign.Cast<object>().ToList();
+        if (other > 0)
+            breakdown.Add(new { name = "Other", amount = other });
+
+        return Ok(new { totalRaised, breakdown });
+    }
+
+    // GET /api/public/care-story
+    // Aggregated care metrics that tell the story of how each girl is supported.
+    // Returns only counts and rates — no resident-identifying information.
+    [HttpGet("care-story")]
+    public async Task<IActionResult> GetCareStory()
+    {
+        var totalCounselingSessions = await _context.ProcessRecordings
+            .AsNoTracking()
+            .CountAsync();
+
+        var totalHomeVisits = await _context.HomeVisitations
+            .AsNoTracking()
+            .CountAsync();
+
+        // % of counseling sessions where progress was noted
+        var sessionsWithProgress = await _context.ProcessRecordings
+            .AsNoTracking()
+            .CountAsync(r => r.ProgressNoted == true);
+
+        double progressRate = totalCounselingSessions == 0
+            ? 0
+            : (double)sessionsWithProgress / totalCounselingSessions;
+
+        // % of sessions ending on a positive emotional note
+        var positiveEndStates = new[] { "Hopeful", "Calm", "Happy", "Content", "Stable", "Motivated", "Relieved", "Confident", "Peaceful" };
+        var sessionsEndingPositively = await _context.ProcessRecordings
+            .AsNoTracking()
+            .CountAsync(r => r.EmotionalStateEnd != null && positiveEndStates.Contains(r.EmotionalStateEnd));
+
+        var sessionsWithEndState = await _context.ProcessRecordings
+            .AsNoTracking()
+            .CountAsync(r => r.EmotionalStateEnd != null);
+
+        double positiveEndRate = sessionsWithEndState == 0
+            ? 0
+            : (double)sessionsEndingPositively / sessionsWithEndState;
+
+        // % of home visits with a favorable outcome
+        var favorableVisits = await _context.HomeVisitations
+            .AsNoTracking()
+            .CountAsync(v => v.VisitOutcome == "Favorable");
+
+        var visitsWithOutcome = await _context.HomeVisitations
+            .AsNoTracking()
+            .CountAsync(v => v.VisitOutcome != null);
+
+        double favorableVisitRate = visitsWithOutcome == 0
+            ? 0
+            : (double)favorableVisits / visitsWithOutcome;
+
+        // Girls who improved from Critical/High risk to Medium/Low risk
+        var highRiskLevels = new[] { "Critical", "High" };
+        var lowRiskLevels = new[] { "Medium", "Low" };
+
+        var girlsRiskImproved = await _context.Residents
+            .AsNoTracking()
+            .CountAsync(r =>
+                r.InitialRiskLevel != null &&
+                r.CurrentRiskLevel != null &&
+                highRiskLevels.Contains(r.InitialRiskLevel) &&
+                lowRiskLevels.Contains(r.CurrentRiskLevel));
+
+        return Ok(new
+        {
+            totalCounselingSessions,
+            totalHomeVisits,
+            progressRate,
+            positiveEndRate,
+            favorableVisitRate,
+            girlsRiskImproved
         });
     }
 

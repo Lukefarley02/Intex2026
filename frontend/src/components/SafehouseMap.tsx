@@ -131,6 +131,8 @@ export default function SafehouseMap({ safehouses }: SafehouseMapProps) {
       `}</style>
       <div
         ref={containerRef}
+        role="application"
+        aria-label="Interactive map showing safehouse locations across the Philippines"
         className="w-full rounded-2xl overflow-hidden shadow-md border"
         style={{ height: "480px" }}
       />
