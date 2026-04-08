@@ -178,4 +178,101 @@ Run tests with `npm test` (watch mode) or `npm run test:run` (single pass). Only
 
 **Impact on this project:** Development-only; no production exposure. The dev server binds to localhost and is only running during active development on the team's machines.
 
-**Remediation path:** npm's proposed fix (`npm audit fix --force`) upgrades vitest from 2.x to 4.x, a two-major-version br
+**Remediation path:** npm's proposed fix (`npm audit fix --force`) upgrades vitest from 2.x to 4.x, a two-major-version brthe real backend. **This is now outdated — see the Apr 8 update below.**
+
+## Backend + auth wiring update (Apr 8 2026)
+
+All major pages are now wired to the real backend via `apiFetch()` and `useQuery`. Mock data has been removed from:
+- `Dashboard.tsx` — pulls from `/api/supporters`, `/api/residents`, `/api/safehouses`
+- `Donors.tsx` — pulls from `/api/supporters`
+- `Safehouses.tsx` — pulls from `/api/safehouses`
+- `Residents.tsx` — pulls from `/api/residents`
+- `DonorPortal.tsx` — pulls from `/api/donorportal/me`, `/me/donations`, `/me/impact`, `/api/campaigns`
+
+New controllers added: `ProcessRecordingsController`, `HomeVisitationsController`, with pages `ProcessRecording.tsx` and `HomeVisitation.tsx` routed in `App.tsx`.
+
+`CookieConsent.tsx` now properly imported and mounted in `App.tsx`.
+
+## Auth system update (Apr 8 2026) — ApplicationUser + Region/City scope
+
+The Identity system was upgraded from plain `IdentityUser` to a custom `ApplicationUser` class:
+
+- **File:** `backend/Data/ApplicationUser.cs`
+- **New columns on `AspNetUsers`:** `Region` (nvarchar(max), nullable), `City` (nvarchar(max), nullable)
+- **Migration:** `20260407174017_AddUserRegionCity` (applied manually via SQL + `__EFMigrationsHistory` insert)
+
+### Admin scope logic (no new roles needed)
+
+Admin access level is derived entirely from `Region` and `City` on the user record:
+
+| Region | City | Admin level |
+|---|---|---|
+| null | null | Company Manager — sees all data |
+| set | null | Regional Manager — scoped to their region |
+| set | set | Location Manager — scoped to their city |
+
+Staff must have both Region and City set. Donors: Region/City are ignored for access control.
+
+`Region` and `City` are embedded as JWT claims (`"region"`, `"city"`) on login so controllers can filter without a DB round-trip. The `/api/auth/me` endpoint now returns `adminScope` ("company", "region", or "location") for frontend use.
+
+**Note:** Controller-level filtering by region/city is not yet implemented — all Admin users currently see all data. The infrastructure (claims in JWT, scope derivation) is in place.
+
+### Critical rule: always use ApplicationUser, never IdentityUser
+
+Any code that interacts with the Identity system MUST use `ApplicationUser`, not `IdentityUser`. This includes `UserManager<>`, `SignInManager<>`, `FindByEmailAsync`, etc. Using `IdentityUser` directly will break because `Region` and `City` columns won't be included in SELECT queries.
+
+### Test accounts
+
+| Email | Password | Role(s) | Region | City | Admin scope |
+|---|---|---|---|---|---|
+| admin@ember.org | AdminEmber2026! | Admin, Donor | null | null | Company Manager |
+| staff@ember.org | StaffEmber2026! | Staff, Donor | West | Salem | Location-scoped |
+| donor@ember.org | DonorEmber2026! | Donor | null | null | N/A |
+| admin@intex2026.org | Admin123!@#Pass | Admin | null | null | Company Manager |
+
+### CORS policy
+
+CORS policy was renamed from `"DevCors"` to `"AppCors"` and now reads allowed origins from the `AllowedOrigins` array in `appsettings.json`. Add the production Azure frontend URL to this array before deployment.
+
+```json
+"AllowedOrigins": [
+  "http://localhost:5173",
+  "https://localhost:5173",
+  "https://your-frontend.azurestaticapps.net"
+]
+```
+
+## Current state (as of Apr 8 2026)
+
+### Backend
+- ✅ ASP.NET Identity + JWT auth with ApplicationUser (Region/City scope)
+- ✅ Two EF Core DbContexts: AppDbContext (EmberApp) + IdentityContext (EmberIdentity)
+- ✅ CORS configured via AllowedOrigins config (AppCors policy)
+- ✅ HSTS + HTTPS redirect + CSP header middleware
+- ✅ Role seeder + auto-migration on startup
+- ✅ SupportersController — full CRUD + donation aggregates
+- ✅ ResidentsController — full CRUD
+- ✅ SafehousesController — full CRUD + live occupancy counts
+- ✅ ProcessRecordingsController — GET (with ?residentId filter), DELETE (Admin only), NotesRestricted stripped for non-Admin
+- ✅ HomeVisitationsController — full CRUD with ?residentId filter
+- ✅ DonorPortalController — /me, /me/donations, /me/impact
+- ✅ DashboardController — aggregated KPIs
+- ✅ CampaignsController — campaign aggregates from donations
+- ✅ AdminUsersController — user list with scope, PUT /scope endpoint
+- ✅ PublicController — anonymous stats + safehouse list for landing page
+- 🔲 Controller-level region/city filtering for Regional/Location Managers
+
+### Frontend
+- ✅ Full routing in App.tsx (public, Admin+Staff, Donor routes with ProtectedRoute)
+- ✅ CookieConsent mounted and working
+- ✅ Dashboard, Donors, Safehouses, Residents wired to backend
+- ✅ DonorPortal wired to backend
+- ✅ ProcessRecording + HomeVisitation pages exist and are routed
+- ✅ Login + Register wired to backend
+- 🔲 Delete confirmation dialogs (required for IS 414)
+- 🔲 Dark mode toggle / cookie preference
+
+### Deployment
+- 🔲 Azure App Service (backend) — in progress
+- 🔲 Azure Static Web Apps (frontend) — not started
+- 🔲 Production AllowedOrigins configured

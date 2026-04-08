@@ -7,6 +7,89 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 ---
 
+## Auth
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/login` | None | Login and receive a JWT |
+| POST | `/api/auth/register` | None | Register a new user |
+| POST | `/api/auth/logout` | Any | Stateless — instructs client to discard token |
+| GET | `/api/auth/me` | Any | Current user profile with roles and admin scope |
+
+**POST `/api/auth/login` request:**
+```json
+{ "email": "admin@ember.org", "password": "AdminEmber2026!" }
+```
+
+**POST `/api/auth/login` response:**
+```json
+{
+  "token": "eyJhbG...",
+  "email": "admin@ember.org",
+  "roles": ["Admin", "Donor"],
+  "region": null,
+  "city": null
+}
+```
+`region` and `city` are `null` for company-level admins and donors. They are populated for regional/location managers and staff.
+
+**POST `/api/auth/register` request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "role": "Staff",
+  "region": "West",
+  "city": "Salem"
+}
+```
+`role` and `region`/`city` are optional. All users get `Donor` by default; `Staff` or `Admin` can also be assigned.
+
+**GET `/api/auth/me` response:**
+```json
+{
+  "email": "admin@ember.org",
+  "roles": ["Admin", "Donor"],
+  "region": null,
+  "city": null,
+  "adminScope": "company"
+}
+```
+`adminScope` is `"company"`, `"region"`, or `"location"` for Admin users; `null` for Staff and Donor.
+
+---
+
+## Admin Users
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/adminusers` | Admin | List all Identity users with roles and scope |
+| PUT | `/api/adminusers/{id}/scope` | Admin | Update a user's region and city |
+
+**GET `/api/adminusers` response:**
+```json
+[
+  {
+    "id": "guid",
+    "email": "admin@ember.org",
+    "emailConfirmed": true,
+    "lockedOut": false,
+    "roles": ["Admin", "Donor"],
+    "region": null,
+    "city": null,
+    "adminScope": "company"
+  }
+]
+```
+
+**PUT `/api/adminusers/{id}/scope` request:**
+```json
+{ "region": "West", "city": "Salem" }
+```
+Pass `null` or empty string to clear a value. Setting `region` only → Regional Manager. Setting both → Location Manager. Clearing both → Company Manager.
+
+---
+
 ## Health Check
 
 | Method | Endpoint | Auth | Description |
@@ -204,177 +287,41 @@ Active donors falls back to total supporter count when the `status` column is no
   }
 ]
 ```
-There is no dedicated campaigns table in the current schema, so this endpoint groups donations by `campaign_name`, sums `amount` (or `estimated_value` as fallback), and synthesizes a display-only goal (1.5× raised, rounded up to the nearest $5k) and an end date (3 months after the most recent donation to that campaign). Returns the top 10 campaigns by raised amount.
-
+There is no dedicated campaigns table in the current schema, so this endpoint groups donati
 ---
 
 ## Safehouses
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/safehouses` | Admin, Staff | List all safehouses with live resident counts |
-| GET | `/api/safehouses/{id}` | Admin, Staff | Get a single safehouse |
+| GET | `/api/safehouses` | Admin, Staff | List all safehouses with live occupancy counts |
+| GET | `/api/safehouses/{id}` | Admin, Staff | Get safehouse by ID |
 | POST | `/api/safehouses` | Admin, Staff | Create a new safehouse |
 | PUT | `/api/safehouses/{id}` | Admin, Staff | Update a safehouse |
 | DELETE | `/api/safehouses/{id}` | Admin | Delete a safehouse |
-
-**GET response shape (list):**
-```json
-[
-  {
-    "safehouseId": 1,
-    "safehouseCode": "SH-001",
-    "name": "Casa Esperanza",
-    "region": "Central Visayas",
-    "province": "Cebu",
-    "city": "Cebu City",
-    "country": "Philippines",
-    "status": "Active",
-    "openDate": "2022-01-15",
-    "capacityGirls": 12,
-    "capacityStaff": 4,
-    "storedOccupancy": 9,
-    "activeResidents": 9
-  }
-]
-```
-`activeResidents` is a LEFT JOIN count of residents whose `case_status` is `Active`/`Open` or whose `date_closed` is null. `storedOccupancy` mirrors the `current_occupancy` column on the safehouses table as a fallback.
-
----
-
-## Admin Users (Admin only)
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/adminusers` | Admin | List every ASP.NET Identity account with role membership |
-
-**Response:**
-```json
-[
-  {
-    "id": "b3d0...",
-    "email": "admin@ember.org",
-    "emailConfirmed": true,
-    "lockedOut": false,
-    "roles": ["Admin"]
-  }
-]
-```
-
----
-
-## Public (anonymous) endpoints
-
-These power the marketing landing page. They return aggregated, non-sensitive data only — no resident identifiers are ever exposed.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/public/stats` | None | Headline numbers for the hero pills |
-| GET | `/api/public/safehouses` | None | Minimal safehouse list (name, city, capacity, active count) |
-
-**GET `/api/public/stats` response:**
-```json
-{
-  "safehouseCount": 4,
-  "girlsSupported": 247,
-  "activeGirls": 36,
-  "retentionRate": 0.87
-}
-```
-
-**GET `/api/public/safehouses` response:**
-```json
-[
-  {
-    "safehouseId": 1,
-    "name": "Casa Esperanza",
-    "city": "Cebu City",
-    "region": "Central Visayas",
-    "capacity": 12,
-    "activeResidents": 9
-  }
-]
-```
-
----
-
-## Endpoints still needed
-
-These controllers do not exist yet. When building them, follow the CRUD pattern in `SupportersController.cs`.
-
-| Resource | Route | Priority | Schema table |
-|---|---|---|---|
-| Donations (CRUD) | `/api/donations` | Must | donations |
-| Donation Allocations | `/api/donationallocations` | Should | donation_allocations |
-| In-Kind Items | `/api/inkinditems` | Should | in_kind_donation_items |
-| Partners | `/api/partners` | Should | partners |
-| Partner Assignments | `/api/partnerassignments` | Could | partner_assignments |
-| Process Recordings | `/api/processrecordings` | Must | process_recordings |
-| Home Visitations | `/api/homevisitations` | Must | home_visitations |
-| Education Records | `/api/educationrecords` | Must | education_records |
-| Health Records | `/api/healthrecords` | Must | health_wellbeing_records |
-| Intervention Plans | `/api/interventionplans` | Must | intervention_plans |
-| Incident Reports | `/api/incidentreports` | Should | incident_reports |
-| Social Media Posts | `/api/socialmediaposts` | Must | social_media_posts |
-| Monthly Metrics | `/api/monthlymetrics` | Should | safehouse_monthly_metrics |
-| Impact Snapshots | `/api/impactsnapshots` | Must | public_impact_snapshots |
-| Auth | `/api/auth/login`, `/register`, `/logout` | Must | ASP.NET Identity tables |
-
----
-
-## Auth
-
-ASP.NET Identity + JWT. Register and Login are `[AllowAnonymous]`; `/me` requires a valid token.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/register` | None | Create new user account, returns JWT |
-| POST | `/api/auth/login` | None | Authenticate, returns JWT + email + roles |
-| POST | `/api/auth/logout` | None | Stateless — instructs client to discard token |
-| GET | `/api/auth/me` | Any role | Returns current user email and roles |
-
-**POST `/api/auth/login` response:**
-```json
-{
-  "token": "eyJhbG...",
-  "email": "donor@ember.org",
-  "roles": ["Donor"]
-}
-```
 
 ---
 
 ## Process Recordings
 
-Counseling session notes per resident. IS 413 requirement.
-
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/processrecordings` | Admin, Staff | List all recordings; supports optional `?residentId=#` filter. Sorted by `sessionDate` desc. `notesRestricted` returned only for Admin. |
-| GET | `/api/processrecordings/{id}` | Admin, Staff | Single recording. |
-| POST | `/api/processrecordings` | Admin, Staff | Create a new recording (server generates `recordingId`). |
-| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording. |
-| DELETE | `/api/processrecordings/{id}` | Admin | Delete a recording. |
+| GET | `/api/processrecordings?residentId=N` | Admin, Staff | List recordings, optionally filtered by resident. Ordered newest-first. |
+| GET | `/api/processrecordings/{id}` | Admin, Staff | Get single recording |
+| POST | `/api/processrecordings` | Admin, Staff | Create a recording |
+| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording |
+| DELETE | `/api/processrecordings/{id}` | Admin | Delete a recording |
 
-## Home Visitations
-
-Home visits, field assessments, and case conferences per resident. IS 413 requirement.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/homevisitations` | Admin, Staff | List all visits; supports optional `?residentId=#` filter. Sorted by `visitDate` desc. |
-| GET | `/api/homevisitations/{id}` | Admin, Staff | Single visit. |
-| POST | `/api/homevisitations` | Admin, Staff | Create a new visit (server generates `visitationId`). |
-| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visit. |
-| DELETE | `/api/homevisitations/{id}` | Admin | Delete a visit. |
+**Security note:** `notesRestricted` is stripped from responses for non-Admin callers.
 
 ---
 
-## Conventions for new endpoints
+## Home Visitations
 
-- Route: `api/[controller]` (auto from controller name)
-- Return `ActionResult<T>` for single items, `ActionResult<IEnumerable<T>>` for lists
-- Use `async/await` throughout
-- Return `201 CreatedAtAction` for POST, `204 NoContent` for PUT/DELETE
-- Return `404 NotFound` when resource doesn't exist
-- Add `[Authorize]` attributes per IS 414 security requirements
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/homevisitations?residentId=N` | Admin, Staff | List visitations, optionally filtered by resident |
+| GET | `/api/homevisitations/{id}` | Admin, Staff | Get single visitation |
+| POST | `/api/homevisitations` | Admin, Staff | Create a visitation record |
+| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation record |
+| DELETE | `/api/homevisitations/{id}` | Admin | Delete a visitation record |
