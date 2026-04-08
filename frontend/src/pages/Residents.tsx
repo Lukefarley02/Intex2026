@@ -4,6 +4,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, Plus, UserCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
@@ -59,8 +66,24 @@ const displayName = (r: ResidentRow) =>
 
 const statusLabel = (r: ResidentRow) => r.caseStatus || "Unknown";
 
+// Sentinel value used in all dropdowns to mean "no filter applied". Using
+// a non-empty string is required because Radix's Select treats empty
+// string as a reset and throws a dev warning.
+const ANY = "__any__";
+
+// Case status filter options. The canonical schema allows three values:
+// Active, Closed, Transferred.
+const statusOptions = ["Active", "Closed", "Transferred"] as const;
+
+// Risk-level filter options. Matches the four values used by the
+// `currentRiskLevel` column and the riskColor map above.
+const priorityOptions = ["low", "medium", "high", "critical"] as const;
+
 const Residents = () => {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>(ANY);
+  const [safehouseFilter, setSafehouseFilter] = useState<string>(ANY);
+  const [priorityFilter, setPriorityFilter] = useState<string>(ANY);
 
   const { data, isLoading, isError } = useQuery<ResidentRow[]>({
     queryKey: ["residents"],
@@ -69,10 +92,32 @@ const Residents = () => {
 
   const residents = data ?? [];
 
+  // Unique list of safehouse names present in the data set, for the
+  // safehouse dropdown. Sorted alphabetically so the menu is predictable.
+  const safehouseOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of residents) {
+      if (r.safehouse?.name) set.add(r.safehouse.name);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [residents]);
+
   const filtered = useMemo(() => {
-    if (search.trim().length === 0) return residents;
+    let rows = residents;
+    if (statusFilter !== ANY) {
+      rows = rows.filter((r) => (r.caseStatus ?? "").trim() === statusFilter);
+    }
+    if (safehouseFilter !== ANY) {
+      rows = rows.filter((r) => (r.safehouse?.name ?? "") === safehouseFilter);
+    }
+    if (priorityFilter !== ANY) {
+      rows = rows.filter(
+        (r) => (r.currentRiskLevel ?? "").toLowerCase() === priorityFilter,
+      );
+    }
+    if (search.trim().length === 0) return rows;
     const q = search.toLowerCase();
-    return residents.filter((r) => {
+    return rows.filter((r) => {
       const hay = [
         displayName(r),
         r.safehouse?.name ?? "",
@@ -83,7 +128,7 @@ const Residents = () => {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [residents, search]);
+  }, [residents, search, statusFilter, safehouseFilter, priorityFilter]);
 
   return (
     <DashboardLayout title="Residents">
@@ -100,6 +145,86 @@ const Residents = () => {
         <Button variant="hero" size="sm">
           <Plus className="w-4 h-4 mr-1" /> Add resident
         </Button>
+      </div>
+
+      {/* Filter dropdowns. Each one narrows the resident list client-side
+          on top of whatever the search box is doing. "Any" resets that
+          dimension. All three compose as AND filters. */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">
+            Case status
+          </label>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Any status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any status</SelectItem>
+              {statusOptions.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">
+            Safehouse
+          </label>
+          <Select value={safehouseFilter} onValueChange={setSafehouseFilter}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Any safehouse" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any safehouse</SelectItem>
+              {safehouseOptions.map((name) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-muted-foreground font-medium">
+            Priority
+          </label>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Any priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY}>Any priority</SelectItem>
+              {priorityOptions.map((p) => (
+                <SelectItem key={p} value={p} className="capitalize">
+                  {p}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {(statusFilter !== ANY ||
+          safehouseFilter !== ANY ||
+          priorityFilter !== ANY) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="self-end"
+            onClick={() => {
+              setStatusFilter(ANY);
+              setSafehouseFilter(ANY);
+              setPriorityFilter(ANY);
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {isLoading && (

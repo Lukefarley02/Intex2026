@@ -223,4 +223,46 @@ using (var scope = app.Services.CreateScope())
     await RoleSeeder.SeedAsync(scope.ServiceProvider);
 }
 
+// One-time backfill: reconcile every safehouse's current_occupancy with the
+// live count of Active residents. The canonical schema ships with stale
+// values in current_occupancy (the seed CSVs were authored before the
+// residents table was populated), so on every cold start we walk the table
+// and sync. From this point forward the ResidentsController keeps the
+// column in sync on every insert/update/delete.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<Intex2026.Api.Data.AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var counts = await db.Residents
+            .Where(r => r.CaseStatus == "Active")
+            .GroupBy(r => r.SafehouseId)
+            .Select(g => new { SafehouseId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var countMap = counts.ToDictionary(x => x.SafehouseId, x => x.Count);
+        var safehouses = await db.Safehouses.ToListAsync();
+        var changed = 0;
+        foreach (var sh in safehouses)
+        {
+            var live = countMap.TryGetValue(sh.SafehouseId, out var c) ? c : 0;
+            if (sh.CurrentOccupancy != live)
+            {
+                sh.CurrentOccupancy = live;
+                changed++;
+            }
+        }
+        if (changed > 0)
+        {
+            await db.SaveChangesAsync();
+            logger.LogInformation("Occupancy backfill: reconciled {Count} safehouse rows.", changed);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Occupancy backfill failed (non-fatal).");
+    }
+}
+
 app.Run();
