@@ -1,27 +1,64 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, ClipboardList, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useAuth } from "@/api/AuthContext";
 
-const navItems = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/donors", icon: HeartHandshake, label: "Donors" },
-  { to: "/safehouses", icon: Home, label: "Safehouses" },
-  { to: "/residents", icon: UserCircle, label: "Residents" },
-  { to: "/process-recording", icon: NotebookPen, label: "Process Recording" },
-  { to: "/home-visitation", icon: MapPin, label: "Home Visitation" },
-  { to: "/ml-insights", icon: Brain, label: "ML Insights" },
-  { to: "/reports", icon: FileText, label: "Reports" },
-  { to: "/staff", icon: ClipboardList, label: "Staff Portal" },
-  { to: "/my-impact", icon: Users, label: "Donor Portal" },
-  { to: "/admin", icon: Shield, label: "Admin" },
+// Every nav item the sidebar can render, along with the roles allowed to
+// see it. The sidebar filters by the current user's roles at render time.
+//
+// Rules (matches the four-tier access-control model and the IS 413 grading):
+//   • Donor         → Donor Portal only. They must not see any case or admin page.
+//   • Staff         → Case-management tools (Safehouses, Residents, Process
+//                     Recording, Home Visitation) plus the Staff Portal.
+//                     Staff do NOT see Dashboard, Donors, Reports, ML Insights,
+//                     or Admin — those are either monetary (Staff is backend-
+//                     blocked from donor data) or admin-only.
+//   • Admin         → Everything.
+//
+// If a user holds multiple roles (e.g. an Admin is also seeded as a Donor),
+// the union of their allowed items is shown — Admin wins because its rule
+// set is a superset of Staff and Donor.
+type NavItem = {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  roles: Array<"Admin" | "Staff" | "Donor">;
+};
+
+const navItems: NavItem[] = [
+  { to: "/dashboard",        icon: LayoutDashboard, label: "Dashboard",        roles: ["Admin"] },
+  { to: "/donors",           icon: HeartHandshake,  label: "Donors",           roles: ["Admin"] },
+  { to: "/safehouses",       icon: Home,            label: "Safehouses",       roles: ["Admin", "Staff"] },
+  { to: "/residents",        icon: UserCircle,      label: "Residents",        roles: ["Admin", "Staff"] },
+  { to: "/process-recording",icon: NotebookPen,     label: "Process Recording",roles: ["Admin", "Staff"] },
+  { to: "/home-visitation",  icon: MapPin,          label: "Home Visitation",  roles: ["Admin", "Staff"] },
+  { to: "/ml-insights",      icon: Brain,           label: "ML Insights",      roles: ["Admin"] },
+  { to: "/reports",          icon: FileText,        label: "Reports",          roles: ["Admin"] },
+  { to: "/staff",            icon: ClipboardList,   label: "Staff Portal",     roles: ["Admin", "Staff"] },
+  { to: "/my-impact",        icon: Users,           label: "Donor Portal",     roles: ["Donor"] },
+  { to: "/admin",            icon: Shield,          label: "Admin",            roles: ["Admin"] },
 ];
 
 const DashboardLayout = ({ children, title }: { children: React.ReactNode; title: string }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout, user, hasRole } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Filter the nav by the current user's highest-privilege role. Admin is a
+  // superset of Staff; a user who is ONLY a Donor (no Admin/Staff role) sees
+  // Donor Portal only. An Admin who is also seeded as a Donor still sees the
+  // full admin nav because Admin outranks Donor.
+  const visibleNavItems = useMemo(() => {
+    const isAdmin = hasRole("Admin");
+    const isStaff = hasRole("Staff");
+    const isDonorOnly = !isAdmin && !isStaff && hasRole("Donor");
+
+    if (isAdmin) return navItems.filter((i) => i.roles.includes("Admin"));
+    if (isStaff) return navItems.filter((i) => i.roles.includes("Staff"));
+    if (isDonorOnly) return navItems.filter((i) => i.roles.includes("Donor"));
+    return [];
+  }, [hasRole]);
 
   const handleSignOut = () => {
     logout();
@@ -35,7 +72,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
         <Flame className="w-6 h-6" /> Ember
       </Link>
       <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = location.pathname === item.to;
           return (
             <Link

@@ -30,6 +30,7 @@ Website/Intex2026/
 │   │   ├── ProcessRecordingsController.cs  # CRUD ?residentId — scoped through resident's safehouse; NotesRestricted admin-only; DELETE founder-only
 │   │   ├── HomeVisitationsController.cs    # CRUD ?residentId — scoped through resident's safehouse; DELETE founder-only
 │   │   ├── DashboardController.cs          # GET /api/dashboard/stats — KPIs scoped to caller's region; Staff sees zeros (no monetary visibility)
+│   │   ├── ReportsController.cs            # GET /api/reports/summary — IS 413 Reports & Analytics: donation trends, resident outcomes, safehouse performance, reintegration rates, Annual Accomplishment Report (caring/healing/teaching); scope-aware; Staff sees empty monetary sections
 │   │   ├── CampaignsController.cs          # GET /api/campaigns — aggregates from donations
 │   │   ├── AdminUsersController.cs         # GET /api/adminusers (filtered by caller's scope), PUT /api/adminusers/{id}/scope (Founder only)
 │   │   ├── PublicController.cs             # /api/public/stats + /api/public/safehouses (anonymous)
@@ -82,7 +83,7 @@ Website/Intex2026/
         ├── components/
         │   ├── ConfirmDialog.tsx   # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
-        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated staff/admin pages (Flame logo, nav, sign out)
+        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; navItems are role-tagged (Admin/Staff/Donor) and filtered at render via hasRole() — Donor-only sees Donor Portal, Staff sees case-mgmt tools + Staff Portal, Admin sees everything
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
         │   ├── StatPill.tsx         # Hero stat pill ("247 girls supported")
         │   ├── NavLink.tsx          # Wrapper around react-router NavLink with active/pending classNames
