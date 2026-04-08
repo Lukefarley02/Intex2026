@@ -1,6 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import type { ReactNode } from "react";
 
+const API_BASE =
+  import.meta.env.VITE_API_URL ??
+  "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net";
+
 // ---- Types ----
 
 interface User {
@@ -42,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = sessionStorage.getItem("jwt");
     if (stored) {
       setToken(stored);
-      fetch("/api/auth/me", {
+      fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${stored}` },
       })
         .then((res) => {
@@ -64,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -84,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -101,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     if (token) {
-      fetch("/api/auth/logout", {
+      fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       }).catch(() => {});
