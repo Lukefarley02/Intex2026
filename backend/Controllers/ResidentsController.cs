@@ -53,8 +53,18 @@ public class ResidentsController : ControllerBase
         }).ToList();
     }
 
+    // GET /api/residents/{id}
+    //
+    // Returns the full Resident entity so the edit form on the frontend can
+    // round-trip all 40+ columns without having to re-send every categorical
+    // flag. NotesRestricted is still stripped for Staff callers (and any
+    // non-admin) per the IS 414 RBAC rule. The navigation property to the
+    // parent safehouse is intentionally NOT included in the JSON — PUT posts
+    // the raw Resident back and EF Core would complain about the attached
+    // Safehouse graph. The frontend already has the safehouse list from
+    // GET /api/safehouses for display purposes.
     [HttpGet("{id}")]
-    public async Task<ActionResult<object>> GetResident(int id)
+    public async Task<ActionResult<Resident>> GetResident(int id)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
 
@@ -68,22 +78,13 @@ public class ResidentsController : ControllerBase
         if (!scope.CanAccessSafehouseRow(resident.Safehouse))
             return Forbid();
 
-        var canSeeNotes = scope.IsAdmin;
-        return new
-        {
-            resident.ResidentId,
-            resident.SafehouseId,
-            resident.CaseControlNo,
-            resident.InternalCode,
-            resident.CaseStatus,
-            resident.DateOfBirth,
-            resident.DateOfAdmission,
-            resident.CurrentRiskLevel,
-            NotesRestricted = canSeeNotes ? resident.NotesRestricted : null,
-            Safehouse = resident.Safehouse == null
-                ? null
-                : new { resident.Safehouse.Name, resident.Safehouse.City, resident.Safehouse.Region }
-        };
+        if (!scope.IsAdmin)
+            resident.NotesRestricted = null;
+
+        // Strip the navigation property so the JSON payload is a flat
+        // Resident entity — same shape POST/PUT accept.
+        resident.Safehouse = null;
+        return Ok(resident);
     }
 
     [HttpPost]
