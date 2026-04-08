@@ -163,7 +163,7 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/api/residents` | Admin, Staff | List residents whose safehouse is in the caller's scope. |
-| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID. `403` if their safehouse is outside the caller's scope. |
+| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID. Returns the **full `Resident` entity** (all 40+ columns) so the frontend edit form can round-trip every categorical flag on PUT without losing data. `notesRestricted` is stripped for non-Admin callers. The `safehouse` navigation property is nulled out so the payload is flat and can be sent straight back on PUT without EF Core complaining about an attached graph. `403` if the resident's safehouse is outside the caller's scope. |
 | POST | `/api/residents` | Admin, Staff | Create a new resident. The target safehouse must be in scope. |
 | PUT | `/api/residents/{id}` | Admin, Staff | Update a resident. Both the existing and the target safehouse must be in scope. |
 | DELETE | `/api/residents/{id}` | Admin | Delete a resident. Admin tier (any of founder/regional/location) and the resident must be in scope. |

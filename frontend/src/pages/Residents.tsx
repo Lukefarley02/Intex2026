@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -11,11 +13,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, UserCircle } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Search,
+  Plus,
+  UserCircle,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAuth } from "@/api/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
-// ---- Types matching /api/residents projection ----
+// ---- Types matching /api/residents projection (list) ----
 interface ResidentRow {
   residentId: number;
   safehouseId: number;
@@ -27,6 +46,33 @@ interface ResidentRow {
   currentRiskLevel: string | null;
   notesRestricted?: string | null; // Admin only
   safehouse: { name: string } | null;
+}
+
+// Minimal safehouse shape for the dropdown in the form.
+interface SafehouseOption {
+  safehouseId: number;
+  name: string;
+}
+
+// Full Resident entity returned by GET /api/residents/{id}. Matches
+// backend/Models/Resident.cs so PUT can round-trip. Nullable fields
+// are kept unknown and simply re-sent back untouched.
+interface ResidentEntity {
+  residentId: number;
+  safehouseId: number;
+  caseControlNo: string | null;
+  internalCode: string | null;
+  caseStatus: string | null;
+  sex: string | null;
+  dateOfBirth: string | null;
+  dateOfAdmission: string | null;
+  currentRiskLevel: string | null;
+  notesRestricted: string | null;
+  assignedSocialWorker: string | null;
+  // Everything else on the entity is carried along as-is so PUT
+  // doesn't wipe out categorical flags. We don't type each field
+  // individually — they ride in via spread.
+  [key: string]: unknown;
 }
 
 // ---- Helpers ----
@@ -79,7 +125,37 @@ const statusOptions = ["Active", "Closed", "Transferred"] as const;
 // `currentRiskLevel` column and the riskColor map above.
 const priorityOptions = ["low", "medium", "high", "critical"] as const;
 
+// yyyy-MM-dd helper for <input type="date">.
+const toDateInput = (iso: string | null | undefined): string => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+};
+
+// Empty skeleton used when opening the create dialog. We build a minimal
+// entity from scratch; most fields stay null on the server because the
+// schema defines them as nullable.
+const emptyEntity = (): ResidentEntity => ({
+  residentId: 0,
+  safehouseId: 0,
+  caseControlNo: null,
+  internalCode: null,
+  caseStatus: "Active",
+  sex: null,
+  dateOfBirth: null,
+  dateOfAdmission: new Date().toISOString(),
+  currentRiskLevel: "low",
+  notesRestricted: null,
+  assignedSocialWorker: null,
+});
+
 const Residents = () => {
+  const qc = useQueryClient();
+  const { hasRole } = useAuth();
+  const canWrite = hasRole("Admin") || hasRole("Staff");
+  const canDelete = hasRole("Admin"); // backend: Admin-only DELETE
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(ANY);
   const [safehouseFilter, setSafehouseFilter] = useState<string>(ANY);
@@ -90,10 +166,18 @@ const Residents = () => {
     queryFn: () => apiFetch<ResidentRow[]>("/api/residents"),
   });
 
+  // Safehouse list — needed for the form dropdown so users can assign
+  // residents to houses they have scope to see.
+  const { data: safehouseList } = useQuery<SafehouseOption[]>({
+    queryKey: ["safehouses"],
+    queryFn: () => apiFetch<SafehouseOption[]>("/api/safehouses"),
+  });
+
   const residents = data ?? [];
 
   // Unique list of safehouse names present in the data set, for the
-  // safehouse dropdown. Sorted alphabetically so the menu is predictable.
+  // safehouse filter dropdown. Sorted alphabetically so the menu is
+  // predictable.
   const safehouseOptions = useMemo(() => {
     const set = new Set<string>();
     for (const r of residents) {
@@ -130,6 +214,135 @@ const Residents = () => {
     });
   }, [residents, search, statusFilter, safehouseFilter, priorityFilter]);
 
+  // ---- Dialog state ----
+  const [formOpen, setFormOpen] = useState(false);
+  const [entity, setEntity] = useState<ResidentEntity>(emptyEntity());
+  const [toDelete, setToDelete] = useState<ResidentRow | null>(null);
+  const isEditing = entity.residentId !== 0;
+
+  const openCreate = () => {
+    const next = emptyEntity();
+    // Pre-select the first accessible safehouse so the form starts valid.
+    if (safehouseList && safehouseList.length > 0) {
+      next.safehouseId = safehouseList[0].safehouseId;
+    }
+    setEntity(next);
+    setFormOpen(true);
+  };
+
+  const openEdit = async (row: ResidentRow) => {
+    try {
+      const full = await apiFetch<ResidentEntity>(
+        `/api/residents/${row.residentId}`,
+      );
+      setEntity(full);
+      setFormOpen(true);
+    } catch (e) {
+      toast({
+        title: "Could not load resident",
+        description: (e as Error).message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Serialize the entity into the JSON shape the backend PUT/POST accept.
+  // The key trick here: we spread `entity` first so every unknown field
+  // from the GET round-trips untouched, then overwrite with trimmed /
+  // typed versions of the fields the form edits. Dates are converted
+  // from the yyyy-MM-dd <input> value back to ISO datetimes.
+  const toPayload = (e: ResidentEntity) => ({
+    ...e,
+    dateOfBirth: e.dateOfBirth
+      ? new Date(e.dateOfBirth).toISOString()
+      : null,
+    dateOfAdmission: e.dateOfAdmission
+      ? new Date(e.dateOfAdmission).toISOString()
+      : null,
+  });
+
+  const createMut = useMutation({
+    mutationFn: (payload: ResidentEntity) =>
+      apiFetch<ResidentEntity>("/api/residents", {
+        method: "POST",
+        body: JSON.stringify(toPayload(payload)),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["residents"] });
+      qc.invalidateQueries({ queryKey: ["safehouses"] });
+      toast({ title: "Resident created" });
+      setFormOpen(false);
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Create failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: (payload: ResidentEntity) =>
+      apiFetch<void>(`/api/residents/${payload.residentId}`, {
+        method: "PUT",
+        body: JSON.stringify(toPayload(payload)),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["residents"] });
+      qc.invalidateQueries({ queryKey: ["safehouses"] });
+      toast({ title: "Resident updated" });
+      setFormOpen(false);
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Update failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/residents/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["residents"] });
+      qc.invalidateQueries({ queryKey: ["safehouses"] });
+      toast({ title: "Resident deleted" });
+      setToDelete(null);
+    },
+    onError: (e: Error) =>
+      toast({
+        title: "Delete failed",
+        description: e.message,
+        variant: "destructive",
+      }),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!entity.safehouseId) {
+      toast({
+        title: "Safehouse is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (isEditing) {
+      updateMut.mutate(entity);
+    } else {
+      createMut.mutate(entity);
+    }
+  };
+
+  const saving = createMut.isPending || updateMut.isPending;
+
+  // Shortcut for setting a single field on the entity without losing
+  // the rest of the fields in a shallow clone.
+  const setField = <K extends keyof ResidentEntity>(
+    key: K,
+    value: ResidentEntity[K],
+  ) => setEntity((prev) => ({ ...prev, [key]: value }));
+
   return (
     <DashboardLayout title="Residents">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -142,9 +355,11 @@ const Residents = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="hero" size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Add resident
-        </Button>
+        {canWrite && (
+          <Button variant="hero" size="sm" onClick={openCreate}>
+            <Plus className="w-4 h-4 mr-1" /> Add resident
+          </Button>
+        )}
       </div>
 
       {/* Filter dropdowns. Each one narrows the resident list client-side
@@ -290,6 +505,27 @@ const Residents = () => {
                     >
                       {status}
                     </Badge>
+                    {canWrite && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEdit(r)}
+                        aria-label={`Edit ${displayName(r)}`}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {canDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:bg-destructive/10"
+                        onClick={() => setToDelete(r)}
+                        aria-label={`Delete ${displayName(r)}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -319,6 +555,209 @@ const Residents = () => {
           );
         })}
       </div>
+
+      {/* ---- Create / Edit dialog ---- */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Edit resident" : "New resident"}
+            </DialogTitle>
+            <DialogDescription>
+              Only the core case fields are editable here. Categorical
+              flags and extended history live in the individual resident
+              detail view.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="r-control">Case control #</Label>
+                <Input
+                  id="r-control"
+                  value={entity.caseControlNo ?? ""}
+                  onChange={(e) => setField("caseControlNo", e.target.value)}
+                  placeholder="e.g. 2026-0042"
+                />
+              </div>
+              <div>
+                <Label htmlFor="r-code">Internal code</Label>
+                <Input
+                  id="r-code"
+                  value={entity.internalCode ?? ""}
+                  onChange={(e) => setField("internalCode", e.target.value)}
+                  placeholder="e.g. LHS2-07"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="r-safehouse">Safehouse *</Label>
+              <select
+                id="r-safehouse"
+                className="w-full border rounded-md h-10 px-3 bg-background"
+                value={entity.safehouseId}
+                onChange={(e) =>
+                  setField("safehouseId", Number(e.target.value))
+                }
+                required
+              >
+                <option value={0}>Select a safehouse…</option>
+                {(safehouseList ?? []).map((s) => (
+                  <option key={s.safehouseId} value={s.safehouseId}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="r-status">Case status</Label>
+                <select
+                  id="r-status"
+                  className="w-full border rounded-md h-10 px-3 bg-background"
+                  value={entity.caseStatus ?? "Active"}
+                  onChange={(e) => setField("caseStatus", e.target.value)}
+                >
+                  <option>Active</option>
+                  <option>Closed</option>
+                  <option>Transferred</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="r-risk">Risk level</Label>
+                <select
+                  id="r-risk"
+                  className="w-full border rounded-md h-10 px-3 bg-background"
+                  value={entity.currentRiskLevel ?? "low"}
+                  onChange={(e) =>
+                    setField("currentRiskLevel", e.target.value)
+                  }
+                >
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="high">high</option>
+                  <option value="critical">critical</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="r-dob">Date of birth</Label>
+                <Input
+                  id="r-dob"
+                  type="date"
+                  value={toDateInput(entity.dateOfBirth)}
+                  onChange={(e) =>
+                    setField(
+                      "dateOfBirth",
+                      e.target.value
+                        ? new Date(e.target.value).toISOString()
+                        : null,
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="r-admission">Admission date</Label>
+                <Input
+                  id="r-admission"
+                  type="date"
+                  value={toDateInput(entity.dateOfAdmission)}
+                  onChange={(e) =>
+                    setField(
+                      "dateOfAdmission",
+                      e.target.value
+                        ? new Date(e.target.value).toISOString()
+                        : null,
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="r-sex">Sex</Label>
+                <Input
+                  id="r-sex"
+                  value={entity.sex ?? ""}
+                  onChange={(e) => setField("sex", e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="r-worker">Assigned social worker</Label>
+                <Input
+                  id="r-worker"
+                  value={entity.assignedSocialWorker ?? ""}
+                  onChange={(e) =>
+                    setField("assignedSocialWorker", e.target.value)
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Restricted notes (admin-only on the backend — Staff callers
+                will receive null and the field will look empty). */}
+            {hasRole("Admin") && (
+              <div>
+                <Label htmlFor="r-notes">
+                  Restricted notes (admin-only)
+                </Label>
+                <Textarea
+                  id="r-notes"
+                  rows={3}
+                  value={entity.notesRestricted ?? ""}
+                  onChange={(e) =>
+                    setField("notesRestricted", e.target.value)
+                  }
+                  placeholder="Sensitive case notes. Not visible to Staff."
+                />
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormOpen(false)}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving
+                  ? "Saving…"
+                  : isEditing
+                    ? "Save changes"
+                    : "Create resident"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ---- Delete confirmation ---- */}
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(v) => {
+          if (!v) setToDelete(null);
+        }}
+        title="Delete resident?"
+        description={
+          toDelete
+            ? `This permanently deletes the case record for ${displayName(toDelete)}. Process recordings, visitations, and other linked history may also become orphaned. This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete resident"
+        loading={deleteMut.isPending}
+        onConfirm={() => {
+          if (toDelete) deleteMut.mutate(toDelete.residentId);
+        }}
+      />
     </DashboardLayout>
   );
 };
