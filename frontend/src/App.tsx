@@ -11,7 +11,6 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Donate from "./pages/Donate";
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import Privacy from "./pages/Privacy";
 import Dashboard from "./pages/Dashboard";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -52,7 +51,6 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/privacy" element={<Privacy />} />
 
             {/* Admin + Staff */}
