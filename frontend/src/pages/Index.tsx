@@ -123,7 +123,7 @@ const Index = () => {
 
     <main>
     {/* Hero */}
-    <section className="relative overflow-hidden">
+    <section id="mission" className="relative overflow-hidden">
       <div className="absolute inset-0">
         <img src={heroImage} alt="Girls supported by Ember" className="w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
@@ -168,8 +168,54 @@ const Index = () => {
       </div>
     </section>
 
+    {/* Mission */}
+    <section id="mission-section" className="bg-card py-20 md:py-28">
+      <div className="container">
+        <div className="max-w-3xl mx-auto text-center space-y-6">
+          <p className="text-sm font-semibold text-primary uppercase tracking-widest">Our mission</p>
+          <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+            Restoring hope, one girl at a time
+          </h2>
+          <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
+            Ember exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate
+            girls who have experienced trafficking, abuse, and exploitation. We believe every girl
+            deserves safety, dignity, and a future full of possibility.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-8 pt-6 text-left">
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                <Heart className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground">Protect</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Provide safe shelter and immediate care for girls rescued from dangerous situations.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground">Rehabilitate</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Walk alongside each girl through counseling, education, and personalized care plans.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                <UserCheck className="w-5 h-5 text-primary" />
+              </div>
+              <h3 className="font-semibold text-foreground">Reintegrate</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Equip girls with skills and family support to return confidently to their communities.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     {/* Journey of Care */}
-    <section className="container py-20 md:py-28">
+    <section id="how-we-care" className="container py-20 md:py-28">
       <div className="text-center mb-14">
         <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">How we care</p>
         <h2 className="text-3xl md:text-4xl font-bold">Every girl receives consistent, personalized care</h2>

@@ -238,7 +238,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
         onClick={handleSignOut}
         className="flex items-center gap-2 px-6 py-4 text-sidebar-foreground/50 hover:text-sidebar-foreground text-sm border-t border-sidebar-border text-left w-full"
       >
-        <LogOut className="w-4 h-4" /> Sign out
+        <LogOut className="w-4 h-4" aria-hidden="true" /> Sign out
       </button>
     </>
   );
@@ -255,8 +255,12 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
         <div className="lg:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
           <aside className="relative w-60 h-full bg-sidebar flex flex-col">
-            <button className="absolute top-4 right-3 text-sidebar-foreground" onClick={() => setSidebarOpen(false)}>
-              <X className="w-5 h-5" />
+            <button
+              className="absolute top-4 right-3 text-sidebar-foreground"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
             <SidebarContent />
           </aside>
@@ -265,8 +269,8 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
 
       <div className="flex-1 lg:ml-60">
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-6 gap-4">
-          <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
-            <Menu className="w-5 h-5" />
+          <button className="lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+            <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
           <h1 className="font-semibold text-lg">{title}</h1>
           <div className="ml-auto flex items-center gap-3">
@@ -280,7 +284,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
               onClick={handleSignOut}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border hover:bg-muted transition-colors"
             >
-              <LogOut className="w-4 h-4" /> Sign out
+              <LogOut className="w-4 h-4" aria-hidden="true" /> Sign out
             </button>
           </div>
         </header>

@@ -80,6 +80,88 @@ public class AdminUsersController : ControllerBase
         return Ok(result);
     }
 
+    // POST /api/adminusers
+    // Create a new user with a given role. Founder-only.
+    [HttpPost]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+    {
+        var caller = await UserScope.FromPrincipalAsync(User, _userManager);
+        if (!caller.IsFounder) return Forbid();
+
+        var allowed = new[] { "Admin", "Staff", "Donor" };
+        if (!allowed.Contains(request.Role))
+            return BadRequest(new { message = "Role must be Admin, Staff, or Donor." });
+
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            EmailConfirmed = true,
+            Region = string.IsNullOrWhiteSpace(request.Region) ? null : request.Region.Trim(),
+            City   = string.IsNullOrWhiteSpace(request.City)   ? null : request.City.Trim(),
+        };
+
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+
+        await _userManager.AddToRoleAsync(user, request.Role);
+
+        return Ok(new { id = user.Id, email = user.Email, role = request.Role });
+    }
+
+    // PUT /api/adminusers/{id}
+    // Update a user's email and role. Founder-only.
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserRequest request)
+    {
+        var caller = await UserScope.FromPrincipalAsync(User, _userManager);
+        if (!caller.IsFounder) return Forbid();
+
+        var user = await _userManager.FindByIdAsync(id);
+        if (user == null) return NotFound();
+
+        // Update email
+        if (!string.IsNullOrWhiteSpace(request.Email) &&
+            !string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            user.Email = request.Email.Trim();
+            user.UserName = request.Email.Trim();
+            user.NormalizedEmail = request.Email.Trim().ToUpperInvariant();
+            user.NormalizedUserName = request.Email.Trim().ToUpperInvariant();
+        }
+
+        var updateResult = await _userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+            return BadRequest(new { errors = updateResult.Errors.Select(e => e.Description) });
+
+        // Update password if provided
+        if (!string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var pwResult = await _userManager.ResetPasswordAsync(user, token, request.NewPassword);
+            if (!pwResult.Succeeded)
+                return BadRequest(new { errors = pwResult.Errors.Select(e => e.Description) });
+        }
+
+        // Update role
+        var allowed = new[] { "Admin", "Staff", "Donor" };
+        if (!string.IsNullOrWhiteSpace(request.Role) && allowed.Contains(request.Role))
+        {
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.SequenceEqual(new[] { request.Role }))
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                await _userManager.AddToRoleAsync(user, request.Role);
+                // Invalidate any existing JWT for this user so the new role
+                // takes effect immediately on their next request.
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
+        }
+
+        return Ok(new { id = user.Id, email = user.Email, role = request.Role });
+    }
+
     // PUT /api/adminusers/{id}/scope
     // Update a user's region and city (changes their admin scope).
     // Founder-only — only the company-level admin can move people between
@@ -104,3 +186,5 @@ public class AdminUsersController : ControllerBase
 }
 
 public record UpdateScopeRequest(string? Region, string? City);
+public record UpdateUserRequest(string Email, string Role, string? NewPassword = null);
+public record CreateUserRequest(string Email, string Password, string Role, string? Region = null, string? City = null);

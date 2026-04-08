@@ -315,13 +315,15 @@ const Donate = () => {
           <CardContent className="p-8 space-y-8">
             {/* Amount selector */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Choose an amount</Label>
-              <div className="grid grid-cols-4 gap-3">
+              <Label className="text-base font-semibold" id="amount-label">Choose an amount</Label>
+              <div className="grid grid-cols-4 gap-3" role="group" aria-labelledby="amount-label">
                 {presets.map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => { setAmount(p); setCustom(""); }}
+                    aria-pressed={!custom && amount === p}
+                    aria-label={`Donate $${p}`}
                     className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                       !custom && amount === p
                         ? "border-primary bg-primary-light text-primary"
@@ -332,22 +334,26 @@ const Donate = () => {
                   </button>
                 ))}
               </div>
+              <Label htmlFor="custom-amount" className="sr-only">Custom donation amount</Label>
               <Input
+                id="custom-amount"
                 placeholder="Custom amount"
                 type="number"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 className="mt-2"
+                aria-label="Custom donation amount"
               />
             </div>
 
             {/* Frequency */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Frequency</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <Label className="text-base font-semibold" id="frequency-label">Frequency</Label>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="frequency-label">
                 <button
                   type="button"
                   onClick={() => setMonthly(true)}
+                  aria-pressed={monthly}
                   className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                     monthly ? "border-primary bg-primary-light text-primary" : "border-border"
                   }`}
@@ -357,6 +363,7 @@ const Donate = () => {
                 <button
                   type="button"
                   onClick={() => setMonthly(false)}
+                  aria-pressed={!monthly}
                   className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                     !monthly ? "border-primary bg-primary-light text-primary" : "border-border"
                   }`}
@@ -412,6 +419,8 @@ const Donate = () => {
                             key={s.safehouseId}
                             type="button"
                             onClick={() => setSelectedSafehouse(s.name)}
+                            aria-pressed={isSelected}
+                            aria-label={`Select ${s.name}${[s.city, s.region].filter(Boolean).join(", ") ? `, ${[s.city, s.region].filter(Boolean).join(", ")}` : ""}`}
                             className={`text-left rounded-lg border-2 p-3 transition-all ${
                               isSelected
                                 ? "border-primary bg-primary-light"

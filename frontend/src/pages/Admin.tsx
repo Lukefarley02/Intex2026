@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { Shield, TrendingUp, UserPlus, Settings, MapPin } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Shield, TrendingUp, UserPlus, Settings, Eye, EyeOff } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -73,6 +79,9 @@ const initials = (email: string | null) => {
   const parts = name.split(/[._-]/).filter(Boolean);
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
 };
+
+const EMPTY_FORM = { email: "", password: "", confirm: "", role: "Donor" };
+const EMPTY_EDIT = { id: "", email: "", role: "Donor", newPassword: "", confirmPassword: "" };
 
 const Admin = () => {
   const queryClient = useQueryClient();
@@ -132,6 +141,61 @@ const Admin = () => {
       region: scopeRegion,
       city: scopeCity,
     });
+  const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_EDIT);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [showEditPassword, setShowEditPassword] = useState(false);
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof EMPTY_FORM) =>
+      apiFetch("/api/adminusers", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
+      setAddOpen(false);
+      setForm(EMPTY_FORM);
+      setFormError(null);
+    },
+    onError: async (err: unknown) => {
+      setFormError(err instanceof Error ? err.message : "Failed to create user.");
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: (data: typeof EMPTY_EDIT) => {
+      return apiFetch(`/api/adminusers/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          email: data.email,
+          role: data.role,
+          newPassword: data.newPassword || null,
+        }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
+      setEditOpen(false);
+      setEditForm(EMPTY_EDIT);
+      setEditError(null);
+    },
+    onError: (err: unknown) => {
+      setEditError(err instanceof Error ? err.message : "Failed to update user.");
+    },
+  });
+
+  const handleCreate = () => {
+    if (form.password !== form.confirm) {
+      setFormError("Passwords do not match.");
+      return;
+    }
+    setFormError(null);
+    createMutation.mutate(form);
   };
 
   const usersQuery = useQuery<AdminUserRow[]>({
@@ -221,7 +285,7 @@ const Admin = () => {
           <CardTitle className="text-base flex items-center gap-2">
             <Shield className="w-4 h-4" /> User management
           </CardTitle>
-          <Button variant="hero" size="sm">
+          <Button variant="hero" size="sm" onClick={() => { setForm(EMPTY_FORM); setFormError(null); setAddOpen(true); }}>
             <UserPlus className="w-4 h-4 mr-1" /> Add user
           </Button>
         </CardHeader>
@@ -298,6 +362,11 @@ const Admin = () => {
                       size="sm"
                       onClick={() => openScopeEditor(u)}
                       title="Edit region / city"
+                      onClick={() => {
+                        setEditForm({ id: u.id, email: u.email ?? "", role: u.roles[0] ?? "Donor", newPassword: "", confirmPassword: "" });
+                        setEditError(null);
+                        setEditOpen(true);
+                      }}
                     >
                       <Settings className="w-4 h-4" />
                     </Button>
@@ -366,6 +435,142 @@ const Admin = () => {
               disabled={scopeMutation.isPending}
             >
               {scopeMutation.isPending ? "Saving…" : "Save scope"}
+      {/* Edit User Modal */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit user</DialogTitle>
+            <DialogDescription>Update the email or role for this account.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-password">
+                Password <span className="text-muted-foreground font-normal">(leave blank to keep current)</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="edit-password"
+                  type={showEditPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  value={editForm.newPassword}
+                  onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowEditPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  tabIndex={-1}
+                  aria-label={showEditPassword ? "Hide password" : "Show password"}
+                >
+                  {showEditPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Role</Label>
+              <Select value={editForm.role} onValueChange={(v) => setEditForm((f) => ({ ...f, role: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Donor">Donor</SelectItem>
+                  <SelectItem value="Staff">Staff</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {editError && <p className="text-sm text-destructive">{editError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button
+              variant="hero"
+              disabled={editMutation.isPending || !editForm.email}
+              onClick={() => editMutation.mutate(editForm)}
+            >
+              {editMutation.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Modal */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add new user</DialogTitle>
+            <DialogDescription>Fill in the details below to create a new account.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="new-email">Email</Label>
+              <Input
+                id="new-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@ember-ngo.org"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-password">Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="new-confirm">Confirm password</Label>
+              <Input
+                id="new-confirm"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                value={form.confirm}
+                onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Role</Label>
+              <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Donor">Donor</SelectItem>
+                  <SelectItem value="Staff">Staff</SelectItem>
+                  <SelectItem value="Admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && (
+              <p className="text-sm text-destructive">{formError}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button
+              variant="hero"
+              disabled={createMutation.isPending || !form.email || !form.password || !form.confirm}
+              onClick={handleCreate}
+            >
+              {createMutation.isPending ? "Creating…" : "Create user"}
             </Button>
           </DialogFooter>
         </DialogContent>

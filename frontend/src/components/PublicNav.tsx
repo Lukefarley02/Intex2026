@@ -12,15 +12,26 @@ const PublicNav = () => {
   return (
     <nav aria-label="Main navigation" className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16">
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+        <a
+          href="/"
+          onClick={(e) => {
+            // If already on the home page, just scroll to top instead of
+            // triggering a full navigation (React Router ignores same-path Links).
+            if (window.location.pathname === "/") {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
+          className="flex items-center gap-2 font-bold text-xl text-primary"
+        >
           <Flame className="w-7 h-7" aria-hidden="true" />
           Ember
-        </Link>
+        </a>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="#mission" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Mission</a>
-          <a href="#impact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Impact</a>
-          <a href="#safehouses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safehouses</a>
+          <a href="/#mission-section" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Mission</a>
+          <a href="/#how-we-care" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Impact</a>
+          <a href="/#impact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safehouses</a>
           {isAuthenticated ? (
             <Link to={dashboardHref}>
               <Button variant="ghost" size="sm" className="gap-1.5">
@@ -50,8 +61,9 @@ const PublicNav = () => {
 
       {open && (
         <div id="mobile-menu" className="md:hidden bg-card border-b p-4 space-y-3">
-          <a href="#mission" className="block text-sm font-medium text-muted-foreground">Mission</a>
-          <a href="#impact" className="block text-sm font-medium text-muted-foreground">Impact</a>
+          <a href="/#mission-section" className="block text-sm font-medium text-muted-foreground">Mission</a>
+          <a href="/#how-we-care" className="block text-sm font-medium text-muted-foreground">Impact</a>
+          <a href="/#impact" className="block text-sm font-medium text-muted-foreground">Safehouses</a>
           {isAuthenticated ? (
             <Link to={dashboardHref} className="block">
               <Button variant="ghost" className="w-full gap-1.5">
