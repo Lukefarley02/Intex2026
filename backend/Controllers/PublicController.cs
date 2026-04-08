@@ -35,9 +35,12 @@ public class PublicController : ControllerBase
             .AsNoTracking()
             .CountAsync();
 
+        // Active = canonical case_status value from lighthouse_schema.sql
+        // (two-value enum: 'Active' / 'Closed'). Must match SafehousesController
+        // so the public landing page and the admin safehouses page agree.
         var activeGirls = await _context.Residents
             .AsNoTracking()
-            .Where(r => r.DateClosed == null)
+            .Where(r => r.CaseStatus == "Active")
             .CountAsync();
 
         // Rolling 12-month donor retention — identical calc to the admin
@@ -103,7 +106,7 @@ public class PublicController : ControllerBase
                 g.Key.City,
                 g.Key.Region,
                 Capacity = g.Key.CapacityGirls ?? 0,
-                ActiveResidents = g.Count(x => x.r != null && x.r.DateClosed == null)
+                ActiveResidents = g.Count(x => x.r != null && x.r.CaseStatus == "Active")
             }
         )
         .OrderBy(s => s.Name)

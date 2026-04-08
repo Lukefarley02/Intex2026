@@ -55,7 +55,21 @@ Swagger UI (dev): `https://localhost:5001/swagger`
   "adminScope": "company"
 }
 ```
-`adminScope` is `"company"`, `"region"`, or `"location"` for Admin users; `null` for Staff and Donor.
+`adminScope` is `"founder"`, `"region"`, or `"location"` for Admin users; `null` for Staff and Donor.
+
+### Access tiers
+
+The four-tier access model is derived from the user's role + Region/City columns:
+
+| Tier | Role | Region | City | Sees |
+|---|---|---|---|---|
+| Founder | Admin | null | null | Every safehouse, resident, supporter, and donation in the system |
+| Regional Manager | Admin | set | null | Everything in safehouses whose `region` matches their Region |
+| Location Manager | Admin | set | set | Everything in the single safehouse whose `city` matches their City |
+| Staff | Staff | set | set | Their city's safehouse + residents + visitations + process recordings, plus non-monetary supporters in their region. Cannot see monetary or in-kind donors. Cannot see resident `notesRestricted`. |
+| Donor | Donor | n/a | n/a | Only their own giving history via `/api/donorportal/me*` |
+
+All `Admin,Staff` endpoints in this document silently filter their results by these rules. A request that would touch a row outside the caller's scope returns `403 Forbidden`. Founder-only writes (creating safehouses, deleting any record, changing another user's scope) return `403` for region/location managers.
 
 ---
 
@@ -63,8 +77,8 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/adminusers` | Admin | List all Identity users with roles and scope |
-| PUT | `/api/adminusers/{id}/scope` | Admin | Update a user's region and city |
+| GET | `/api/adminusers` | Admin | List Identity users with roles and scope. Regional/Location managers only see users inside their own scope; founders see everyone. |
+| PUT | `/api/adminusers/{id}/scope` | Founder | Update a user's region and city. Returns `403` for any admin who is not a founder. |
 
 **GET `/api/adminusers` response:**
 ```json
@@ -86,7 +100,7 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 ```json
 { "region": "West", "city": "Salem" }
 ```
-Pass `null` or empty string to clear a value. Setting `region` only → Regional Manager. Setting both → Location Manager. Clearing both → Company Manager.
+Pass `null` or empty string to clear a value. Setting `region` only → Regional Manager. Setting both → Location Manager. Clearing both → Founder. Founder-only endpoint.
 
 ---
 
@@ -107,11 +121,11 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/supporters?types=MonetaryDonor,InKindDonor` | Admin, Staff | List supporters with aggregated donation totals |
-| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID |
-| POST | `/api/supporters` | Admin, Staff | Create a new supporter |
-| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter |
-| DELETE | `/api/supporters/{id}` | Admin | Delete a supporter |
+| GET | `/api/supporters?types=MonetaryDonor,InKindDonor` | Admin, Staff | List supporters with aggregated donation totals. Region-scoped. Staff is silently restricted to the four non-monetary `supporter_type` values. |
+| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID. `403` if outside scope; `403` for Staff requesting a monetary/in-kind donor. |
+| POST | `/api/supporters` | Admin, Staff | Create a new supporter. Must be in caller's region; Staff cannot create monetary/in-kind donors. |
+| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter. Same scope rules as POST; cannot move a supporter out of the caller's region. |
+| DELETE | `/api/supporters/{id}` | Founder | Delete a supporter. |
 
 **Query parameter:** `types` is an optional comma-separated list of `supporter_type` values. Per Appendix A of the case doc the allowed values are `MonetaryDonor`, `InKindDonor`, `Volunteer`, `SkillsContributor`, `SocialMediaAdvocate`, `PartnerOrganization`. When omitted, all supporters are returned.
 
@@ -148,11 +162,11 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/residents` | TBD | List all residents (includes safehouse) |
-| GET | `/api/residents/{id}` | TBD | Get resident by ID (includes safehouse) |
-| POST | `/api/residents` | TBD | Create a new resident |
-| PUT | `/api/residents/{id}` | TBD | Update a resident |
-| DELETE | `/api/residents/{id}` | Admin | Delete a resident |
+| GET | `/api/residents` | Admin, Staff | List residents whose safehouse is in the caller's scope. |
+| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID. `403` if their safehouse is outside the caller's scope. |
+| POST | `/api/residents` | Admin, Staff | Create a new resident. The target safehouse must be in scope. |
+| PUT | `/api/residents/{id}` | Admin, Staff | Update a resident. Both the existing and the target safehouse must be in scope. |
+| DELETE | `/api/residents/{id}` | Admin | Delete a resident. Admin tier (any of founder/regional/location) and the resident must be in scope. |
 
 **GET response shape:**
 ```json
@@ -170,7 +184,7 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 }
 ```
 
-**Security note:** `notesRestricted` must be excluded from responses for non-Admin roles. This is not yet implemented — requires auth + DTO or projection.
+**Security note:** `notesRestricted` is now stripped from every response for Staff callers. Only Admin tiers (founder, regional, location) ever see it.
 
 ---
 
@@ -242,7 +256,7 @@ Returns zeros and empty array if no donations found. Never throws 404.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/dashboard/stats` | Admin, Staff | Aggregated KPIs for the admin dashboard |
+| GET | `/api/dashboard/stats` | Admin, Staff | Aggregated KPIs for the admin dashboard. Numbers are filtered to the caller's region (Founder = company-wide). Staff receives all-zero monetary KPIs because Staff is not allowed to see donor or donation totals. |
 
 **GET `/api/dashboard/stats` response:**
 ```json
@@ -294,11 +308,11 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/safehouses` | Admin, Staff | List all safehouses with live occupancy counts |
-| GET | `/api/safehouses/{id}` | Admin, Staff | Get safehouse by ID |
-| POST | `/api/safehouses` | Admin, Staff | Create a new safehouse |
-| PUT | `/api/safehouses/{id}` | Admin, Staff | Update a safehouse |
-| DELETE | `/api/safehouses/{id}` | Admin | Delete a safehouse |
+| GET | `/api/safehouses` | Admin, Staff | List safehouses in the caller's scope, with live occupancy counts |
+| GET | `/api/safehouses/{id}` | Admin, Staff | Get safehouse by ID; `403` if outside scope |
+| POST | `/api/safehouses` | Founder | Create a new safehouse (structural change) |
+| PUT | `/api/safehouses/{id}` | Admin | Update a safehouse. Region/City cannot be moved out of caller's scope. |
+| DELETE | `/api/safehouses/{id}` | Founder | Delete a safehouse |
 
 ---
 
@@ -306,11 +320,11 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/processrecordings?residentId=N` | Admin, Staff | List recordings, optionally filtered by resident. Ordered newest-first. |
-| GET | `/api/processrecordings/{id}` | Admin, Staff | Get single recording |
-| POST | `/api/processrecordings` | Admin, Staff | Create a recording |
-| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording |
-| DELETE | `/api/processrecordings/{id}` | Admin | Delete a recording |
+| GET | `/api/processrecordings?residentId=N` | Admin, Staff | List recordings whose resident is in scope. Ordered newest-first. |
+| GET | `/api/processrecordings/{id}` | Admin, Staff | Get single recording. `403` if the resident is outside scope. |
+| POST | `/api/processrecordings` | Admin, Staff | Create a recording. Resident must be in scope. |
+| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording. Both old and new resident must be in scope. |
+| DELETE | `/api/processrecordings/{id}` | Founder | Delete a recording. |
 
 **Security note:** `notesRestricted` is stripped from responses for non-Admin callers.
 
@@ -320,79 +334,9 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/homevisitations?residentId=N` | Admin, Staff | List visitations, optionally filtered by resident |
-| GET | `/api/homevisitations/{id}` | Admin, Staff | Get single visitation |
-| POST | `/api/homevisitations` | Admin, Staff | Create a visitation record |
-| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation record |
-| DELETE | `/api/homevisitations/{id}` | Admin | Delete a visitation record |
-
----
-
-## Social Media Posts
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/social/stats` | Admin, Staff | Aggregated social media KPIs for the dashboard |
-
-**GET `/api/social/stats` response:**
-```json
-{
-  "totalPosts": 850,
-  "totalReach": 4200000,
-  "avgEngagementRate": 0.1423,
-  "totalClickThroughs": 18500,
-  "totalDonationReferrals": 342,
-  "estimatedDonationValuePhp": 1250000.00,
-  "platformBreakdown": [
-    { "platform": "Facebook", "postCount": 210, "totalReach": 1200000, "avgEngagementRate": 0.127, "donationReferrals": 95 }
-  ],
-  "topPostTypes": [
-    { "postType": "FundraisingAppeal", "avgDonationValue": 28500.00, "postCount": 140 }
-  ]
-}
-```
-Returns all zeroes / empty arrays if the `social_media_posts` table has not yet been seeded.
-
----
-
-## ML Insights
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/mlinsights` | Admin, Staff | ML-derived KPIs computed live from Azure SQL |
-
-**GET `/api/mlinsights` response:**
-```json
-{
-  "atRiskDonorCount": 12,
-  "upgradeOpportunityCount": 8,
-  "residentsReadyCount": 5,
-  "safehousesNearCapacity": 2,
-  "topSocialPlatform": "Facebook",
-  "topSocialReferrals": 14
-}
-```
-
-| Field | Pipeline | Rule Used |
-|---|---|---|
-| `atRiskDonorCount` | 01 Donor Churn | Monetary donors with last gift > 90 days ago |
-| `upgradeOpportunityCount` | 02 Donation Capacity | Recurring donors where `max_donation > 1.5 × avg_donation` |
-| `residentsReadyCount` | 04 Resident Outcomes | Active residents with `current_risk_level = 'Low'` |
-| `safehousesNearCapacity` | 05 Geographic | Safehouses at ≥ 90% occupancy (live resident count) |
-| `topSocialPlatform` | 03 Social Media | Platform with most donation referrals in last 30 days |
-
----
-
-## ML Insights — Detail Endpoints (ML Insights Page)
-
-All require `Admin` or `Staff` role.
-
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/mlinsights/donor-churn` | Pipeline 01: recency buckets, retention rate, top at-risk donors |
-| GET | `/api/mlinsights/donation-capacity` | Pipeline 02: tier distribution, upgrade opportunities, channel avg donation |
-| GET | `/api/mlinsights/resident-outcomes` | Pipeline 04: readiness tiers, risk breakdown, at-risk resident list |
-| GET | `/api/mlinsights/geographic` | Pipeline 05: safehouse efficiency ranking, regional utilization |
-| GET | `/api/mlinsights/acquisition-roi` | Pipeline 06: channel LTV, retention rate, recurring rate per channel |
-
-Pipelines 03 (Social Media) uses the existing `/api/social/stats`. Pipelines 07 (Partner) and 08 (In-Kind) display static notebook findings — their source tables are not yet modeled in EF Core.
+| GET | `/api/homevisitations?residentId=N` | Admin, Staff | List visitations whose resident is in scope. |
+| GET | `/api/homevisitations/{id}` | Admin, Staff | Get single visitation. `403` if the resident is outside scope. |
+| POST | `/api/homevisitations` | Admin, Staff | Create a visitation record. Resident must be in scope. |
+| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation. Both old and new resident must be in scope. |
+| DELETE | `/api/homevisitations/{id}` | Founder | Delete a visitation record. |
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

@@ -107,9 +107,11 @@ public class AuthController : ControllerBase
             roles,
             region = user.Region,
             city = user.City,
-            // Convenience: derive admin scope so the frontend can show the right UI
+            // Convenience: derive admin scope so the frontend can show the right UI.
+            // "founder" replaces the old "company" label and aligns with the
+            // four-tier access model (founder / region / location / staff).
             adminScope = roles.Contains("Admin")
-                ? (user.Region == null ? "company" : user.City == null ? "region" : "location")
+                ? (user.Region == null ? "founder" : user.City == null ? "region" : "location")
                 : null
         });
     }

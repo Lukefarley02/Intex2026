@@ -1,13 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Intex2026.Api.Authorization;
 using Intex2026.Api.Data;
 
 namespace Intex2026.Api.Controllers;
 
 /// <summary>
 /// Admin user management. Lists every account in the ASP.NET Identity
-/// store along with their roles and organizational scope. Admin-only.
+/// store along with their roles and organizational scope.
+///
+/// Read access:  any Admin (founder, regional, or location manager) — but
+///               regional and location managers only see users whose scope
+///               is contained inside their own.
+/// Write access: founders only (creating a new manager is a structural
+///               operation a city-level admin should not perform).
 /// </summary>
 [ApiController]
 [Route("api/adminusers")]
@@ -25,6 +32,7 @@ public class AdminUsersController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetUsers()
     {
+        var caller = await UserScope.FromPrincipalAsync(User, _userManager);
         var users = _userManager.Users.ToList();
         var result = new List<object>(users.Count);
 
@@ -32,11 +40,26 @@ public class AdminUsersController : ControllerBase
         {
             var roles = await _userManager.GetRolesAsync(u);
 
-            // Derive admin scope from Region/City for convenience
+            // Hide users that fall outside the caller's scope.
+            if (!caller.IsFounder)
+            {
+                if (caller.Level == UserScope.ScopeLevel.RegionalManager)
+                {
+                    if (!string.Equals(u.Region, caller.Region, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                }
+                else if (caller.Level == UserScope.ScopeLevel.LocationManager)
+                {
+                    if (!string.Equals(u.City, caller.City, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                }
+            }
+
+            // Derive admin scope label from Region/City for convenience
             string? adminScope = null;
             if (roles.Contains("Admin"))
             {
-                adminScope = u.Region == null ? "company"
+                adminScope = u.Region == null ? "founder"
                            : u.City == null   ? "region"
                                               : "location";
             }
@@ -58,10 +81,15 @@ public class AdminUsersController : ControllerBase
     }
 
     // PUT /api/adminusers/{id}/scope
-    // Update a user's region and city (changes their admin scope)
+    // Update a user's region and city (changes their admin scope).
+    // Founder-only — only the company-level admin can move people between
+    // tiers, regions, or locations.
     [HttpPut("{id}/scope")]
     public async Task<IActionResult> UpdateScope(string id, [FromBody] UpdateScopeRequest request)
     {
+        var caller = await UserScope.FromPrincipalAsync(User, _userManager);
+        if (!caller.IsFounder) return Forbid();
+
         var user = await _userManager.FindByIdAsync(id);
         if (user == null) return NotFound();
 
