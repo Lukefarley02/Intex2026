@@ -17,7 +17,7 @@ public static class RoleSeeder
     //
     // All five tiers are seeded here so you can log in as each one and
     // verify the four-tier access control end-to-end. Passwords all satisfy
-    // the hardened policy (length ≥ 12, upper, lower, digit, non-alphanumeric).
+    // the hardened policy (length ≥ 14, upper, lower, digit, non-alphanumeric).
     private static readonly (string Email, string Password, string[] Roles, string? Region, string? City)[] TestUsers =
     [
         // Region / City values match the real safehouse seed data:
