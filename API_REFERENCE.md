@@ -284,6 +284,68 @@ Active donors falls back to total supporter count when the `status` column is no
 
 ---
 
+## Reports & Analytics (Admin/Staff)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/reports/summary?start=YYYY-MM-DD&end=YYYY-MM-DD` | Admin, Staff | Full Reports page payload: donation trends, resident outcomes, safehouse performance, reintegration rates, Annual Accomplishment Report (caring/healing/teaching). Scope-aware. |
+
+`start` and `end` are optional; default is the trailing 12 months ending today. Numbers are scoped to the caller's region/city, matching the rules in `UserScope`. Staff callers get `staffView: true` and empty `donations` sections so the page still renders without leaking monetary data.
+
+**GET `/api/reports/summary` response (abridged):**
+```json
+{
+  "period": { "start": "2025-04-08T00:00:00Z", "end": "2026-04-08T00:00:00Z" },
+  "staffView": false,
+  "caring": {
+    "residentsServed": 47,
+    "activeResidents": 31,
+    "totalClosed": 12,
+    "caseStatusBreakdown": [{ "status": "Active", "count": 31 }],
+    "caseCategoryBreakdown": [{ "category": "Trafficked", "count": 18 }],
+    "subCategoryBreakdown": [{ "label": "Trafficked", "count": 18 }]
+  },
+  "healing": { "counselingSessions": 184, "homeVisits": 42, "riskImproved": 9 },
+  "reintegration": {
+    "totalClosed": 12,
+    "reintegratedSuccess": 9,
+    "reintegrationRate": 0.75,
+    "reintegrationTypes": [{ "type": "Family", "count": 7 }]
+  },
+  "safehousePerformance": [
+    {
+      "safehouseId": 1,
+      "name": "Lighthouse Safehouse 1",
+      "city": "Quezon City",
+      "region": "NCR",
+      "capacity": 10,
+      "active": 8,
+      "closedInWindow": 3,
+      "totalServed": 11,
+      "utilization": 0.8
+    }
+  ],
+  "donations": {
+    "total": 24350,
+    "count": 58,
+    "trend": [{ "month": "2025-10", "total": 2400, "count": 6 }],
+    "byType": [{ "type": "Cash", "total": 18200, "count": 40 }],
+    "byCampaign": [{ "campaign": "Spring Hope Drive", "total": 9400, "count": 22 }],
+    "bySafehouse": [
+      { "safehouseId": 1, "name": "Lighthouse Safehouse 1", "share": 0.33, "allocated": 8035.5 }
+    ]
+  },
+  "annualAccomplishment": {
+    "caring":  { "girlsServed": 47, "activeNow": 31, "closedInWindow": 12 },
+    "healing": { "counselingSessions": 184, "homeVisits": 42, "riskImproved": 9 },
+    "teaching": { "successfulReintegrations": 9, "reintegrationRate": 0.75 }
+  }
+}
+```
+Because there is no first-class donation→safehouse link in the schema, `donations.bySafehouse` is computed by weighting each safehouse's share of the period's donation pool by the number of residents it served during the window.
+
+---
+
 ## Campaigns
 
 | Method | Endpoint | Auth | Description |
