@@ -11,6 +11,29 @@ Website/Intex2026/
 ├── Intex2026.sln                    # .NET solution file
 ├── .gitignore
 ├── ARCHITECTURE.md                  # This file
+├── ml-piplines                      # Machine learning python pipelines & .CSV files
+│   ├── 01_donor_churn_prediction.ipynb
+│   ├── 02_donation_capacity_prediction.ipynb
+│   ├── 03_social_media_donation_conversion.ipynb
+│   ├── 04_resident_outcome_prediction.ipynb
+│   ├── 05_geographic_safehouse_performance.ipynb
+│   ├── donation_allocations.csv
+│   ├── donations.csv
+│   ├── education_records.csv
+│   ├── health_wellbeing_records.csv
+│   ├── home_visitations.csv
+│   ├── in_kind_donation_items.csv
+│   ├── incident_reports.csv
+│   ├── intervention_plans.csv
+│   ├── partner_assignments.csv
+│   ├── partners.csv
+│   ├── process_recordings.csv
+│   ├── public_impact_snapshots.csv
+│   ├── residents.csv
+│   ├── safehouse_monthly_metrics.csv
+│   ├── safehouses.csv
+│   ├── social_media_posts.csv
+│   └── supporters.csv
 │
 ├── backend/                         # .NET 10 Web API
 │   ├── Intex2026.Api.csproj
