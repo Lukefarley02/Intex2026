@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Intex2026.Api.Data;
 
-public class IdentityContext : IdentityDbContext<IdentityUser>
+public class IdentityContext : IdentityDbContext<ApplicationUser, IdentityRole, string>
 {
     public IdentityContext(DbContextOptions<IdentityContext> options)
         : base(options) { }

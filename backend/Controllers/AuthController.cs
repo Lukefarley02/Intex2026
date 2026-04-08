@@ -5,28 +5,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Intex2026.Api.Data;
 
 namespace Intex2026.Api.Controllers;
 
-// ── DTOs ─────────────────────────────────────────────────────────────────────
-
-public record RegisterRequest(string Email, string Password, string? Role = null);
+// ── DTOs ──────────────────────────────────────────────────────────────────────
+public record RegisterRequest(string Email, string Password, string? Role = null, string? Region = null, string? City = null);
 public record LoginRequest(string Email, string Password);
-public record AuthResponse(string Token, string Email, IList<string> Roles);
+public record AuthResponse(string Token, string Email, IList<string> Roles, string? Region, string? City);
 
 // ── Controller ────────────────────────────────────────────────────────────────
-
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
 {
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IConfiguration _config;
 
     public AuthController(
-        UserManager<IdentityUser> userManager,
-        SignInManager<IdentityUser> signInManager,
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
         IConfiguration config)
     {
         _userManager = userManager;
@@ -39,9 +38,15 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var user = new IdentityUser { UserName = request.Email, Email = request.Email };
-        var result = await _userManager.CreateAsync(user, request.Password);
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            Region = request.Region,
+            City = request.City
+        };
 
+        var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
             return BadRequest(result.Errors);
 
@@ -51,14 +56,14 @@ public class AuthController : ControllerBase
         // Optionally assign Staff or Admin (and still keep Donor)
         if (!string.IsNullOrWhiteSpace(request.Role))
         {
-            var upper = request.Role.Trim();
-            if (upper == "Staff" || upper == "Admin")
-                await _userManager.AddToRoleAsync(user, upper);
+            var role = request.Role.Trim();
+            if (role == "Staff" || role == "Admin")
+                await _userManager.AddToRoleAsync(user, role);
         }
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
-        return Ok(new AuthResponse(token, user.Email!, roles));
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
     }
 
     // POST /api/auth/login
@@ -76,7 +81,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
-        return Ok(new AuthResponse(token, user.Email!, roles));
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
     }
 
     // POST /api/auth/logout
@@ -96,12 +101,21 @@ public class AuthController : ControllerBase
         if (user == null) return Unauthorized();
 
         var roles = await _userManager.GetRolesAsync(user);
-        return Ok(new { email = user.Email, roles });
+        return Ok(new
+        {
+            email = user.Email,
+            roles,
+            region = user.Region,
+            city = user.City,
+            // Convenience: derive admin scope so the frontend can show the right UI
+            adminScope = roles.Contains("Admin")
+                ? (user.Region == null ? "company" : user.City == null ? "region" : "location")
+                : null
+        });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private string GenerateJwt(IdentityUser user, IList<string> roles)
+    private string GenerateJwt(ApplicationUser user, IList<string> roles)
     {
         var claims = new List<Claim>
         {
@@ -113,6 +127,12 @@ public class AuthController : ControllerBase
 
         // Embed every role as a claim so [Authorize(Roles = "...")] works
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        // Embed Region and City so controllers can filter without a DB round-trip
+        if (!string.IsNullOrEmpty(user.Region))
+            claims.Add(new Claim("region", user.Region));
+        if (!string.IsNullOrEmpty(user.City))
+            claims.Add(new Claim("city", user.City));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

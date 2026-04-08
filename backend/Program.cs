@@ -20,8 +20,8 @@ builder.Services.AddDbContext<IdentityContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("IdentityConnection")));
 
-// ASP.NET Identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
+// ASP.NET Identity — using ApplicationUser so Region/City columns exist on ASPNetUsers
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
     options.Password.RequireLowercase = true;
@@ -93,7 +93,6 @@ builder.Services.AddSwaggerGen(options =>
 
 // CORS — reads allowed origins from configuration so the same binary works
 // in development (localhost:5173) and in Azure (the deployed frontend URL).
-// Add your Azure frontend URL to AllowedOrigins in appsettings.json before deploying.
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:5173", "https://localhost:5173" };
 
@@ -124,9 +123,19 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Migrations applied successfully.");
         }
 
+        // Apply any pending Identity migrations automatically
+        var identityDb = scope.ServiceProvider.GetRequiredService<IdentityContext>();
+        var identityPending = await identityDb.Database.GetPendingMigrationsAsync();
+        if (identityPending.Any())
+        {
+            logger.LogInformation("Applying {Count} pending Identity migration(s)...", identityPending.Count());
+            await identityDb.Database.MigrateAsync();
+            logger.LogInformation("Identity migrations applied successfully.");
+        }
+
         // Seed roles
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
         string[] roles = ["Admin", "Staff", "Donor"];
         foreach (var role in roles)
@@ -143,11 +152,12 @@ using (var scope = app.Services.CreateScope())
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin == null)
         {
-            var adminUser = new IdentityUser
+            var adminUser = new ApplicationUser
             {
                 UserName = adminEmail,
                 Email = adminEmail,
                 EmailConfirmed = true
+                // Region and City are null → Company Manager level
             };
             var result = await userManager.CreateAsync(adminUser, adminPassword);
             if (result.Succeeded)
