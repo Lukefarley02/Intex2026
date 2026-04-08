@@ -33,7 +33,7 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 | status | Status | Yes |
 | capacity_girls | CapacityGirls | Yes |
 | capacity_staff | CapacityStaff | Yes |
-| current_occupancy | CurrentOccupancy | Yes |
+| current_occupancy | CurrentOccupancy | Yes — auto-synced by `ResidentsController` on every resident insert/update/delete to the live count of `case_status = 'Active'` residents. `Closed` and `Transferred` residents are not counted. Backfilled on app startup from `Program.cs`. |
 | notes | Notes | Yes |
 
 ### partners (30 rows)

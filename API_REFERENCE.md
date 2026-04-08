@@ -186,6 +186,8 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 
 **Security note:** `notesRestricted` is now stripped from every response for Staff callers. Only Admin tiers (founder, regional, location) ever see it.
 
+**Occupancy side effect:** `POST`, `PUT`, and `DELETE` on `/api/residents` all trigger a recalculation of `safehouses.current_occupancy` for the affected safehouse (and both safehouses when a `PUT` moves a resident between houses). The new value equals the live count of residents with `case_status = 'Active'` — `Closed` and `Transferred` residents are not counted. See the note on `GET /api/safehouses` below.
+
 ---
 
 ## Donor Portal
@@ -313,6 +315,8 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 | POST | `/api/safehouses` | Founder | Create a new safehouse (structural change) |
 | PUT | `/api/safehouses/{id}` | Admin | Update a safehouse. Region/City cannot be moved out of caller's scope. |
 | DELETE | `/api/safehouses/{id}` | Founder | Delete a safehouse |
+
+**Occupancy note:** Each row in the `GET /api/safehouses` response includes both `storedOccupancy` (the `safehouses.current_occupancy` column) and `activeResidents` (a live `COUNT(*)` over residents with `case_status = 'Active'` joined by `safehouse_id`). These two values are kept in sync automatically — `ResidentsController` recomputes `current_occupancy` after every resident insert, update, or delete, and `Program.cs` runs a one-time backfill on startup to reconcile any drift inherited from the seed CSVs.
 
 ---
 
