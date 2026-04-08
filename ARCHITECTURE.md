@@ -80,6 +80,7 @@ Website/Intex2026/
         │   ├── setup.ts             # Loaded before each test; imports @testing-library/jest-dom + mocks window.matchMedia
         │   └── example.test.ts      # Placeholder smoke test
         ├── components/
+        │   ├── ConfirmDialog.tsx   # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
         │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated staff/admin pages (Flame logo, nav, sign out)
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
