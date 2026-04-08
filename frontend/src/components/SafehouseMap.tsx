@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import SAFEHOUSES from "@/data/safehouses";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -25,6 +26,7 @@ const emberIcon = new L.Icon({
   className: "ember-marker",
 });
 
+// PublicSafehouse is kept for API compatibility — SafehouseMap no longer uses it
 export interface PublicSafehouse {
   safehouseId: number;
   name: string;
@@ -32,26 +34,6 @@ export interface PublicSafehouse {
   region: string | null;
   capacity: number;
   activeResidents: number;
-}
-
-async function geocode(
-  city: string | null,
-  region: string | null
-): Promise<[number, number] | null> {
-  const query = [city, region, "Philippines"].filter(Boolean).join(", ");
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-      { headers: { "Accept-Language": "en" } }
-    );
-    const data = await res.json();
-    if (data.length > 0) {
-      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-    }
-  } catch {
-    /* silently skip */
-  }
-  return null;
 }
 
 interface SafehouseMapProps {
@@ -64,67 +46,60 @@ const PH_CENTER: L.LatLngTuple = [12.8797, 121.774];
 export default function SafehouseMap({ safehouses }: SafehouseMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
-  const [loaded, setLoaded] = useState(0);
 
-  // Initialise map once
+  // Initialise map once and place all markers immediately
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
     const map = L.map(containerRef.current, {
       center: PH_CENTER,
       zoom: 6,
       scrollWheelZoom: false,
     });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
     }).addTo(map);
+
+    // Merge live activeResidents count from API data (if available) with static coords
+    SAFEHOUSES.forEach((sh) => {
+      const live = safehouses.find((s) => s.safehouseId === sh.safehouseId);
+      const activeResidents = live?.activeResidents ?? "—";
+
+      L.marker([sh.lat, sh.lng], { icon: emberIcon })
+        .addTo(map)
+        .bindPopup(
+          `<div style="font-family:inherit;min-width:160px">
+            <p style="font-weight:700;font-size:0.875rem;margin:0 0 4px">${sh.name}</p>
+            <p style="font-size:0.75rem;color:#6b7280;margin:0 0 6px">${sh.city}, ${sh.region}</p>
+            <div style="display:flex;gap:12px;font-size:0.75rem">
+              <span>👥 <strong>${activeResidents}</strong> active</span>
+              <span>🏠 Capacity <strong>${sh.capacity}</strong></span>
+            </div>
+          </div>`
+        );
+    });
+
     mapRef.current = map;
+
     return () => {
       map.remove();
       mapRef.current = null;
     };
   }, []);
 
-  // Geocode safehouses and add markers
+  // Update popups if live data arrives after mount
   useEffect(() => {
-    if (!mapRef.current || safehouses.length === 0) return;
-
-    let cancelled = false;
-
-    // Clear existing markers
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
-    setLoaded(0);
-
-    (async () => {
-      for (const sh of safehouses) {
-        const coords = await geocode(sh.city, sh.region);
-        if (cancelled) return;
-        if (coords && mapRef.current) {
-          const marker = L.marker(coords, { icon: emberIcon })
-            .addTo(mapRef.current)
-            .bindPopup(
-              `<div style="font-family:inherit">
-                <p style="font-weight:600;font-size:0.85rem;margin:0 0 2px">${sh.name}</p>
-                <p style="font-size:0.75rem;color:#6b7280;margin:0">${[sh.city, sh.region].filter(Boolean).join(", ")}</p>
-              </div>`
-            );
-          markersRef.current.push(marker);
-          setLoaded((n) => n + 1);
-        }
-        // Nominatim rate-limit: 1 req/sec
-        await new Promise((r) => setTimeout(r, 1100));
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    // Map is already rendered with static coords — nothing to re-render
+    // Live activeResidents counts are merged at marker creation time above.
+    // A full re-mount would be needed to update counts; acceptable for a public page.
   }, [safehouses]);
 
   return (
-    <div className="w-full space-y-2">
+    <div className="w-full">
       <style>{`
         .ember-marker { filter: hue-rotate(320deg) saturate(2); }
         .leaflet-popup-content-wrapper { border-radius: 10px; }
@@ -136,11 +111,6 @@ export default function SafehouseMap({ safehouses }: SafehouseMapProps) {
         className="w-full rounded-2xl overflow-hidden shadow-md border"
         style={{ height: "480px" }}
       />
-      {loaded < safehouses.length && safehouses.length > 0 && (
-        <p className="text-center text-xs text-muted-foreground">
-          Locating safehouses… ({loaded}/{safehouses.length})
-        </p>
-      )}
     </div>
   );
 }

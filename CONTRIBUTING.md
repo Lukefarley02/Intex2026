@@ -84,7 +84,7 @@ Follow the pattern in `Donors.tsx` (an existing mock-data page in `src/pages/` �
 3. `useEffect` + `apiFetch<T[]>('/api/educationrecords')` to load data (or use `@tanstack/react-query` if you prefer)
 4. Render using shadcn/ui `Table`, `Card`, etc. from `@/components/ui/*`
 5. Add the route in `App.tsx`, wrapped in `<ProtectedRoute roles={["Admin","Staff"]}>` as appropriate
-6. Add the nav entry in `DashboardLayout.tsx` (sidebar) for authenticated pages, or `PublicNav.tsx` for public pages
+6. Add the nav entry in `DashboardLayout.tsx` (sidebar) for authenticated pages, or `PublicNav.tsx` for public pages. **Every sidebar entry must include a `roles: Array<"Admin"|"Staff"|"Donor">` tag** — the sidebar is role-filtered at render time via `hasRole()`. Use `["Admin"]` for admin-only pages, `["Admin","Staff"]` for case-management pages, and `["Donor"]` for the donor portal. Match this tag to the `<ProtectedRoute roles={[...]}>` on the route so the backend guard and the visible nav agree.
 
 ### Step 5 — Test
 
@@ -102,7 +102,7 @@ If you're adding a page that uses existing API endpoints:
 1. Create the page component in `frontend/src/pages/` (name like `MyPage.tsx`, no `Page` suffix — matches existing pages)
 2. Add the route in `App.tsx`, wrapped in `<ProtectedRoute>` if authenticated
 3. Wrap the page body in `<DashboardLayout title="...">` for authenticated pages, or use `<PublicNav />` at the top for public pages
-4. Add nav entry in `DashboardLayout.tsx` sidebar (authenticated) or `PublicNav.tsx` (public)
+4. Add nav entry in `DashboardLayout.tsx` sidebar (authenticated, with the required `roles` tag — see the previous section) or `PublicNav.tsx` (public)
 5. Use `apiFetch<T>()` from `@/api/client` for data (auto-attaches the JWT)
 
 ---
@@ -132,7 +132,8 @@ If you're adding a page that uses existing API endpoints:
 | `backend/Controllers/YourController.cs` | CRUD endpoints |
 | `frontend/src/pages/YourPage.tsx` | New page component |
 | `frontend/src/App.tsx` | Route entry (wrap in `<ProtectedRoute>` if needed) |
-| `frontend/src/components/DashboardLayout.tsx` | Sidebar nav entry (authenticated pages) |
+| `frontend/src/components/DashboardLayout.tsx` | Sidebar nav entry (authenticated pages) — must include a `roles` tag |
+| `CLAUDE.md` | Current-state checkbox + dated changelog entry |
 | `frontend/src/components/PublicNav.tsx` | Top nav entry (public pages only) |
 | `ARCHITECTURE.md` | Update schema gap table |
 | `DATA_DICTIONARY.md` | Mark table status as implemented |
