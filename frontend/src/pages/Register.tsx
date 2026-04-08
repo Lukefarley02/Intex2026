@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Flame } from "lucide-react";
-import { useAuth } from "@/api/AuthContext";
+import { useAuth, landingFor } from "@/api/AuthContext";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -29,8 +29,8 @@ const Register = () => {
     try {
       await register(email, password);
       // Auto-login after successful registration
-      await login(email, password);
-      navigate("/dashboard");
+      const loggedInUser = await login(email, password);
+      navigate(landingFor(loggedInUser.roles), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -47,6 +47,9 @@ const Register = () => {
           <h1 className="text-4xl font-extrabold leading-tight">
             Join the Ember mission
           </h1>
+          <p className="text-sm font-medium opacity-90 leading-relaxed">
+            Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one secure platform.
+          </p>
           <p className="text-lg opacity-90 leading-relaxed">
             Create an account to access your personalized dashboard, manage your donations, and stay connected with the causes you care about. Together, we can make a difference.
           </p>
@@ -56,11 +59,13 @@ const Register = () => {
       {/* Right: form */}
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to home
-          </Link>
-          <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
-            <Flame className="w-8 h-8" /> Ember
+          <div className="flex flex-col gap-3 mb-4">
+            <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Back to home
+            </Link>
+            <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl">
+              <Flame className="w-8 h-8" /> Ember
+            </div>
           </div>
 
           <div>
@@ -101,6 +106,9 @@ const Register = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Must be at least 14 characters (uppercase, lowercase, number, and symbol required).
+              </p>
             </div>
 
             <div className="space-y-2">
