@@ -88,6 +88,101 @@ public class SafehousesController : ControllerBase
         return Ok(rows);
     }
 
+    // GET /api/safehouses/mine
+    //
+    // Returns the safehouse(s) associated with the caller — used by the
+    // Staff Dashboard to show a single "My safehouse" card. This is more
+    // forgiving than the plain list endpoint because:
+    //
+    //   1. It first applies the normal scope filter (Founder/Region/City).
+    //   2. If nothing matches (e.g. the staff user's City value is off by
+    //      casing or whitespace, or the account was never assigned a city),
+    //      it falls back to joining through the residents the caller can see
+    //      and returns the distinct set of safehouses behind them.
+    //   3. If that is also empty and the caller has a Region set, it falls
+    //      back once more to every safehouse in that region.
+    //
+    // The shape matches the main GET /api/safehouses projection so the
+    // frontend can reuse the same `SafehouseRow` type.
+    [HttpGet("mine")]
+    public async Task<ActionResult<IEnumerable<object>>> GetMySafehouses()
+    {
+        var scope = await UserScope.FromPrincipalAsync(User, _users);
+
+        // ── Pass 1: normal scope filter ─────────────────────────────
+        var primary = scope.ApplyToSafehouses(_context.Safehouses.AsNoTracking());
+        var primaryIds = await primary.Select(s => s.SafehouseId).ToListAsync();
+
+        // ── Pass 2: derive from residents the caller can see ────────
+        if (primaryIds.Count == 0)
+        {
+            var residentSafehouseIds = await scope
+                .ApplyToResidents(_context.Residents.AsNoTracking(), _context.Safehouses)
+                .Select(r => r.SafehouseId)
+                .Distinct()
+                .ToListAsync();
+            primaryIds = residentSafehouseIds;
+        }
+
+        // ── Pass 3: fall back to every safehouse in the caller's region ──
+        if (primaryIds.Count == 0 && !string.IsNullOrWhiteSpace(scope.Region))
+        {
+            var regionLower = scope.Region!.ToLower();
+            primaryIds = await _context.Safehouses.AsNoTracking()
+                .Where(s => s.Region != null && s.Region.ToLower() == regionLower)
+                .Select(s => s.SafehouseId)
+                .ToListAsync();
+        }
+
+        if (primaryIds.Count == 0)
+            return Ok(Array.Empty<object>());
+
+        // Join to residents for the live Active count, same shape as GetSafehouses.
+        var rows = await (
+            from sh in _context.Safehouses.AsNoTracking()
+            where primaryIds.Contains(sh.SafehouseId)
+            join r in _context.Residents.AsNoTracking()
+                on sh.SafehouseId equals r.SafehouseId into residentGroup
+            from r in residentGroup.DefaultIfEmpty()
+            group new { sh, r } by new
+            {
+                sh.SafehouseId,
+                sh.SafehouseCode,
+                sh.Name,
+                sh.Region,
+                sh.Province,
+                sh.City,
+                sh.Country,
+                sh.Status,
+                sh.OpenDate,
+                sh.CapacityGirls,
+                sh.CapacityStaff,
+                sh.CurrentOccupancy
+            }
+            into g
+            select new
+            {
+                g.Key.SafehouseId,
+                g.Key.SafehouseCode,
+                g.Key.Name,
+                g.Key.Region,
+                g.Key.Province,
+                g.Key.City,
+                g.Key.Country,
+                g.Key.Status,
+                g.Key.OpenDate,
+                g.Key.CapacityGirls,
+                g.Key.CapacityStaff,
+                StoredOccupancy = g.Key.CurrentOccupancy,
+                ActiveResidents = g.Count(x => x.r != null && x.r.CaseStatus == "Active")
+            }
+        )
+        .OrderBy(s => s.Name)
+        .ToListAsync();
+
+        return Ok(rows);
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<Safehouse>> GetSafehouse(int id)
     {

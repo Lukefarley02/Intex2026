@@ -14,11 +14,12 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Privacy from "./pages/Privacy";
 import Dashboard from "./pages/Dashboard";
+import StaffDashboard from "./pages/StaffDashboard";
 import Donors from "./pages/Donors";
 import Safehouses from "./pages/Safehouses";
 import Residents from "./pages/Residents";
 import Reports from "./pages/Reports";
-import StaffPortal from "./pages/StaffPortal";
+import { useAuth } from "@/api/AuthContext";
 import DonorPortal from "./pages/DonorPortal";
 import TaxReceipt from "./pages/TaxReceipt";
 import Admin from "./pages/Admin";
@@ -27,6 +28,16 @@ import HomeVisitation from "./pages/HomeVisitation";
 import MLInsights from "./pages/MLInsights";
 
 const queryClient = new QueryClient();
+
+// Role-based dashboard router. Admins get the full monetary dashboard;
+// Staff get the case-worker dashboard (safehouse snapshot, upcoming visits,
+// counseling history, weekly check-ins). Staff have no dedicated "portal"
+// anymore — this is their landing page.
+const DashboardRouter = () => {
+  const { hasRole } = useAuth();
+  if (hasRole("Admin")) return <Dashboard />;
+  return <StaffDashboard />;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -49,7 +60,7 @@ const App = () => (
               path="/dashboard"
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
-                  <Dashboard />
+                  <DashboardRouter />
                 </ProtectedRoute>
               }
             />
@@ -61,10 +72,12 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            {/* Safehouses is Admin-only — Staff see their assigned safehouse
+                on the Staff Dashboard instead. */}
             <Route
               path="/safehouses"
               element={
-                <ProtectedRoute roles={["Admin", "Staff"]}>
+                <ProtectedRoute roles={["Admin"]}>
                   <Safehouses />
                 </ProtectedRoute>
               }
@@ -101,15 +114,6 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/staff"
-              element={
-                <ProtectedRoute roles={["Admin", "Staff"]}>
-                  <StaffPortal />
-                </ProtectedRoute>
-              }
-            />
-
             {/* Donor */}
             <Route
               path="/my-impact"
