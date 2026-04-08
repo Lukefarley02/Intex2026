@@ -204,7 +204,7 @@ const Dashboard = () => {
               <div className="flex items-start justify-between mb-3">
                 <span className="text-sm text-muted-foreground">{m.label}</span>
                 <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <m.icon className="w-5 h-5 text-primary" />
+                  <m.icon className="w-5 h-5 text-primary" aria-hidden="true" />
                 </div>
               </div>
               <div className="text-3xl font-bold text-primary">
@@ -236,7 +236,7 @@ const Dashboard = () => {
                 <div
                   className={`w-9 h-9 rounded-lg ${card.iconBg} flex items-center justify-center flex-shrink-0 ml-2`}
                 >
-                  <card.icon className={`w-5 h-5 ${card.iconColor}`} />
+                  <card.icon className={`w-5 h-5 ${card.iconColor}`} aria-hidden="true" />
                 </div>
               </div>
               <div className="text-3xl font-bold text-foreground">
@@ -247,6 +247,7 @@ const Dashboard = () => {
                 <Link
                   to={card.action.to}
                   className="text-xs font-medium text-primary hover:underline"
+                  aria-label={`${card.action.label} — ${card.label}`}
                 >
                   {card.action.label} →
                 </Link>
@@ -262,7 +263,7 @@ const Dashboard = () => {
         <Card className="rounded-xl shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl flex items-center gap-2 text-secondary">
-              <Globe className="w-5 h-5" /> Social Media Overview
+              <Globe className="w-5 h-5" aria-hidden="true" /> Social Media Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -367,7 +368,7 @@ const Dashboard = () => {
                 return (
                   <div key={i} className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-primary-light text-primary">
-                      <DollarSign className="w-4 h-4" />
+                      <DollarSign className="w-4 h-4" aria-hidden="true" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{text}</p>
@@ -382,7 +383,7 @@ const Dashboard = () => {
               {data?.recentActivity && data.recentActivity.length < 3 && (
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gold/10 text-gold">
-                    <Award className="w-4 h-4" />
+                    <Award className="w-4 h-4" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
@@ -406,10 +407,10 @@ const Dashboard = () => {
             <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <link.icon className="w-5 h-5 text-primary" />
+                  <link.icon className="w-5 h-5 text-primary" aria-hidden="true" />
                   <span className="font-semibold">{link.label}</span>
                 </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                <ArrowRight className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
               </CardContent>
             </Card>
           </Link>

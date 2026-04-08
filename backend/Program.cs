@@ -53,6 +53,30 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
+
+    // Reject tokens whose security stamp no longer matches the DB.
+    // This forces a re-login whenever an admin changes a user's role.
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async ctx =>
+        {
+            var userManager = ctx.HttpContext.RequestServices
+                .GetRequiredService<UserManager<ApplicationUser>>();
+            var userId = ctx.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                      ?? ctx.Principal?.FindFirst("sub")?.Value;
+            if (userId == null) { ctx.Fail("No user id in token."); return; }
+
+            var user = await userManager.FindByIdAsync(userId);
+            if (user == null) { ctx.Fail("User not found."); return; }
+
+            // If the security stamp in the token doesn't match the DB, reject it.
+            var tokenStamp = ctx.Principal?.FindFirst("AspNet.Identity.SecurityStamp")?.Value;
+            if (tokenStamp != null && tokenStamp != user.SecurityStamp)
+            {
+                ctx.Fail("Security stamp mismatch — please log in again.");
+            }
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -222,7 +246,12 @@ app.Use(async (context, next) =>
 {
     context.Response.Headers.Append(
         "Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';");
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://unpkg.com; " +
+        "connect-src 'self' https://*.basemaps.cartocdn.com;");
     await next();
 });
 
