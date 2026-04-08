@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
+import { useAuth } from "@/api/AuthContext";
 import {
   Users,
   DollarSign,
@@ -96,6 +97,7 @@ const quickLinks = [
 ];
 
 const Dashboard = () => {
+  const { isFounder } = useAuth();
   const { data, isLoading, isError } = useQuery<DashboardStats>({
     queryKey: ["dashboard-stats"],
     queryFn: () => apiFetch<DashboardStats>("/api/dashboard/stats"),
@@ -216,12 +218,15 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* ML Insights row */}
-      <div className="mb-2">
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          ML Insights
-        </h2>
-      </div>
+      {/* ML Insights row — Founder-only */}
+      {isFounder && (
+        <div className="mb-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            ML Insights
+          </h2>
+        </div>
+      )}
+      {isFounder && (
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {mlCards.map((card) => (
           <Card key={card.label} className="rounded-xl shadow-sm">
@@ -256,6 +261,7 @@ const Dashboard = () => {
           </Card>
         ))}
       </div>
+      )}
 
       {/* Social media + recent activity */}
       <div className="grid lg:grid-cols-2 gap-6 mb-6">

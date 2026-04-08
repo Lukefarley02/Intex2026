@@ -28,6 +28,8 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   label: string;
   roles: Array<Role>;
+  /** When true, only top-level admins (Founders) see this link. */
+  founderOnly?: boolean;
 };
 
 type NavGroup = {
@@ -85,7 +87,7 @@ const navGroups: NavGroup[] = [
     roles: ["Admin"],
     items: [
       { to: "/reports",     icon: FileText, label: "Reports",     roles: ["Admin"] },
-      { to: "/ml-insights", icon: Brain,    label: "ML Insights", roles: ["Admin"] },
+      { to: "/ml-insights", icon: Brain,    label: "ML Insights", roles: ["Admin"], founderOnly: true },
     ],
   },
   {
@@ -102,7 +104,7 @@ const navGroups: NavGroup[] = [
 const DashboardLayout = ({ children, title }: { children: React.ReactNode; title: string }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user, hasRole } = useAuth();
+  const { logout, user, hasRole, isFounder } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Resolve the single role bucket this user belongs to. Admin beats Staff
@@ -116,8 +118,13 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
   }, [hasRole]);
 
   const visibleTopLinks = useMemo(
-    () => (effectiveRole ? topLinks.filter((i) => i.roles.includes(effectiveRole)) : []),
-    [effectiveRole]
+    () =>
+      effectiveRole
+        ? topLinks.filter(
+            (i) => i.roles.includes(effectiveRole) && (!i.founderOnly || isFounder),
+          )
+        : [],
+    [effectiveRole, isFounder]
   );
 
   const visibleGroups = useMemo(() => {
@@ -126,10 +133,12 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
       .filter((g) => g.roles.includes(effectiveRole))
       .map((g) => ({
         ...g,
-        items: g.items.filter((i) => i.roles.includes(effectiveRole)),
+        items: g.items.filter(
+          (i) => i.roles.includes(effectiveRole) && (!i.founderOnly || isFounder),
+        ),
       }))
       .filter((g) => g.items.length > 0);
-  }, [effectiveRole]);
+  }, [effectiveRole, isFounder]);
 
   // Track which groups are expanded. Default: auto-open the group that owns
   // the current route so the user never lands on a page inside a collapsed

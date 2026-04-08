@@ -4,10 +4,12 @@ import { useAuth } from "@/api/AuthContext";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   roles?: string[]; // If specified, user must have at least one of these roles
+  /** When true, only top-level admins (Founders) may access this route. */
+  founderOnly?: boolean;
 }
 
-function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, user, isFounder } = useAuth();
 
   if (isLoading) {
     return (
@@ -33,6 +35,17 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
         </div>
       );
     }
+  }
+
+  if (founderOnly && !isFounder) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-2 p-8 text-center">
+        <h2 className="text-2xl font-bold">Access Denied</h2>
+        <p className="text-muted-foreground">
+          This page is restricted to top-level administrators.
+        </p>
+      </div>
+    );
   }
 
   return <>{children}</>;
