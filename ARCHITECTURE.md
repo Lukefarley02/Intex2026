@@ -59,7 +59,7 @@ Website/Intex2026/
 │   │   ├── PublicController.cs             # /api/public/stats + /api/public/safehouses (anonymous)
 │   │   ├── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact (Donor only)
 │   │   ├── SocialMediaPostsController.cs   # GET /api/social/stats — social media KPIs (Admin/Staff)
-│   │   └── MLInsightsController.cs         # GET /api/mlinsights — ML-proxy KPIs from live DB (Admin/Staff)
+│   │   └── MLInsightsController.cs         # GET /api/mlinsights (dashboard summary) + /donor-churn /donation-capacity /resident-outcomes /geographic /acquisition-roi (Admin/Staff)
 │   ├── Data/
 │   │   ├── ApplicationUser.cs       # Custom IdentityUser with Region + City properties (determines admin scope)
 │   │   ├── AppDbContext.cs          # DbContext for EmberApp DB (6 of 17 tables wired)
@@ -119,4 +119,5 @@ Website/Intex2026/
             ├── Login.tsx            # Login form — wired to AuthContext.login(), Ember branded split layout
             ├── Register.tsx         # Registration form — password confirm, auto-login on success
             ├── Privacy.tsx          # Privacy policy (Ember styled)
-            ├── Dashboard.tsx        
+            ├── Dashboard.tsx
+            ├── MLInsights.tsx       # /ml-insights — 8-pipeline tab view with recharts, KPIs, interpretations, actions

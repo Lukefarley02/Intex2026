@@ -380,3 +380,19 @@ Returns all zeroes / empty arrays if the `social_media_posts` table has not yet 
 | `residentsReadyCount` | 04 Resident Outcomes | Active residents with `current_risk_level = 'Low'` |
 | `safehousesNearCapacity` | 05 Geographic | Safehouses at ≥ 90% occupancy (live resident count) |
 | `topSocialPlatform` | 03 Social Media | Platform with most donation referrals in last 30 days |
+
+---
+
+## ML Insights — Detail Endpoints (ML Insights Page)
+
+All require `Admin` or `Staff` role.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/mlinsights/donor-churn` | Pipeline 01: recency buckets, retention rate, top at-risk donors |
+| GET | `/api/mlinsights/donation-capacity` | Pipeline 02: tier distribution, upgrade opportunities, channel avg donation |
+| GET | `/api/mlinsights/resident-outcomes` | Pipeline 04: readiness tiers, risk breakdown, at-risk resident list |
+| GET | `/api/mlinsights/geographic` | Pipeline 05: safehouse efficiency ranking, regional utilization |
+| GET | `/api/mlinsights/acquisition-roi` | Pipeline 06: channel LTV, retention rate, recurring rate per channel |
+
+Pipelines 03 (Social Media) uses the existing `/api/social/stats`. Pipelines 07 (Partner) and 08 (In-Kind) display static notebook findings — their source tables are not yet modeled in EF Core.
