@@ -83,7 +83,7 @@ Website/Intex2026/
         ├── components/
         │   ├── ConfirmDialog.tsx   # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
-        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; navItems are role-tagged (Admin/Staff/Donor) and filtered at render via hasRole() — Donor-only sees Donor Portal, Staff sees case-mgmt tools + Staff Portal, Admin sees everything
+        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; collapsible NavGroups (Case Management / Fundraising / Analytics / System) tagged by role and filtered via hasRole() — Donor-only sees Donor Portal, Staff sees Dashboard + case-mgmt tools (no Safehouses — embedded on the Staff Dashboard), Admin sees everything
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
         │   ├── StatPill.tsx         # Hero stat pill ("247 girls supported")
         │   ├── NavLink.tsx          # Wrapper around react-router NavLink with active/pending classNames

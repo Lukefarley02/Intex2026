@@ -1,11 +1,23 @@
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Shield, TrendingUp, UserPlus, Settings } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Shield, TrendingUp, UserPlus, Settings, MapPin } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
+import { toast } from "@/hooks/use-toast";
 
 // ---- Types ----
 interface AdminUserRow {
@@ -14,6 +26,9 @@ interface AdminUserRow {
   emailConfirmed: boolean;
   lockedOut: boolean;
   roles: string[];
+  region: string | null;
+  city: string | null;
+  adminScope: string | null;
 }
 
 interface DashboardStats {
@@ -60,6 +75,65 @@ const initials = (email: string | null) => {
 };
 
 const Admin = () => {
+  const queryClient = useQueryClient();
+
+  // ─── Scope-editor dialog state ─────────────────────────────────────
+  // Founders can edit any other user's Region + City via the settings
+  // gear in the user list. Backend route: PUT /api/adminusers/{id}/scope.
+  // This is how you fix a staff account that's pointing at the wrong
+  // city without waiting for a backend redeploy to run RoleSeeder.
+  const [scopeEditUser, setScopeEditUser] = useState<AdminUserRow | null>(null);
+  const [scopeRegion, setScopeRegion] = useState("");
+  const [scopeCity, setScopeCity] = useState("");
+
+  const openScopeEditor = (u: AdminUserRow) => {
+    setScopeEditUser(u);
+    setScopeRegion(u.region ?? "");
+    setScopeCity(u.city ?? "");
+  };
+  const closeScopeEditor = () => setScopeEditUser(null);
+
+  const scopeMutation = useMutation({
+    mutationFn: async (vars: { id: string; region: string; city: string }) => {
+      return apiFetch<{ message: string; region: string | null; city: string | null }>(
+        `/api/adminusers/${vars.id}/scope`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            region: vars.region.trim() || null,
+            city: vars.city.trim() || null,
+          }),
+        },
+      );
+    },
+    onSuccess: (_data, vars) => {
+      toast({
+        title: "Scope updated",
+        description: `${scopeEditUser?.email ?? "User"} → ${
+          vars.region || "—"
+        } / ${vars.city || "—"}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
+      closeScopeEditor();
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Could not update scope",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const submitScope = () => {
+    if (!scopeEditUser) return;
+    scopeMutation.mutate({
+      id: scopeEditUser.id,
+      region: scopeRegion,
+      city: scopeCity,
+    });
+  };
+
   const usersQuery = useQuery<AdminUserRow[]>({
     queryKey: ["adminusers"],
     queryFn: () => apiFetch<AdminUserRow[]>("/api/adminusers"),
@@ -185,10 +259,18 @@ const Admin = () => {
                       <p className="text-sm font-medium">
                         {u.email ?? "(no email)"}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {u.roles.length > 0
-                          ? u.roles.join(", ")
-                          : "No roles assigned"}
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          {u.roles.length > 0
+                            ? u.roles.join(", ")
+                            : "No roles assigned"}
+                        </span>
+                        <span className="text-muted-foreground/60">·</span>
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {u.region || "—"}
+                          {u.city ? ` / ${u.city}` : ""}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -211,7 +293,12 @@ const Admin = () => {
                     >
                       {status}
                     </Badge>
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openScopeEditor(u)}
+                      title="Edit region / city"
+                    >
                       <Settings className="w-4 h-4" />
                     </Button>
                   </div>
@@ -221,6 +308,68 @@ const Admin = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Scope editor dialog — Founder-only on the backend (PUT
+          /api/adminusers/{id}/scope). Leaving both fields blank promotes
+          the user to Founder; Region only → Regional Manager; Region + City
+          → Location Manager (Admin) or Staff (Staff role). */}
+      <Dialog
+        open={!!scopeEditUser}
+        onOpenChange={(open) => !open && closeScopeEditor()}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit scope</DialogTitle>
+            <DialogDescription>
+              {scopeEditUser?.email ?? ""}
+              <br />
+              Set the user&apos;s Region and City. Staff and Location
+              Managers must have both. Leave both blank to promote an admin
+              to Founder (company-wide). Case and whitespace matter — they
+              must match values in the safehouses table exactly (e.g.{" "}
+              <code>Visayas</code> / <code>Cebu City</code>).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="scope-region">Region</Label>
+              <Input
+                id="scope-region"
+                value={scopeRegion}
+                onChange={(e) => setScopeRegion(e.target.value)}
+                placeholder="e.g. Visayas"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="scope-city">City</Label>
+              <Input
+                id="scope-city"
+                value={scopeCity}
+                onChange={(e) => setScopeCity(e.target.value)}
+                placeholder="e.g. Cebu City"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closeScopeEditor}
+              disabled={scopeMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="hero"
+              onClick={submitScope}
+              disabled={scopeMutation.isPending}
+            >
+              {scopeMutation.isPending ? "Saving…" : "Save scope"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
