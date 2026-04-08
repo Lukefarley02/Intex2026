@@ -12,7 +12,6 @@ backend/publish/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
-frontend/.env.production
 frontend/.env.local
 frontend/.env*.local
 
