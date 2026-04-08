@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, ClipboardList, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X } from "lucide-react";
+import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, ClipboardList, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/api/AuthContext";
 
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/residents", icon: UserCircle, label: "Residents" },
   { to: "/process-recording", icon: NotebookPen, label: "Process Recording" },
   { to: "/home-visitation", icon: MapPin, label: "Home Visitation" },
+  { to: "/ml-insights", icon: Brain, label: "ML Insights" },
   { to: "/reports", icon: FileText, label: "Reports" },
   { to: "/staff", icon: ClipboardList, label: "Staff Portal" },
   { to: "/my-impact", icon: Users, label: "Donor Portal" },

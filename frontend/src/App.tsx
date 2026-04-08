@@ -23,6 +23,7 @@ import DonorPortal from "./pages/DonorPortal";
 import Admin from "./pages/Admin";
 import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
+import MLInsights from "./pages/MLInsights";
 
 const queryClient = new QueryClient();
 
@@ -114,6 +115,15 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff", "Donor"]}>
                   <DonorPortal />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/ml-insights"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <MLInsights />
                 </ProtectedRoute>
               }
             />
