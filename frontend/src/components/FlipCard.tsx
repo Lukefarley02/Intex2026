@@ -13,7 +13,20 @@ const FlipCard = ({ icon, title, backContent }: FlipCardProps) => {
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Card flip area */}
-      <div className="relative w-full h-44" style={{ perspective: "1000px" }}>
+      <div
+        className="relative w-full h-44 cursor-pointer"
+        style={{ perspective: "1000px" }}
+        onClick={() => setIsFlipped(!isFlipped)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsFlipped(!isFlipped);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={isFlipped ? `${title} — click to go back` : `${title} — click to learn more`}
+      >
         <div
           className="relative w-full h-full transition-all duration-500"
           style={{
