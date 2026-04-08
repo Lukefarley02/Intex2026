@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame } from "lucide-react";
+import { ArrowLeft, Flame } from "lucide-react";
 import { useAuth } from "@/api/AuthContext";
 
 const Register = () => {
@@ -56,6 +56,9 @@ const Register = () => {
       {/* Right: form */}
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to home
+          </Link>
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
             <Flame className="w-8 h-8" /> Ember
           </div>
