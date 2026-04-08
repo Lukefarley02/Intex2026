@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import PublicNav from "@/components/PublicNav";
+import DonateHeader from "@/components/DonateHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -249,7 +249,7 @@ const Donate = () => {
     const linked = phase === "done-linked";
     return (
       <div className="min-h-screen bg-background">
-        <PublicNav />
+        <DonateHeader />
         <div className="container max-w-lg py-24 text-center space-y-6 animate-fade-in">
           <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto">
             <Check className="w-10 h-10 text-success" />
@@ -298,7 +298,7 @@ const Donate = () => {
   // ─────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
-      <PublicNav />
+      <DonateHeader />
       <div className="container max-w-2xl py-16 md:py-24">
         <div className="text-center mb-10">
           <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Make a difference</p>
