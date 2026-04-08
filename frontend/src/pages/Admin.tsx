@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,14 +20,20 @@ import {
 } from "@/components/ui/dialog";
 import { Shield, TrendingUp, UserPlus, Settings, MapPin } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Shield, TrendingUp, UserPlus, Settings, Eye, EyeOff } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+<<<<<<< HEAD
 >>>>>>> 035b8ff2d092d3434312bb6512b74b289e2a1d22
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -89,6 +98,9 @@ const EMPTY_EDIT = { id: "", email: "", role: "Donor", newPassword: "", confirmP
 const Admin = () => {
   const queryClient = useQueryClient();
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
 
   // ─── Scope-editor dialog state ─────────────────────────────────────
   // Founders can edit any other user's Region + City via the settings
@@ -145,7 +157,10 @@ const Admin = () => {
       region: scopeRegion,
       city: scopeCity,
     });
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
@@ -201,7 +216,10 @@ const Admin = () => {
     }
     setFormError(null);
     createMutation.mutate(form);
+<<<<<<< HEAD
 >>>>>>> 035b8ff2d092d3434312bb6512b74b289e2a1d22
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
   };
 
   const usersQuery = useQuery<AdminUserRow[]>({
@@ -367,15 +385,23 @@ const Admin = () => {
                       variant="ghost"
                       size="sm"
 <<<<<<< HEAD
+<<<<<<< HEAD
                       onClick={() => openScopeEditor(u)}
                       title="Edit region / city"
 =======
+=======
+                      onClick={() => openScopeEditor(u)}
+                      title="Edit region / city"
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
                       onClick={() => {
                         setEditForm({ id: u.id, email: u.email ?? "", role: u.roles[0] ?? "Donor", newPassword: "", confirmPassword: "" });
                         setEditError(null);
                         setEditOpen(true);
                       }}
+<<<<<<< HEAD
 >>>>>>> 035b8ff2d092d3434312bb6512b74b289e2a1d22
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
                     >
                       <Settings className="w-4 h-4" />
                     </Button>
@@ -387,6 +413,9 @@ const Admin = () => {
         </CardContent>
       </Card>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
 
       {/* Scope editor dialog — Founder-only on the backend (PUT
           /api/adminusers/{id}/scope). Leaving both fields blank promotes
@@ -445,7 +474,10 @@ const Admin = () => {
               disabled={scopeMutation.isPending}
             >
               {scopeMutation.isPending ? "Saving…" : "Save scope"}
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
       {/* Edit User Modal */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
@@ -582,7 +614,10 @@ const Admin = () => {
               onClick={handleCreate}
             >
               {createMutation.isPending ? "Creating…" : "Create user"}
+<<<<<<< HEAD
 >>>>>>> 035b8ff2d092d3434312bb6512b74b289e2a1d22
+=======
+>>>>>>> e81469e751bed98221b70dae5ed3c2cd4ccef785
             </Button>
           </DialogFooter>
         </DialogContent>
