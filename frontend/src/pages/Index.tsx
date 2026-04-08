@@ -51,11 +51,20 @@ const Index = () => {
   const careStoryQuery = useQuery<CareStory>({
     queryKey: ["public-care-story"],
     queryFn: () => apiFetch<CareStory>("/api/public/care-story"),
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
   });
 
   const stats = statsQuery.data;
   const safehouses = safehousesQuery.data ?? [];
   const care = careStoryQuery.data;
+  const careError = careStoryQuery.isError;
+  const careStat = (
+    loading: boolean,
+    value: string | number | undefined,
+  ): string =>
+    loading ? "…" : value !== undefined ? String(value) : careError ? "—" : "…";
 
   return (
   <div className="min-h-screen bg-background">
@@ -127,7 +136,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.totalCounselingSessions.toLocaleString() : "…"}
+                {careStat(careStoryQuery.isLoading, care?.totalCounselingSessions.toLocaleString())}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Counseling sessions held</p>
               <p className="text-xs text-muted-foreground mt-1">One-on-one and group sessions with social workers</p>
@@ -141,7 +150,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.totalHomeVisits.toLocaleString() : "…"}
+                {careStat(careStoryQuery.isLoading, care?.totalHomeVisits.toLocaleString())}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home & family visits made</p>
               <p className="text-xs text-muted-foreground mt-1">Checking on girls in their communities and homes</p>
@@ -155,7 +164,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.progressRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.progressRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Of sessions show measurable progress</p>
               <p className="text-xs text-muted-foreground mt-1">Noted by social workers after each session</p>
@@ -173,7 +182,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.positiveEndRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.positiveEndRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Sessions end on a hopeful note</p>
               <p className="text-xs text-muted-foreground mt-1">Girls leaving sessions feeling calm, hopeful, or motivated</p>
@@ -187,7 +196,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.girlsRiskImproved : "…"}
+                {careStat(careStoryQuery.isLoading, care?.girlsRiskImproved)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Girls moved from high to low risk</p>
               <p className="text-xs text-muted-foreground mt-1">Reduced from critical or high risk to medium or low</p>
@@ -201,7 +210,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.favorableVisitRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.favorableVisitRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home visits end favorably</p>
               <p className="text-xs text-muted-foreground mt-1">Family environments assessed as safe and supportive</p>

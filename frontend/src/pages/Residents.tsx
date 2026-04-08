@@ -27,7 +27,10 @@ import {
   UserCircle,
   Pencil,
   Trash2,
+  Heart,
+  Brain,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -440,6 +443,33 @@ const Residents = () => {
             Clear filters
           </Button>
         )}
+      </div>
+
+      {/* ML Pipeline quick-link — Admin/Staff */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Brain className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            ML Insights
+          </h2>
+        </div>
+        <Link to="/ml-insights?tab=outcomes" className="group block max-w-sm">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Pipeline 04</p>
+                <p className="text-sm font-semibold text-emerald-700">Resident Outcomes</p>
+              </div>
+              <Heart className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+            </div>
+            <p className="text-xs text-emerald-600/80 mb-2">
+              Which residents are progressing toward reintegration? Risk-scores each resident and identifies readiness tiers.
+            </p>
+            <span className="text-xs font-medium text-emerald-600 group-hover:underline">
+              View outcomes analysis →
+            </span>
+          </div>
+        </Link>
       </div>
 
       {isLoading && (

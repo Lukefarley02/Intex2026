@@ -14,7 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Home, MapPin, Users, Plus, Pencil, Trash2 } from "lucide-react";
+import { Home, MapPin, Users, Plus, Pencil, Trash2, Building2, Brain } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -265,6 +266,33 @@ const Safehouses = () => {
             <Plus className="w-4 h-4 mr-1" /> Add safehouse
           </Button>
         )}
+      </div>
+
+      {/* ML Pipeline quick-link */}
+      <div className="mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Brain className="w-4 h-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            ML Insights
+          </h2>
+        </div>
+        <Link to="/ml-insights?tab=geographic" className="group block max-w-sm">
+          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Pipeline 05</p>
+                <p className="text-sm font-semibold text-indigo-700">Geographic Performance</p>
+              </div>
+              <Building2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+            </div>
+            <p className="text-xs text-indigo-600/80 mb-2">
+              Which safehouses are performing best? Benchmarks efficiency, flags capacity issues, and provides regional roll-ups.
+            </p>
+            <span className="text-xs font-medium text-indigo-600 group-hover:underline">
+              View geographic analysis →
+            </span>
+          </div>
+        </Link>
       </div>
 
       {isError && (
