@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Data;
+using Intex2026.Api.Services;
 
 namespace Intex2026.Api.Controllers;
 
@@ -104,6 +105,8 @@ public class DonorPortalController : ControllerBase
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Email == email);
 
+        var costPerGirl = await ImpactCalculator.GetCostPerGirlAsync(_context);
+
         if (supporter == null)
         {
             return Ok(new
@@ -111,6 +114,8 @@ public class DonorPortalController : ControllerBase
                 total_donated = 0m,
                 total_estimated_value = 0m,
                 donation_count = 0,
+                girls_helped = 0,
+                cost_per_girl = costPerGirl,
                 first_donation_date = (DateTime?)null,
                 most_recent_donation_date = (DateTime?)null,
                 campaigns_supported = Array.Empty<string>()
@@ -129,6 +134,8 @@ public class DonorPortalController : ControllerBase
                 total_donated = 0m,
                 total_estimated_value = 0m,
                 donation_count = 0,
+                girls_helped = 0,
+                cost_per_girl = costPerGirl,
                 first_donation_date = (DateTime?)null,
                 most_recent_donation_date = (DateTime?)null,
                 campaigns_supported = Array.Empty<string>()
@@ -152,6 +159,8 @@ public class DonorPortalController : ControllerBase
             total_donated          = totalDonated,
             total_estimated_value  = totalEstimated,
             donation_count         = donationCount,
+            girls_helped           = ImpactCalculator.GirlsHelped(totalDonated, costPerGirl),
+            cost_per_girl          = costPerGirl,
             first_donation_date    = firstDate,
             most_recent_donation_date = mostRecentDate,
             campaigns_supported    = campaigns

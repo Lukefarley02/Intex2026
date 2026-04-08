@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Data;
+using Intex2026.Api.Services;
 
 namespace Intex2026.Api.Controllers;
 
@@ -78,6 +79,11 @@ public class PublicController : ControllerBase
             .AsNoTracking()
             .SumAsync(d => (decimal?)(d.Amount ?? d.EstimatedValue ?? 0m)) ?? 0m;
 
+        // Compute the live cost-per-girl ratio so the landing page and donor
+        // portal always show consistent "girls helped" numbers.
+        var costPerGirl = await ImpactCalculator.GetCostPerGirlAsync(_context);
+        var girlsHelped = ImpactCalculator.GirlsHelped(totalRaised, costPerGirl);
+
         return Ok(new
         {
             safehouseCount,
@@ -85,7 +91,9 @@ public class PublicController : ControllerBase
             activeGirls,
             reintegratedGirls,
             totalRaised,
-            retentionRate = retention
+            retentionRate = retention,
+            girlsHelped,
+            costPerGirl
         });
     }
 

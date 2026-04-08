@@ -17,6 +17,8 @@ interface PublicStats {
   reintegratedGirls: number;
   totalRaised: number;
   retentionRate: number; // 0..1
+  girlsHelped: number;   // totalRaised ÷ live cost-per-girl
+  costPerGirl: number;
 }
 
 interface CareStory {
@@ -99,8 +101,8 @@ const Index = () => {
           </div>
           <div className="flex flex-wrap gap-3 pt-4">
             <StatPill
-              value={stats ? String(stats.girlsSupported) : "…"}
-              label="girls supported"
+              value={stats ? String(stats.girlsHelped) : "…"}
+              label="girls helped"
             />
             <StatPill
               value={stats ? String(stats.safehouseCount) : "…"}

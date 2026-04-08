@@ -20,6 +20,8 @@ interface DonorImpact {
   total_donated: number;
   total_estimated_value: number;
   donation_count: number;
+  girls_helped: number;
+  cost_per_girl: number;
   first_donation_date: string | null;
   most_recent_donation_date: string | null;
   campaigns_supported: string[];
@@ -87,15 +89,10 @@ const DonorPortal = () => {
   const totalContributions = impact?.total_donated ?? 0;
   const donationsMade = impact?.donation_count ?? 0;
 
-  // "Girls helped" is not a stored field. We approximate it from the total
-  // given (roughly $1,500 per girl per program cycle). The campaigns supported
-  // count is used as a floor so donors who gave to several campaigns always
-  // see a meaningful number.
-  const campaignsSupported = impact?.campaigns_supported.length ?? 0;
-  const girlsHelped = Math.max(
-    campaignsSupported,
-    Math.round(totalContributions / 1500),
-  );
+  // girls_helped is computed server-side from the live cost-per-girl ratio
+  // (total program funding ÷ total girls ever served), so it updates
+  // automatically whenever a new donation or resident is recorded.
+  const girlsHelped = impact?.girls_helped ?? 0;
 
   return (
     <DashboardLayout title="My Impact">

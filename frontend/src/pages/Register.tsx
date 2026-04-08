@@ -48,7 +48,7 @@ const Register = () => {
             Join the Ember mission
           </h1>
           <p className="text-lg opacity-90 leading-relaxed">
-            Create an account to manage donors, safehouses, and the girls in your care.
+            Create an account to access your personalized dashboard, manage your donations, and stay connected with the causes you care about. Together, we can make a difference.
           </p>
         </div>
       </div>
@@ -63,7 +63,7 @@ const Register = () => {
           <div>
             <h2 className="text-2xl font-bold">Create an account</h2>
             <p className="text-muted-foreground text-sm mt-1">
-              Get started in less than a minute
+              Start donating in less than a minute
             </p>
           </div>
 
