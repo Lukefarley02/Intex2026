@@ -17,6 +17,9 @@ Website/Intex2026/
 │   ├── 03_social_media_donation_conversion.ipynb
 │   ├── 04_resident_outcome_prediction.ipynb
 │   ├── 05_geographic_safehouse_performance.ipynb
+│   ├── 06_acquisition_channel_roi.ipynb
+│   ├── 07_partner_effectiveness.ipynb
+│   ├── 08_in_kind_needs_forecasting.ipynb
 │   ├── donation_allocations.csv
 │   ├── donations.csv
 │   ├── education_records.csv
@@ -54,7 +57,9 @@ Website/Intex2026/
 │   │   ├── CampaignsController.cs          # GET /api/campaigns — aggregates from donations
 │   │   ├── AdminUsersController.cs         # GET /api/adminusers (users+roles+scope), PUT /api/adminusers/{id}/scope (Admin only)
 │   │   ├── PublicController.cs             # /api/public/stats + /api/public/safehouses (anonymous)
-│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact (Donor only)
+│   │   ├── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact (Donor only)
+│   │   ├── SocialMediaPostsController.cs   # GET /api/social/stats — social media KPIs (Admin/Staff)
+│   │   └── MLInsightsController.cs         # GET /api/mlinsights — ML-proxy KPIs from live DB (Admin/Staff)
 │   ├── Data/
 │   │   ├── ApplicationUser.cs       # Custom IdentityUser with Region + City properties (determines admin scope)
 │   │   ├── AppDbContext.cs          # DbContext for EmberApp DB (6 of 17 tables wired)
@@ -71,7 +76,8 @@ Website/Intex2026/
 │       ├── Safehouse.cs
 │       ├── Resident.cs
 │       ├── ProcessRecording.cs
-│       └── HomeVisitation.cs
+│       ├── HomeVisitation.cs
+│       └── SocialMediaPost.cs             # Partial model (dashboard-relevant columns only)
 │
 └── frontend/                        # React + Vite + TypeScript + Tailwind + shadcn/ui
     ├── package.json

@@ -19,6 +19,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ProcessRecording> ProcessRecordings => Set<ProcessRecording>();
     public DbSet<HomeVisitation> HomeVisitations => Set<HomeVisitation>();
 
+    // ----- Analytics -----
+    public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);  // Required — configures Identity tables
@@ -36,6 +39,13 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Resident>().ToTable("residents");
         modelBuilder.Entity<ProcessRecording>().ToTable("process_recordings");
         modelBuilder.Entity<HomeVisitation>().ToTable("home_visitations");
+        modelBuilder.Entity<SocialMediaPost>().ToTable("social_media_posts");
+        modelBuilder.Entity<SocialMediaPost>()
+            .Property(p => p.EstimatedDonationValuePhp)
+            .HasColumnType("decimal(12,2)");
+        modelBuilder.Entity<SocialMediaPost>()
+            .Property(p => p.EngagementRate)
+            .HasColumnType("decimal(8,6)");
 
         // Resident -> Safehouse relationship
         modelBuilder.Entity<Resident>()

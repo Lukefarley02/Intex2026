@@ -325,3 +325,58 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 | POST | `/api/homevisitations` | Admin, Staff | Create a visitation record |
 | PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation record |
 | DELETE | `/api/homevisitations/{id}` | Admin | Delete a visitation record |
+
+---
+
+## Social Media Posts
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/social/stats` | Admin, Staff | Aggregated social media KPIs for the dashboard |
+
+**GET `/api/social/stats` response:**
+```json
+{
+  "totalPosts": 850,
+  "totalReach": 4200000,
+  "avgEngagementRate": 0.1423,
+  "totalClickThroughs": 18500,
+  "totalDonationReferrals": 342,
+  "estimatedDonationValuePhp": 1250000.00,
+  "platformBreakdown": [
+    { "platform": "Facebook", "postCount": 210, "totalReach": 1200000, "avgEngagementRate": 0.127, "donationReferrals": 95 }
+  ],
+  "topPostTypes": [
+    { "postType": "FundraisingAppeal", "avgDonationValue": 28500.00, "postCount": 140 }
+  ]
+}
+```
+Returns all zeroes / empty arrays if the `social_media_posts` table has not yet been seeded.
+
+---
+
+## ML Insights
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/mlinsights` | Admin, Staff | ML-derived KPIs computed live from Azure SQL |
+
+**GET `/api/mlinsights` response:**
+```json
+{
+  "atRiskDonorCount": 12,
+  "upgradeOpportunityCount": 8,
+  "residentsReadyCount": 5,
+  "safehousesNearCapacity": 2,
+  "topSocialPlatform": "Facebook",
+  "topSocialReferrals": 14
+}
+```
+
+| Field | Pipeline | Rule Used |
+|---|---|---|
+| `atRiskDonorCount` | 01 Donor Churn | Monetary donors with last gift > 90 days ago |
+| `upgradeOpportunityCount` | 02 Donation Capacity | Recurring donors where `max_donation > 1.5 × avg_donation` |
+| `residentsReadyCount` | 04 Resident Outcomes | Active residents with `current_risk_level = 'Low'` |
+| `safehousesNearCapacity` | 05 Geographic | Safehouses at ≥ 90% occupancy (live resident count) |
+| `topSocialPlatform` | 03 Social Media | Platform with most donation referrals in last 30 days |
