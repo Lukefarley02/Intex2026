@@ -14,7 +14,7 @@ const navItems = [
   { to: "/reports", icon: FileText, label: "Reports" },
   { to: "/staff", icon: ClipboardList, label: "Staff Portal" },
   { to: "/my-impact", icon: Users, label: "Donor Portal" },
-  { to: "/admin", icon: Shield, label: "Admin" },
+  { to: "/admin", icon: Shield, label: "Admin", adminOnly: true },
 ];
 
 const DashboardLayout = ({ children, title }: { children: React.ReactNode; title: string }) => {
@@ -35,7 +35,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
         <Flame className="w-6 h-6" /> Ember
       </Link>
       <nav className="flex-1 p-3 space-y-1">
-        {navItems.map((item) => {
+        {navItems.filter(item => !item.adminOnly || user?.roles?.includes("Admin")).map((item) => {
           const active = location.pathname === item.to;
           return (
             <Link

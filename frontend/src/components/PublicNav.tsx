@@ -18,9 +18,9 @@ const PublicNav = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
-          <a href="#mission" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Mission</a>
-          <a href="#impact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Impact</a>
-          <a href="#safehouses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safehouses</a>
+          <a href="#mission-section" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Mission</a>
+          <a href="#how-we-care" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Impact</a>
+          <a href="#impact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Safehouses</a>
           {isAuthenticated ? (
             <Link to={dashboardHref}>
               <Button variant="ghost" size="sm" className="gap-1.5">
@@ -50,8 +50,9 @@ const PublicNav = () => {
 
       {open && (
         <div id="mobile-menu" className="md:hidden bg-card border-b p-4 space-y-3">
-          <a href="#mission" className="block text-sm font-medium text-muted-foreground">Mission</a>
-          <a href="#impact" className="block text-sm font-medium text-muted-foreground">Impact</a>
+          <a href="#mission-section" className="block text-sm font-medium text-muted-foreground">Mission</a>
+          <a href="#how-we-care" className="block text-sm font-medium text-muted-foreground">Impact</a>
+          <a href="#impact" className="block text-sm font-medium text-muted-foreground">Safehouses</a>
           {isAuthenticated ? (
             <Link to={dashboardHref} className="block">
               <Button variant="ghost" className="w-full gap-1.5">

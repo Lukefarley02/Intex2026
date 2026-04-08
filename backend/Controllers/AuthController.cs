@@ -124,7 +124,8 @@ public class AuthController : ControllerBase
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email!),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.Name, user.Email!)
+            new(ClaimTypes.Name, user.Email!),
+            new("AspNet.Identity.SecurityStamp", user.SecurityStamp ?? "")
         };
 
         // Embed every role as a claim so [Authorize(Roles = "...")] works
