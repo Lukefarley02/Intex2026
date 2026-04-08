@@ -53,26 +53,19 @@ const Login = () => {
       </div>
 
       {/* Right: login form */}
-      <div className="relative flex items-center justify-center p-8 bg-background">
-        {/* Return-to-homepage anchor — sits in the top-left corner of the
-            form panel so it's reachable both on mobile and desktop. */}
-        <Link
-          to="/"
-          className="absolute top-4 left-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Return to homepage
-        </Link>
-
+      <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to home
-          </Link>
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
             <Flame className="w-8 h-8" /> Ember
           </div>
 
           <div>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to home
+            </Link>
             <h2 className="text-2xl font-bold">Sign in</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials to access your dashboard

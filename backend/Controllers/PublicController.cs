@@ -16,7 +16,12 @@ public record PublicDonateRequest(
     decimal Amount,
     bool Monthly,
     bool IsAnonymous,
-    string? CampaignName);
+    string? CampaignName,
+    // Optional safehouse designation from the donor portal "Donate to a
+    // location" picker. Free-text safehouse name; stored in donations.notes
+    // as "Designated for: <name>" since the canonical donations schema
+    // has no first-class safehouse FK.
+    string? SafehouseName);
 
 public record PublicDonateResponse(
     int DonationId,
@@ -346,6 +351,16 @@ public class PublicController : ControllerBase
             ? await _context.Donations.MaxAsync(d => d.DonationId) + 1
             : 1;
 
+        // Build the notes line — base flow marker + optional safehouse
+        // designation from the donor-portal location picker.
+        var baseNote = anonymous ? "Anonymous online donation" : "Online donation via /donate";
+        var locationNote = string.IsNullOrWhiteSpace(req.SafehouseName)
+            ? null
+            : $"Designated for: {req.SafehouseName!.Trim()}";
+        var notes = locationNote == null
+            ? baseNote
+            : $"{baseNote} · {locationNote}";
+
         var donation = new Donation
         {
             DonationId    = nextDonationId,
@@ -359,7 +374,7 @@ public class PublicController : ControllerBase
             CampaignName  = string.IsNullOrWhiteSpace(req.CampaignName) ? "General Fund" : req.CampaignName,
             ChannelSource = "Website",
             ImpactUnit    = "USD",
-            Notes         = anonymous ? "Anonymous online donation" : "Online donation via /donate",
+            Notes         = notes,
         };
         _context.Donations.Add(donation);
         await _context.SaveChangesAsync();

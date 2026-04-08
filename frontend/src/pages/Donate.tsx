@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Heart, Check, Sparkles, FileText, Gift, UserCheck } from "lucide-react";
+import { Heart, Check, Sparkles, FileText, Gift, UserCheck, MapPin } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { useAuth } from "@/api/AuthContext";
 
@@ -33,6 +33,15 @@ interface DonorProfile {
   lastName: string | null;
   displayName: string | null;
   email: string;
+}
+
+interface PublicSafehouse {
+  safehouseId: number;
+  name: string;
+  city: string | null;
+  region: string | null;
+  capacity: number;
+  activeResidents: number;
 }
 
 const Donate = () => {
@@ -58,6 +67,16 @@ const Donate = () => {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Public safehouse directory — powers the "Donate to a safehouse" picker
+  // so first-time visitors can designate their gift at the point of donation
+  // without needing an account. Uses the existing [AllowAnonymous] endpoint
+  // that exposes only name/city/region/capacity/active count (no PII).
+  const safehousesQ = useQuery<PublicSafehouse[]>({
+    queryKey: ["public-safehouses-donate"],
+    queryFn: () => apiFetch<PublicSafehouse[]>("/api/public/safehouses"),
+    staleTime: 5 * 60 * 1000,
+  });
+
   // ── Donation form state ──
   const [amount, setAmount] = useState(25);
   const [custom, setCustom] = useState("");
@@ -68,6 +87,17 @@ const Donate = () => {
   const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Safehouse designation — when `designateToSafehouse` is true, the donor
+  // picks a specific safehouse and its name is sent to the backend as
+  // `safehouseName`, which is then stamped into donations.notes as
+  // "Designated for: <name>". Pre-seeded from `?location=` if present.
+  const [designateToSafehouse, setDesignateToSafehouse] = useState(
+    Boolean(searchParams.get("location")),
+  );
+  const [selectedSafehouse, setSelectedSafehouse] = useState<string>(
+    searchParams.get("location") ?? "",
+  );
 
   // ── Post-donation flow state ──
   // "idle" → form; "ask" → prompt modal; "password" → inline register
@@ -119,6 +149,10 @@ const Donate = () => {
       setFormError("Email is required unless you choose to donate anonymously.");
       return;
     }
+    if (designateToSafehouse && !selectedSafehouse) {
+      setFormError("Please choose a safehouse to designate your gift to.");
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -132,6 +166,7 @@ const Donate = () => {
           monthly,
           isAnonymous: anonymous,
           campaignName: campaignName,
+          safehouseName: designateToSafehouse ? selectedSafehouse : null,
         }),
       });
       setLastDonation(res);
@@ -329,6 +364,86 @@ const Donate = () => {
                   One-time
                 </button>
               </div>
+            </div>
+
+            {/* Donate to a specific safehouse
+                Donors can optionally earmark their gift for one safehouse.
+                The choice is posted to /api/public/donate as `safehouseName`
+                and ends up stamped into donations.notes as
+                "Designated for: <name>". If unchecked, the gift goes to the
+                general fund (or the campaign pre-selected via ?campaign=). */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-primary" />
+                Donate to a safehouse
+              </Label>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={designateToSafehouse}
+                  onChange={(e) => {
+                    setDesignateToSafehouse(e.target.checked);
+                    if (!e.target.checked) setSelectedSafehouse("");
+                  }}
+                  className="h-4 w-4 accent-primary"
+                />
+                Yes, I'd like to designate this gift to a specific safehouse
+              </label>
+
+              {designateToSafehouse && (
+                <div className="space-y-2 pl-6">
+                  {safehousesQ.isLoading ? (
+                    <p className="text-sm text-muted-foreground">
+                      Loading safehouses…
+                    </p>
+                  ) : (safehousesQ.data?.length ?? 0) === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No safehouses are available right now.
+                    </p>
+                  ) : (
+                    <div className="grid gap-2">
+                      {safehousesQ.data!.map((s) => {
+                        const location = [s.city, s.region]
+                          .filter(Boolean)
+                          .join(", ");
+                        const isSelected = selectedSafehouse === s.name;
+                        return (
+                          <button
+                            key={s.safehouseId}
+                            type="button"
+                            onClick={() => setSelectedSafehouse(s.name)}
+                            className={`text-left rounded-lg border-2 p-3 transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary-light"
+                                : "border-border hover:border-primary/40"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold">
+                                  {s.name}
+                                </p>
+                                {location && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {location}
+                                  </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {s.activeResidents} of {s.capacity} girls
+                                  currently housed
+                                </p>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Impact preview */}

@@ -9,10 +9,13 @@ import { useAuth } from "@/api/AuthContext";
 // Rules (matches the four-tier access-control model and the IS 413 grading):
 //   • Donor         → Donor Portal only. They must not see any case or admin page.
 //   • Staff         → Case-management tools (Safehouses, Residents, Process
-//                     Recording, Home Visitation) plus the Staff Portal.
-//                     Staff do NOT see Dashboard, Donors, Reports, ML Insights,
-//                     or Admin — those are either monetary (Staff is backend-
-//                     blocked from donor data) or admin-only.
+//                     Recording, Home Visitation) plus the Staff Portal, and
+//                     a **view-only** Donors page (Staff can see donors but
+//                     cannot create, edit, or delete them — all donor CRUD
+//                     is Admin-only, enforced in SupportersController).
+//                     Staff still do NOT see Dashboard, Reports, ML Insights,
+//                     or Admin — those are either aggregate monetary data
+//                     or admin-only settings.
 //   • Admin         → Everything.
 //
 // If a user holds multiple roles (e.g. an Admin is also seeded as a Donor),
@@ -27,7 +30,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { to: "/dashboard",        icon: LayoutDashboard, label: "Dashboard",        roles: ["Admin"] },
-  { to: "/donors",           icon: HeartHandshake,  label: "Donors",           roles: ["Admin"] },
+  { to: "/donors",           icon: HeartHandshake,  label: "Donors",           roles: ["Admin", "Staff"] },
   { to: "/safehouses",       icon: Home,            label: "Safehouses",       roles: ["Admin", "Staff"] },
   { to: "/residents",        icon: UserCircle,      label: "Residents",        roles: ["Admin", "Staff"] },
   { to: "/process-recording",icon: NotebookPen,     label: "Process Recording",roles: ["Admin", "Staff"] },
