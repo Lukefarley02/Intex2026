@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Flame } from "lucide-react";
 import { useAuth } from "@/api/AuthContext";
-import PublicNav from "@/components/PublicNav";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -40,9 +39,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-    <PublicNav />
-    <div className="flex-1 grid lg:grid-cols-2">
+    <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left: brand panel */}
       <div className="hidden lg:flex gradient-ember flex-col justify-center items-center p-12 text-primary-foreground">
         <div className="max-w-md space-y-8 text-center">
@@ -138,7 +135,6 @@ const Register = () => {
           </p>
         </div>
       </div>
-    </div>
     </div>
   );
 };
