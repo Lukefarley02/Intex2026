@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card"; // still used in featu
 import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
 import SafehouseMap from "@/components/SafehouseMap";
+import FlipCard from "@/components/FlipCard";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { useCounterAnimation } from "@/hooks/useCounterAnimation";
 import heroImage from "@/assets/hero-image.jpg";
 import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -77,12 +80,6 @@ const Index = () => {
   const stats = statsQuery.data;
   const safehouses = safehousesQuery.data ?? [];
   const care = careStoryQuery.data;
-  const careError = careStoryQuery.isError;
-  const careStat = (
-    loading: boolean,
-    value: string | number | undefined,
-  ): string =>
-    loading ? "…" : value !== undefined ? String(value) : careError ? "—" : "…";
 
   return (
   <div className="min-h-screen bg-background">
@@ -182,32 +179,59 @@ const Index = () => {
             deserves safety, dignity, and a future full of possibility.
           </p>
           <div className="grid sm:grid-cols-3 gap-8 pt-6 text-left">
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <Heart className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Protect</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Provide safe shelter and immediate care for girls rescued from dangerous situations.
-              </p>
+            <div className="h-52">
+              <FlipCard
+                icon={<Heart className="w-5 h-5 text-primary" />}
+                title="Protect"
+                description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
+                backContent={
+                  <div className="space-y-2 h-full flex flex-col justify-center">
+                    <h4 className="font-semibold text-lg">Our Protection</h4>
+                    <p className="text-sm opacity-90 flex-grow">
+                      We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
+                    </p>
+                    <div className="pt-2 text-xs opacity-75">
+                      Safe spaces for healing
+                    </div>
+                  </div>
+                }
+              />
             </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Rehabilitate</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Walk alongside each girl through counseling, education, and personalized care plans.
-              </p>
+            <div className="h-52">
+              <FlipCard
+                icon={<BookOpen className="w-5 h-5 text-primary" />}
+                title="Rehabilitate"
+                description="Walk alongside each girl through counseling, education, and personalized care plans."
+                backContent={
+                  <div className="space-y-2 h-full flex flex-col justify-center">
+                    <h4 className="font-semibold text-lg">Healing Process</h4>
+                    <p className="text-sm opacity-90 flex-grow">
+                      Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
+                    </p>
+                    <div className="pt-2 text-xs opacity-75">
+                      Personalized care & growth
+                    </div>
+                  </div>
+                }
+              />
             </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <UserCheck className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Reintegrate</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Equip girls with skills and family support to return confidently to their communities.
-              </p>
+            <div className="h-52">
+              <FlipCard
+                icon={<UserCheck className="w-5 h-5 text-primary" />}
+                title="Reintegrate"
+                description="Equip girls with skills and family support to return confidently to their communities."
+                backContent={
+                  <div className="space-y-2 h-full flex flex-col justify-center">
+                    <h4 className="font-semibold text-lg">Reintegration</h4>
+                    <p className="text-sm opacity-90 flex-grow">
+                      We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
+                    </p>
+                    <div className="pt-2 text-xs opacity-75">
+                      Independent, confident futures
+                    </div>
+                  </div>
+                }
+              />
             </div>
           </div>
         </div>
@@ -233,7 +257,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.totalCounselingSessions.toLocaleString())}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.totalCounselingSessions} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Counseling sessions held</p>
               <p className="text-xs text-muted-foreground mt-1">One-on-one and group sessions with social workers</p>
@@ -247,7 +271,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.totalHomeVisits.toLocaleString())}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.totalHomeVisits} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home & family visits made</p>
               <p className="text-xs text-muted-foreground mt-1">Checking on girls in their communities and homes</p>
@@ -261,7 +285,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.progressRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.progressRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Of sessions show measurable progress</p>
               <p className="text-xs text-muted-foreground mt-1">Noted by social workers after each session</p>
@@ -279,7 +303,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.positiveEndRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.positiveEndRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Sessions end on a hopeful note</p>
               <p className="text-xs text-muted-foreground mt-1">Girls leaving sessions feeling calm, hopeful, or motivated</p>
@@ -293,7 +317,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.girlsRiskImproved)}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.girlsRiskImproved} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Girls moved from high to low risk</p>
               <p className="text-xs text-muted-foreground mt-1">Reduced from critical or high risk to medium or low</p>
@@ -307,7 +331,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.favorableVisitRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.favorableVisitRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home visits end favorably</p>
               <p className="text-xs text-muted-foreground mt-1">Family environments assessed as safe and supportive</p>

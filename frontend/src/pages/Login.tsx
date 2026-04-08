@@ -45,6 +45,9 @@ const Login = () => {
           <h1 className="text-4xl font-extrabold leading-tight">
             Welcome back to Ember
           </h1>
+          <p className="text-sm font-medium opacity-90 leading-relaxed">
+            Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one secure platform.
+          </p>
           <p className="text-lg opacity-80 leading-relaxed">
             "The best way to find yourself is to lose yourself in the service of others."
           </p>
@@ -60,12 +63,20 @@ const Login = () => {
           </div>
 
           <div>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to home
-            </Link>
+            <div className="flex flex-col gap-3 mb-6">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to home
+              </Link>
+              <Link
+                to="/register"
+                className="md:hidden inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                New user? Create account →
+              </Link>
+            </div>
             <h2 className="text-2xl font-bold">Sign in</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials to access your dashboard
@@ -108,6 +119,9 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 14 characters.
+              </p>
             </div>
 
             <Button
