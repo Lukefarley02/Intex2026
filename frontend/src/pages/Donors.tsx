@@ -20,7 +20,12 @@ import {
   Filter,
   Pencil,
   Trash2,
+  AlertTriangle,
+  ArrowUpCircle,
+  TrendingUp,
+  Brain,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -200,12 +205,14 @@ const toPayload = (f: SupporterForm) => ({
 const Donors = () => {
   const qc = useQueryClient();
   const { hasRole } = useAuth();
-  // Staff is blocked from monetary/in-kind donors by the backend, so on
-  // the Donors page (which only shows those two types) Staff gets no
-  // write actions. Admins of all tiers (founder/regional/location) get
-  // Add + Edit; only Founder's DELETE will actually succeed on the
-  // backend, but we still expose the button to all Admins and let the
-  // 403 come back through the toast error.
+  // Staff has **view-only** access to the Donors page — they can see
+  // every donor in their region but cannot add, edit, or delete. All
+  // donor CRUD is Admin-only; SupportersController enforces this on
+  // the backend (POST/PUT/DELETE for MonetaryDonor/InKindDonor rows
+  // return 403 for Staff callers). Admins of all tiers get Add + Edit;
+  // only Founder's DELETE will actually succeed on the backend, but we
+  // still expose the button to all Admins and let the 403 come back
+  // through the toast error.
   const canWrite = hasRole("Admin");
   const canDelete = hasRole("Admin");
 
@@ -421,6 +428,71 @@ const Donors = () => {
           In-Kind ({counts.InKindDonor})
         </Button>
       </div>
+
+      {/* ML Pipeline quick-links — Admin only */}
+      {canWrite && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Brain className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              ML Insights
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Link to="/ml-insights?tab=churn" className="group block">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Pipeline 01</p>
+                    <p className="text-sm font-semibold text-red-700">Donor Churn Prediction</p>
+                  </div>
+                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                </div>
+                <p className="text-xs text-red-600/80 mb-2">
+                  Which donors are at risk of lapsing? Identifies churn candidates by recency and giving history.
+                </p>
+                <span className="text-xs font-medium text-red-600 group-hover:underline">
+                  View churn analysis →
+                </span>
+              </div>
+            </Link>
+            <Link to="/ml-insights?tab=capacity" className="group block">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Pipeline 02</p>
+                    <p className="text-sm font-semibold text-amber-700">Donation Capacity</p>
+                  </div>
+                  <ArrowUpCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                </div>
+                <p className="text-xs text-amber-600/80 mb-2">
+                  Which donors have untapped giving potential? Tiers donors and flags upgrade opportunities.
+                </p>
+                <span className="text-xs font-medium text-amber-600 group-hover:underline">
+                  View capacity analysis →
+                </span>
+              </div>
+            </Link>
+            <Link to="/ml-insights?tab=roi" className="group block">
+              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Pipeline 06</p>
+                    <p className="text-sm font-semibold text-violet-700">Channel ROI</p>
+                  </div>
+                  <TrendingUp className="w-5 h-5 text-violet-500 flex-shrink-0" />
+                </div>
+                <p className="text-xs text-violet-600/80 mb-2">
+                  Which acquisition channels deliver the highest lifetime-value donors?
+                </p>
+                <span className="text-xs font-medium text-violet-600 group-hover:underline">
+                  View ROI analysis →
+                </span>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* States */}
       {isLoading && (

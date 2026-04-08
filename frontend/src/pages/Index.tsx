@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // still used in features section
@@ -5,9 +6,10 @@ import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
 import SafehouseMap from "@/components/SafehouseMap";
 import heroImage from "@/assets/hero-image.jpg";
-import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile } from "lucide-react";
+import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
+import { useAuth } from "@/api/AuthContext";
 
 
 interface PublicStats {
@@ -17,6 +19,8 @@ interface PublicStats {
   reintegratedGirls: number;
   totalRaised: number;
   retentionRate: number; // 0..1
+  girlsHelped: number;   // totalRaised ÷ live cost-per-girl
+  costPerGirl: number;
 }
 
 interface CareStory {
@@ -38,6 +42,20 @@ interface PublicSafehouse {
 }
 
 const Index = () => {
+  // First-visit donate banner — shown once per browser session to
+  // unauthenticated visitors. Dismissal is remembered in sessionStorage.
+  const { isAuthenticated } = useAuth();
+  const [showFirstVisitBanner, setShowFirstVisitBanner] = useState(false);
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const dismissed = sessionStorage.getItem("donate-banner-dismissed");
+    if (!dismissed) setShowFirstVisitBanner(true);
+  }, [isAuthenticated]);
+  const dismissBanner = () => {
+    sessionStorage.setItem("donate-banner-dismissed", "1");
+    setShowFirstVisitBanner(false);
+  };
+
   const statsQuery = useQuery<PublicStats>({
     queryKey: ["public-stats"],
     queryFn: () => apiFetch<PublicStats>("/api/public/stats"),
@@ -51,14 +69,56 @@ const Index = () => {
   const careStoryQuery = useQuery<CareStory>({
     queryKey: ["public-care-story"],
     queryFn: () => apiFetch<CareStory>("/api/public/care-story"),
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
   });
 
   const stats = statsQuery.data;
   const safehouses = safehousesQuery.data ?? [];
   const care = careStoryQuery.data;
+  const careError = careStoryQuery.isError;
+  const careStat = (
+    loading: boolean,
+    value: string | number | undefined,
+  ): string =>
+    loading ? "…" : value !== undefined ? String(value) : careError ? "—" : "…";
 
   return (
   <div className="min-h-screen bg-background">
+    {/* First-visit donate banner (unauthenticated, dismissible) */}
+    {showFirstVisitBanner && (
+      <div className="gradient-ember text-primary-foreground">
+        <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+            <span className="truncate">
+              First time here? A $25 gift can shelter a girl for 30 days.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link to="/donate">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+              >
+                Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
+              </Button>
+            </Link>
+            <button
+              type="button"
+              onClick={dismissBanner}
+              aria-label="Dismiss donate banner"
+              className="p-1 rounded hover:bg-card/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <PublicNav />
 
     <main>
@@ -90,8 +150,8 @@ const Index = () => {
           </div>
           <div className="flex flex-wrap gap-3 pt-4">
             <StatPill
-              value={stats ? String(stats.girlsSupported) : "…"}
-              label="girls supported"
+              value={stats ? String(stats.girlsHelped) : "…"}
+              label="girls helped"
             />
             <StatPill
               value={stats ? String(stats.safehouseCount) : "…"}
@@ -173,7 +233,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.totalCounselingSessions.toLocaleString() : "…"}
+                {careStat(careStoryQuery.isLoading, care?.totalCounselingSessions.toLocaleString())}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Counseling sessions held</p>
               <p className="text-xs text-muted-foreground mt-1">One-on-one and group sessions with social workers</p>
@@ -187,7 +247,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.totalHomeVisits.toLocaleString() : "…"}
+                {careStat(careStoryQuery.isLoading, care?.totalHomeVisits.toLocaleString())}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home & family visits made</p>
               <p className="text-xs text-muted-foreground mt-1">Checking on girls in their communities and homes</p>
@@ -201,7 +261,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.progressRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.progressRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Of sessions show measurable progress</p>
               <p className="text-xs text-muted-foreground mt-1">Noted by social workers after each session</p>
@@ -219,7 +279,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.positiveEndRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.positiveEndRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Sessions end on a hopeful note</p>
               <p className="text-xs text-muted-foreground mt-1">Girls leaving sessions feeling calm, hopeful, or motivated</p>
@@ -233,7 +293,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? care.girlsRiskImproved : "…"}
+                {careStat(careStoryQuery.isLoading, care?.girlsRiskImproved)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Girls moved from high to low risk</p>
               <p className="text-xs text-muted-foreground mt-1">Reduced from critical or high risk to medium or low</p>
@@ -247,7 +307,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {care ? `${Math.round(care.favorableVisitRate * 100)}%` : "…"}
+                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.favorableVisitRate * 100)}%` : undefined)}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home visits end favorably</p>
               <p className="text-xs text-muted-foreground mt-1">Family environments assessed as safe and supportive</p>

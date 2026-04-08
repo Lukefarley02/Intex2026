@@ -25,17 +25,19 @@ public class SupportersController : ControllerBase
     // Per Appendix A of the case doc, supporter_type is one of:
     //   MonetaryDonor, InKindDonor, Volunteer, SkillsContributor,
     //   SocialMediaAdvocate, PartnerOrganization
-    // By convention a "donor" is the first two — and per the access-control
-    // chart, those two are admin-only. Staff only ever sees the remaining four.
+    // The first two ("donors") are **read-only for Staff** — Staff can see
+    // them but cannot create, edit, or delete them. All CRUD operations on
+    // donor-type supporters are gated to Admin (Founder for delete).
     private static readonly string[] DonorTypes = { "MonetaryDonor", "InKindDonor" };
     private static readonly string[] NonDonorTypes =
         { "Volunteer", "SkillsContributor", "SocialMediaAdvocate", "PartnerOrganization" };
 
     // GET /api/supporters?types=MonetaryDonor,InKindDonor
     //
-    // Founders / Regional Mgrs / Location Mgrs may pass any subset of types.
-    // Staff are silently restricted to the four non-monetary types regardless
-    // of what they ask for, and they only see supporters in their region.
+    // All authenticated roles (Founder / Regional Mgr / Location Mgr / Staff)
+    // may read supporters of any type. Region scoping still applies via
+    // UserScope.ApplyToSupporters — Staff and Location/Regional Managers
+    // only see supporters in their assigned region.
     [HttpGet]
     public async Task<ActionResult<IEnumerable<object>>> GetSupporters(
         [FromQuery] string? types = null)
@@ -46,16 +48,6 @@ public class SupportersController : ControllerBase
         string[]? wanted = null;
         if (!string.IsNullOrWhiteSpace(types))
             wanted = types.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-        // Staff cannot see monetary/in-kind donors at all — strip those even
-        // if explicitly requested. Default for staff = the four non-donor types.
-        if (scope.IsStaff)
-        {
-            wanted = wanted == null
-                ? NonDonorTypes
-                : wanted.Where(t => NonDonorTypes.Contains(t)).ToArray();
-            if (wanted.Length == 0) return Ok(Array.Empty<object>());
-        }
 
         // Region scope (admins below founder + staff are clamped here).
         var supportersQuery = scope.ApplyToSupporters(_context.Supporters.AsNoTracking());
@@ -138,13 +130,17 @@ public class SupportersController : ControllerBase
     }
 
     // POST /api/supporters
+    //
+    // Donor-type supporters (MonetaryDonor / InKindDonor) are Admin-only.
+    // Staff may still create non-donor supporters (volunteers, partner orgs,
+    // etc.) inside their region.
     [HttpPost]
     public async Task<ActionResult<Supporter>> CreateSupporter(Supporter supporter)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
 
         if (scope.IsStaff && DonorTypes.Contains(supporter.SupporterType))
-            return Forbid(); // staff cannot create monetary donors
+            return Forbid(); // staff cannot create donors
 
         if (!IsVisibleTo(supporter, scope)) return Forbid();
 
@@ -154,6 +150,10 @@ public class SupportersController : ControllerBase
     }
 
     // PUT /api/supporters/{id}
+    //
+    // Donor-type supporters are Admin-only for edits as well — Staff who
+    // open a donor record see a read-only view with no save button, but
+    // this check is the authoritative backend enforcement.
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateSupporter(int id, Supporter supporter)
     {
@@ -163,6 +163,13 @@ public class SupportersController : ControllerBase
         var existing = await _context.Supporters.AsNoTracking()
             .FirstOrDefaultAsync(s => s.SupporterId == id);
         if (existing == null) return NotFound();
+
+        // Staff cannot edit donor-type supporters — view-only.
+        if (scope.IsStaff && (
+                DonorTypes.Contains(existing.SupporterType) ||
+                DonorTypes.Contains(supporter.SupporterType)))
+            return Forbid();
+
         if (!IsVisibleTo(existing, scope)) return Forbid();
         if (!IsVisibleTo(supporter, scope)) return Forbid(); // can't move out of scope
 
@@ -187,12 +194,11 @@ public class SupportersController : ControllerBase
     }
 
     // ── Visibility helper ─────────────────────────────────────────────────────
+    // Read-side visibility: Staff CAN see donor-type supporters (view-only);
+    // write-side gating is done inline in Create/Update/Delete above.
     private static bool IsVisibleTo(Supporter s, UserScope scope)
     {
         if (scope.IsFounder) return true;
-
-        // Staff can never touch monetary/in-kind donors.
-        if (scope.IsStaff && DonorTypes.Contains(s.SupporterType)) return false;
 
         // Regional Manager / Location Manager / Staff: scoped by region only
         // (the supporters table has no city column).

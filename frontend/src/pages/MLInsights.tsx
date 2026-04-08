@@ -1,4 +1,3 @@
-import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +33,7 @@ import {
   Info,
   Brain,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 // ─── Ember palette for charts ───────────────────────────────────────────────
 const COLORS = {
@@ -1214,7 +1213,11 @@ function StaticInsightView({
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function MLInsights() {
-  const [activePipeline, setActivePipeline] = useState<PipelineId>("churn");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab") as PipelineId | null;
+  const activePipeline: PipelineId =
+    tabParam && PIPELINES.some((p) => p.id === tabParam) ? tabParam : "churn";
+  const setActivePipeline = (id: PipelineId) => setSearchParams({ tab: id });
   const active = PIPELINES.find((p) => p.id === activePipeline)!;
 
   return (

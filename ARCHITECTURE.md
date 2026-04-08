@@ -30,10 +30,11 @@ Website/Intex2026/
 │   │   ├── ProcessRecordingsController.cs  # CRUD ?residentId — scoped through resident's safehouse; NotesRestricted admin-only; DELETE founder-only
 │   │   ├── HomeVisitationsController.cs    # CRUD ?residentId — scoped through resident's safehouse; DELETE founder-only
 │   │   ├── DashboardController.cs          # GET /api/dashboard/stats — KPIs scoped to caller's region; Staff sees zeros (no monetary visibility)
+│   │   ├── ReportsController.cs            # GET /api/reports/summary — IS 413 Reports & Analytics: donation trends, resident outcomes, safehouse performance, reintegration rates, Annual Accomplishment Report (caring/healing/teaching); scope-aware; Staff sees empty monetary sections
 │   │   ├── CampaignsController.cs          # GET /api/campaigns — aggregates from donations
 │   │   ├── AdminUsersController.cs         # GET /api/adminusers (filtered by caller's scope), PUT /api/adminusers/{id}/scope (Founder only)
-│   │   ├── PublicController.cs             # /api/public/stats + /api/public/safehouses (anonymous)
-│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact (Donor only)
+│   │   ├── PublicController.cs             # /api/public/stats, /safehouses, /donations, /care-story + POST /api/public/donate (anonymous self-service donation intake)
+│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact, /me/tax-receipt (Donor only; tax-receipt returns IRS Pub 1771 acknowledgment payload)
 │   ├── Data/
 │   │   ├── ApplicationUser.cs       # Custom IdentityUser with Region + City properties (determines admin scope)
 │   │   ├── AppDbContext.cs          # DbContext for EmberApp DB (6 of 17 tables wired)
@@ -82,14 +83,15 @@ Website/Intex2026/
         ├── components/
         │   ├── ConfirmDialog.tsx   # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
-        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated staff/admin pages (Flame logo, nav, sign out)
+        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; navItems are role-tagged (Admin/Staff/Donor) and filtered at render via hasRole() — Donor-only sees Donor Portal, Staff sees case-mgmt tools + Staff Portal, Admin sees everything
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
         │   ├── StatPill.tsx         # Hero stat pill ("247 girls supported")
         │   ├── NavLink.tsx          # Wrapper around react-router NavLink with active/pending classNames
         │   └── ui/                  # shadcn/ui primitives (49 components: button, card, dialog, table, form, etc.)
         └── pages/
-            ├── Index.tsx            # Public landing — hero, features, safehouses, donation CTA, footer
-            ├── Donate.tsx           # Public donation form
+            ├── Index.tsx            # Public landing — hero, features, safehouses, donation CTA, footer, + dismissible first-visit donate banner for unauthenticated visitors
+            ├── Donate.tsx           # Public donation form — POSTs to /api/public/donate; on success shows a "create a free account?" benefits dialog → inline password prompt → auto-login → /my-impact (anonymous opt-out saves donation under a synthetic supporter)
+            ├── TaxReceipt.tsx       # Printable IRS Publication 1771 donation acknowledgment letter for donors (year picker, window.print() for Save as PDF); route /tax-receipt, protected for Admin/Staff/Donor
             ├── Login.tsx            # Login form — wired to AuthContext.login(), Ember branded split layout
             ├── Register.tsx         # Registration form — password confirm, auto-login on success
             ├── Privacy.tsx          # Privacy policy (Ember styled)

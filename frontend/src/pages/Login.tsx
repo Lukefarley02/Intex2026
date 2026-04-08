@@ -3,7 +3,7 @@ import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame } from "lucide-react";
+import { Flame, ArrowLeft } from "lucide-react";
 import { useAuth, landingFor } from "@/api/AuthContext";
 import PublicNav from "@/components/PublicNav";
 
@@ -63,6 +63,12 @@ const Login = () => {
           </div>
 
           <div>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to home
+            </Link>
             <h2 className="text-2xl font-bold">Sign in</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials to access your dashboard

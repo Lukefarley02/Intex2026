@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame } from "lucide-react";
+import { ArrowLeft, Flame } from "lucide-react";
 import { useAuth } from "@/api/AuthContext";
 import PublicNav from "@/components/PublicNav";
 
@@ -51,7 +51,7 @@ const Register = () => {
             Join the Ember mission
           </h1>
           <p className="text-lg opacity-90 leading-relaxed">
-            Create an account to manage donors, safehouses, and the girls in your care.
+            Create an account to access your personalized dashboard, manage your donations, and stay connected with the causes you care about. Together, we can make a difference.
           </p>
         </div>
       </div>
@@ -59,6 +59,9 @@ const Register = () => {
       {/* Right: form */}
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to home
+          </Link>
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
             <Flame className="w-8 h-8" /> Ember
           </div>
@@ -66,7 +69,7 @@ const Register = () => {
           <div>
             <h2 className="text-2xl font-bold">Create an account</h2>
             <p className="text-muted-foreground text-sm mt-1">
-              Get started in less than a minute
+              Start donating in less than a minute
             </p>
           </div>
 

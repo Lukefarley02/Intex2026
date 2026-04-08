@@ -2,5 +2,8 @@
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": ["/assets/*", "/*.{css,js,png,jpg,jpeg,gif,svg,ico}"]
+  },
+  "globalHeaders": {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net;"
   }
 }
