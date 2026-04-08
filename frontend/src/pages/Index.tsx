@@ -131,7 +131,7 @@ const Index = () => {
             Every girl deserves a <span className="text-primary">safe place</span> to heal & grow
           </h1>
           <p className="text-lg text-card/80 max-w-xl">
-            Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
+            Ember Foundation empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/donate">
@@ -179,60 +179,54 @@ const Index = () => {
             deserves safety, dignity, and a future full of possibility.
           </p>
           <div className="grid sm:grid-cols-3 gap-8 pt-6 text-left">
-            <div className="h-52">
-              <FlipCard
-                icon={<Heart className="w-5 h-5 text-primary" />}
-                title="Protect"
-                description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
-                backContent={
-                  <div className="space-y-2 h-full flex flex-col justify-center">
-                    <h4 className="font-semibold text-lg">Our Protection</h4>
-                    <p className="text-sm opacity-90 flex-grow">
-                      We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
-                    </p>
-                    <div className="pt-2 text-xs opacity-75">
-                      Safe spaces for healing
-                    </div>
+            <FlipCard
+              icon={<Heart className="w-5 h-5 text-primary" />}
+              title="Protect"
+              description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Our Protection</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Safe spaces for healing
                   </div>
-                }
-              />
-            </div>
-            <div className="h-52">
-              <FlipCard
-                icon={<BookOpen className="w-5 h-5 text-primary" />}
-                title="Rehabilitate"
-                description="Walk alongside each girl through counseling, education, and personalized care plans."
-                backContent={
-                  <div className="space-y-2 h-full flex flex-col justify-center">
-                    <h4 className="font-semibold text-lg">Healing Process</h4>
-                    <p className="text-sm opacity-90 flex-grow">
-                      Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
-                    </p>
-                    <div className="pt-2 text-xs opacity-75">
-                      Personalized care & growth
-                    </div>
+                </div>
+              }
+            />
+            <FlipCard
+              icon={<BookOpen className="w-5 h-5 text-primary" />}
+              title="Rehabilitate"
+              description="Walk alongside each girl through counseling, education, and personalized care plans."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Healing Process</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Personalized care & growth
                   </div>
-                }
-              />
-            </div>
-            <div className="h-52">
-              <FlipCard
-                icon={<UserCheck className="w-5 h-5 text-primary" />}
-                title="Reintegrate"
-                description="Equip girls with skills and family support to return confidently to their communities."
-                backContent={
-                  <div className="space-y-2 h-full flex flex-col justify-center">
-                    <h4 className="font-semibold text-lg">Reintegration</h4>
-                    <p className="text-sm opacity-90 flex-grow">
-                      We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
-                    </p>
-                    <div className="pt-2 text-xs opacity-75">
-                      Independent, confident futures
-                    </div>
+                </div>
+              }
+            />
+            <FlipCard
+              icon={<UserCheck className="w-5 h-5 text-primary" />}
+              title="Reintegrate"
+              description="Equip girls with skills and family support to return confidently to their communities."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Reintegration</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Independent, confident futures
                   </div>
-                }
-              />
-            </div>
+                </div>
+              }
+            />
           </div>
         </div>
       </div>

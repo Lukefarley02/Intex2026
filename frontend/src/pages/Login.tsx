@@ -45,9 +45,6 @@ const Login = () => {
           <h1 className="text-4xl font-extrabold leading-tight">
             Welcome back to Ember
           </h1>
-          <p className="text-sm font-medium opacity-90 leading-relaxed">
-            Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one secure platform.
-          </p>
           <p className="text-lg opacity-80 leading-relaxed">
             "The best way to find yourself is to lose yourself in the service of others."
           </p>
