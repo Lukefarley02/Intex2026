@@ -1,7 +1,7 @@
 // Lightweight API client — calls go through the Vite proxy in dev
 // Automatically attaches JWT Bearer token from sessionStorage
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? ""; // empty = same origin (proxy handles /api)
+const BASE_URL = import.meta.env.VITE_API_URL ?? "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net"; // fallback to prod backend
 
 export async function apiFetch<T>(
   endpoint: string,
@@ -39,5 +39,4 @@ export async function apiFetch<T>(
   // 204 No Content
   if (res.status === 204) return undefined as T;
 
-  return (await res.json()) as T;
-}
+  retu
