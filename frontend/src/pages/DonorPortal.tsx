@@ -2,8 +2,9 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Heart, DollarSign, Users, ArrowRight } from "lucide-react";
+import { Heart, DollarSign, Users, ArrowRight, FileText, HandHeart } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { apiFetch } from "@/api/client";
 
 // ---- Types matching backend DonorPortalController & CampaignsController ----
@@ -119,6 +120,27 @@ const DonorPortal = () => {
             <p className="text-white/80 text-xs sm:text-sm mt-1">
               Total Contributions
             </p>
+            <div className="mt-3 flex flex-col sm:items-end gap-2">
+              <Link to="/donate">
+                <Button
+                  size="sm"
+                  className="bg-white text-primary hover:bg-white/90 font-semibold w-full sm:w-auto"
+                >
+                  <HandHeart className="w-4 h-4 mr-1.5" />
+                  Make a donation
+                </Button>
+              </Link>
+              <Link to="/tax-receipt">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-white/10 text-white border border-white/30 hover:bg-white/20 font-semibold w-full sm:w-auto"
+                >
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Generate tax receipt
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -274,9 +296,11 @@ const DonorPortal = () => {
                       {c.endDate ? ` · Ends ${c.endDate}` : ""}
                     </p>
                   </div>
-                  <Button variant="outline" className="w-full justify-center">
-                    Contribute <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  <Link to={`/donate?campaign=${encodeURIComponent(c.name)}`}>
+                    <Button variant="outline" className="w-full justify-center">
+                      Contribute <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
                 </div>
               );
             })}

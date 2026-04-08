@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // still used in features section
@@ -5,9 +6,10 @@ import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
 import SafehouseMap from "@/components/SafehouseMap";
 import heroImage from "@/assets/hero-image.jpg";
-import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile } from "lucide-react";
+import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
+import { useAuth } from "@/api/AuthContext";
 
 
 interface PublicStats {
@@ -38,6 +40,20 @@ interface PublicSafehouse {
 }
 
 const Index = () => {
+  // First-visit donate banner — shown once per browser session to
+  // unauthenticated visitors. Dismissal is remembered in sessionStorage.
+  const { isAuthenticated } = useAuth();
+  const [showFirstVisitBanner, setShowFirstVisitBanner] = useState(false);
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const dismissed = sessionStorage.getItem("donate-banner-dismissed");
+    if (!dismissed) setShowFirstVisitBanner(true);
+  }, [isAuthenticated]);
+  const dismissBanner = () => {
+    sessionStorage.setItem("donate-banner-dismissed", "1");
+    setShowFirstVisitBanner(false);
+  };
+
   const statsQuery = useQuery<PublicStats>({
     queryKey: ["public-stats"],
     queryFn: () => apiFetch<PublicStats>("/api/public/stats"),
@@ -68,6 +84,39 @@ const Index = () => {
 
   return (
   <div className="min-h-screen bg-background">
+    {/* First-visit donate banner (unauthenticated, dismissible) */}
+    {showFirstVisitBanner && (
+      <div className="gradient-ember text-primary-foreground">
+        <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+            <span className="truncate">
+              First time here? A $25 gift can shelter a girl for 30 days.
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link to="/donate">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+              >
+                Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
+              </Button>
+            </Link>
+            <button
+              type="button"
+              onClick={dismissBanner}
+              aria-label="Dismiss donate banner"
+              className="p-1 rounded hover:bg-card/10 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <PublicNav />
 
     <main>

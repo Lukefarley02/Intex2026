@@ -2,8 +2,28 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Data;
+using Intex2026.Api.Models;
 
 namespace Intex2026.Api.Controllers;
+
+// Payload for POST /api/public/donate — accepted anonymously from the
+// public Donate page. If IsAnonymous is true, FirstName/LastName/Email are
+// ignored and a synthetic "anonymous-<guid>@ember.local" supporter is used.
+public record PublicDonateRequest(
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    decimal Amount,
+    bool Monthly,
+    bool IsAnonymous,
+    string? CampaignName);
+
+public record PublicDonateResponse(
+    int DonationId,
+    int SupporterId,
+    string Email,
+    bool CreatedNewSupporter,
+    bool IsAnonymous);
 
 /// <summary>
 /// Public (anonymous) endpoints that power the marketing landing page.
@@ -230,5 +250,125 @@ public class PublicController : ControllerBase
         .ToListAsync();
 
         return Ok(rows);
+    }
+
+    // POST /api/public/donate
+    // Anonymous-friendly donation intake used by the public Donate page.
+    //
+    // Flow:
+    //   1) If IsAnonymous is true we mint a throwaway supporter
+    //      ("Anonymous Donor" display name, synthetic email) so the FK on
+    //      donations.supporter_id stays valid without leaking any PII.
+    //   2) Otherwise we look up the supporter by email (case-insensitive).
+    //      If none exists we create a new MonetaryDonor row. If one does
+    //      exist we reuse it — this lets a returning donor who later creates
+    //      an account see *all* of their historical gifts in the donor portal
+    //      automatically (DonorPortalController matches by email).
+    //   3) Insert a Donation row. Both `supporter_id` and `donation_id` are
+    //      non-identity INT PKs in the canonical schema, so we generate the
+    //      next IDs server-side (same pattern as ProcessRecordings /
+    //      HomeVisitations).
+    //
+    // No real payment processing — this is a capstone demo. The front-end
+    // pretends to take a card; we just record the row.
+    [HttpPost("donate")]
+    public async Task<ActionResult<PublicDonateResponse>> CreateDonation([FromBody] PublicDonateRequest req)
+    {
+        if (req.Amount <= 0)
+            return BadRequest(new { message = "Donation amount must be greater than zero." });
+
+        string email;
+        string firstName;
+        string lastName;
+        string displayName;
+        bool anonymous = req.IsAnonymous;
+
+        if (anonymous)
+        {
+            // Synthetic, non-routable email so we never collide with a real
+            // supporter and so the donor portal's email-match never finds it.
+            email       = $"anonymous-{Guid.NewGuid():N}@ember.local";
+            firstName   = "Anonymous";
+            lastName    = "Donor";
+            displayName = "Anonymous Donor";
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(req.Email))
+                return BadRequest(new { message = "Email is required unless donating anonymously." });
+
+            email     = req.Email.Trim();
+            firstName = string.IsNullOrWhiteSpace(req.FirstName) ? "Donor" : req.FirstName.Trim();
+            lastName  = string.IsNullOrWhiteSpace(req.LastName)  ? ""      : req.LastName.Trim();
+            displayName = string.IsNullOrWhiteSpace(lastName)
+                ? firstName
+                : $"{firstName} {lastName}".Trim();
+        }
+
+        // Look up existing supporter by email (never for anonymous donations)
+        Supporter? supporter = null;
+        bool createdNewSupporter = false;
+        if (!anonymous)
+        {
+            supporter = await _context.Supporters
+                .FirstOrDefaultAsync(s => s.Email == email);
+        }
+
+        if (supporter == null)
+        {
+            var nextSupporterId = (await _context.Supporters.AnyAsync())
+                ? await _context.Supporters.MaxAsync(s => s.SupporterId) + 1
+                : 1;
+
+            supporter = new Supporter
+            {
+                SupporterId        = nextSupporterId,
+                SupporterType      = "MonetaryDonor",
+                DisplayName        = displayName,
+                FirstName          = firstName,
+                LastName           = lastName,
+                Email              = email,
+                Region             = "Online",          // placeholder region for self-service gifts
+                Country            = "United States",  // default for US-facing donate flow
+                RelationshipType   = "Individual",
+                Status             = anonymous ? "Anonymous" : "Active",
+                AcquisitionChannel = "Website",
+                CreatedAt          = DateTime.UtcNow,
+                FirstDonationDate  = DateTime.UtcNow,
+            };
+            _context.Supporters.Add(supporter);
+            await _context.SaveChangesAsync();
+            createdNewSupporter = true;
+        }
+
+        // Generate the next donation_id (non-identity PK)
+        var nextDonationId = (await _context.Donations.AnyAsync())
+            ? await _context.Donations.MaxAsync(d => d.DonationId) + 1
+            : 1;
+
+        var donation = new Donation
+        {
+            DonationId    = nextDonationId,
+            SupporterId   = supporter.SupporterId,
+            DonationType  = "Monetary",
+            Amount        = req.Amount,
+            EstimatedValue = req.Amount,
+            DonationDate  = DateTime.UtcNow,
+            CurrencyCode  = "USD",
+            IsRecurring   = req.Monthly,
+            CampaignName  = string.IsNullOrWhiteSpace(req.CampaignName) ? "General Fund" : req.CampaignName,
+            ChannelSource = "Website",
+            ImpactUnit    = "USD",
+            Notes         = anonymous ? "Anonymous online donation" : "Online donation via /donate",
+        };
+        _context.Donations.Add(donation);
+        await _context.SaveChangesAsync();
+
+        return Ok(new PublicDonateResponse(
+            DonationId: donation.DonationId,
+            SupporterId: supporter.SupporterId,
+            Email: anonymous ? string.Empty : email,
+            CreatedNewSupporter: createdNewSupporter,
+            IsAnonymous: anonymous));
     }
 }
