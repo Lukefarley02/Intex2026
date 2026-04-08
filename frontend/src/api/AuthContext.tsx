@@ -10,6 +10,9 @@ const API_BASE =
 interface User {
   email: string;
   roles: string[];
+  adminScope?: "founder" | "region" | "location" | null;
+  region?: string | null;
+  city?: string | null;
 }
 
 interface AuthState {
@@ -21,6 +24,8 @@ interface AuthState {
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (role: string) => boolean;
+  /** True only for top-level admins (Admin role with no Region/City scope). */
+  isFounder: boolean;
 }
 
 interface LoginResponse {
@@ -53,9 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!res.ok) throw new Error("Token expired");
           return res.json();
         })
-        .then((data: { email: string; roles: string[] }) => {
-          setUser({ email: data.email, roles: data.roles });
-        })
+        .then(
+          (data: {
+            email: string;
+            roles: string[];
+            adminScope?: "founder" | "region" | "location" | null;
+            region?: string | null;
+            city?: string | null;
+          }) => {
+            setUser({
+              email: data.email,
+              roles: data.roles,
+              adminScope: data.adminScope ?? null,
+              region: data.region ?? null,
+              city: data.city ?? null,
+            });
+          },
+        )
         .catch(() => {
           sessionStorage.removeItem("jwt");
           setToken(null);
@@ -80,10 +99,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data: LoginResponse = await res.json();
-    const nextUser: User = { email: data.email, roles: data.roles };
-    setToken(data.token);
-    setUser(nextUser);
     sessionStorage.setItem("jwt", data.token);
+    setToken(data.token);
+
+    // Fetch scope info (region/city/adminScope) so UI can gate founder-only features.
+    let scope: {
+      adminScope?: "founder" | "region" | "location" | null;
+      region?: string | null;
+      city?: string | null;
+    } = {};
+    try {
+      const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
+      if (meRes.ok) scope = await meRes.json();
+    } catch {
+      /* non-fatal — scope stays empty */
+    }
+
+    const nextUser: User = {
+      email: data.email,
+      roles: data.roles,
+      adminScope: scope.adminScope ?? null,
+      region: scope.region ?? null,
+      city: scope.city ?? null,
+    };
+    setUser(nextUser);
     return nextUser;
   }, []);
 
@@ -120,6 +161,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
+  const isFounder = user?.adminScope === "founder";
+
   return (
     <AuthContext.Provider
       value={{
@@ -131,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         hasRole,
+        isFounder,
       }}
     >
       {children}

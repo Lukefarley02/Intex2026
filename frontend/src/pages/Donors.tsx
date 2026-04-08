@@ -204,7 +204,7 @@ const toPayload = (f: SupporterForm) => ({
 
 const Donors = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, isFounder } = useAuth();
   // Staff has **view-only** access to the Donors page — they can see
   // every donor in their region but cannot add, edit, or delete. All
   // donor CRUD is Admin-only; SupportersController enforces this on
@@ -429,8 +429,8 @@ const Donors = () => {
         </Button>
       </div>
 
-      {/* ML Pipeline quick-links — Admin only */}
-      {canWrite && (
+      {/* ML Pipeline quick-links — Founder only */}
+      {isFounder && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Brain className="w-4 h-4 text-muted-foreground" />

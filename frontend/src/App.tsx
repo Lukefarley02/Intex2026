@@ -135,7 +135,7 @@ const App = () => (
             <Route
               path="/ml-insights"
               element={
-                <ProtectedRoute roles={["Admin", "Staff"]}>
+                <ProtectedRoute roles={["Admin"]} founderOnly>
                   <MLInsights />
                 </ProtectedRoute>
               }

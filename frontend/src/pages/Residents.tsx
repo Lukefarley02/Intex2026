@@ -155,7 +155,7 @@ const emptyEntity = (): ResidentEntity => ({
 
 const Residents = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, isFounder } = useAuth();
   const canWrite = hasRole("Admin") || hasRole("Staff");
   const canDelete = hasRole("Admin"); // backend: Admin-only DELETE
 
@@ -445,7 +445,8 @@ const Residents = () => {
         )}
       </div>
 
-      {/* ML Pipeline quick-link — Admin/Staff */}
+      {/* ML Pipeline quick-link — Founder only */}
+      {isFounder && (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Brain className="w-4 h-4 text-muted-foreground" />
@@ -471,6 +472,7 @@ const Residents = () => {
           </div>
         </Link>
       </div>
+      )}
 
       {isLoading && (
         <p className="text-sm text-muted-foreground">Loading residents…</p>

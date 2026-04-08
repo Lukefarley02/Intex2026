@@ -14,16 +14,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Shield, TrendingUp, UserPlus, Settings, MapPin } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Shield,
+  TrendingUp,
+  UserPlus,
+  Settings,
+  Eye,
+  EyeOff,
+  MapPin,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, TrendingUp, UserPlus, Settings, Eye, EyeOff } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
-import { toast } from "@/hooks/use-toast";
 
 // ---- Types ----
 interface AdminUserRow {
@@ -80,76 +88,43 @@ const initials = (email: string | null) => {
   return (parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "");
 };
 
+// ── Empty form shapes ───────────────────────────────────────────────
+// Add-user form: only collects the identity bits the create endpoint
+// accepts. Region/City are set later via the Edit dialog because the
+// create endpoint uses POST /api/adminusers while scope uses
+// PUT /api/adminusers/{id}/scope.
 const EMPTY_FORM = { email: "", password: "", confirm: "", role: "Donor" };
-const EMPTY_EDIT = { id: "", email: "", role: "Donor", newPassword: "", confirmPassword: "" };
+
+// Edit form covers everything the Edit dialog can change: identity,
+// role, optional password reset, AND region/city scope. The Save
+// button dispatches two mutations — editMutation for email/role/password
+// and scopeMutation for region/city — in sequence so both succeed or
+// the dialog stays open showing the error.
+const EMPTY_EDIT = {
+  id: "",
+  email: "",
+  role: "Donor",
+  newPassword: "",
+  confirmPassword: "",
+  region: "",
+  city: "",
+};
 
 const Admin = () => {
   const queryClient = useQueryClient();
 
-  // ─── Scope-editor dialog state ─────────────────────────────────────
-  // Founders can edit any other user's Region + City via the settings
-  // gear in the user list. Backend route: PUT /api/adminusers/{id}/scope.
-  // This is how you fix a staff account that's pointing at the wrong
-  // city without waiting for a backend redeploy to run RoleSeeder.
-  const [scopeEditUser, setScopeEditUser] = useState<AdminUserRow | null>(null);
-  const [scopeRegion, setScopeRegion] = useState("");
-  const [scopeCity, setScopeCity] = useState("");
-
-  const openScopeEditor = (u: AdminUserRow) => {
-    setScopeEditUser(u);
-    setScopeRegion(u.region ?? "");
-    setScopeCity(u.city ?? "");
-  };
-  const closeScopeEditor = () => setScopeEditUser(null);
-
-  const scopeMutation = useMutation({
-    mutationFn: async (vars: { id: string; region: string; city: string }) => {
-      return apiFetch<{ message: string; region: string | null; city: string | null }>(
-        `/api/adminusers/${vars.id}/scope`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            region: vars.region.trim() || null,
-            city: vars.city.trim() || null,
-          }),
-        },
-      );
-    },
-    onSuccess: (_data, vars) => {
-      toast({
-        title: "Scope updated",
-        description: `${scopeEditUser?.email ?? "User"} → ${
-          vars.region || "—"
-        } / ${vars.city || "—"}`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
-      closeScopeEditor();
-    },
-    onError: (err: Error) => {
-      toast({
-        title: "Could not update scope",
-        description: err.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const submitScope = () => {
-    if (!scopeEditUser) return;
-    scopeMutation.mutate({
-      id: scopeEditUser.id,
-      region: scopeRegion,
-      city: scopeCity,
-    });
+  // ── Add-user dialog state ─────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // ── Edit-user dialog state ────────────────────────────────────────
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState(EMPTY_EDIT);
   const [editError, setEditError] = useState<string | null>(null);
   const [showEditPassword, setShowEditPassword] = useState(false);
 
+  // ── Create user mutation ──────────────────────────────────────────
   const createMutation = useMutation({
     mutationFn: (data: typeof EMPTY_FORM) =>
       apiFetch("/api/adminusers", {
@@ -162,33 +137,51 @@ const Admin = () => {
       setForm(EMPTY_FORM);
       setFormError(null);
     },
-    onError: async (err: unknown) => {
+    onError: (err: unknown) => {
       setFormError(err instanceof Error ? err.message : "Failed to create user.");
     },
   });
 
+  // ── Edit-user mutation (email / role / optional password) ─────────
   const editMutation = useMutation({
-    mutationFn: (data: typeof EMPTY_EDIT) => {
-      return apiFetch(`/api/adminusers/${data.id}`, {
+    mutationFn: (data: typeof EMPTY_EDIT) =>
+      apiFetch(`/api/adminusers/${data.id}`, {
         method: "PUT",
         body: JSON.stringify({
           email: data.email,
           role: data.role,
           newPassword: data.newPassword || null,
         }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
-      setEditOpen(false);
-      setEditForm(EMPTY_EDIT);
-      setEditError(null);
-    },
+      }),
     onError: (err: unknown) => {
       setEditError(err instanceof Error ? err.message : "Failed to update user.");
     },
   });
 
+  // ── Scope (region + city) mutation ────────────────────────────────
+  // Backend: PUT /api/adminusers/{id}/scope — Founder-only. This is
+  // the endpoint that lets a company-level admin fix a staff account
+  // whose City doesn't match any safehouse row (e.g. a staff user
+  // seeded with "west / Salem" when the safehouse is "Visayas / Cebu
+  // City"). Leaving both fields blank promotes an Admin to Founder.
+  const scopeMutation = useMutation({
+    mutationFn: (data: { id: string; region: string; city: string }) =>
+      apiFetch<{ message: string; region: string | null; city: string | null }>(
+        `/api/adminusers/${data.id}/scope`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            region: data.region.trim() || null,
+            city: data.city.trim() || null,
+          }),
+        },
+      ),
+    onError: (err: unknown) => {
+      setEditError(err instanceof Error ? err.message : "Failed to update scope.");
+    },
+  });
+
+  // ── Handlers ──────────────────────────────────────────────────────
   const handleCreate = () => {
     if (form.password !== form.confirm) {
       setFormError("Passwords do not match.");
@@ -198,6 +191,44 @@ const Admin = () => {
     createMutation.mutate(form);
   };
 
+  // Dispatches both editMutation and scopeMutation in sequence and
+  // only closes the dialog when both succeed. If either fails, the
+  // error is shown in the dialog and the user can retry.
+  const handleSaveEdit = async () => {
+    setEditError(null);
+    try {
+      await editMutation.mutateAsync(editForm);
+      await scopeMutation.mutateAsync({
+        id: editForm.id,
+        region: editForm.region,
+        city: editForm.city,
+      });
+      queryClient.invalidateQueries({ queryKey: ["adminusers"] });
+      setEditOpen(false);
+      setEditForm(EMPTY_EDIT);
+      setEditError(null);
+    } catch {
+      // onError handlers above already set editError — keep the
+      // dialog open so the user can fix and retry.
+    }
+  };
+
+  const openEditDialog = (u: AdminUserRow) => {
+    setEditForm({
+      id: u.id,
+      email: u.email ?? "",
+      role: u.roles[0] ?? "Donor",
+      newPassword: "",
+      confirmPassword: "",
+      region: u.region ?? "",
+      city: u.city ?? "",
+    });
+    setEditError(null);
+    setShowEditPassword(false);
+    setEditOpen(true);
+  };
+
+  // ── Queries ───────────────────────────────────────────────────────
   const usersQuery = useQuery<AdminUserRow[]>({
     queryKey: ["adminusers"],
     queryFn: () => apiFetch<AdminUserRow[]>("/api/adminusers"),
@@ -221,9 +252,7 @@ const Admin = () => {
   const users = usersQuery.data ?? [];
 
   // ---- KPI derivations ----
-  const donorRetention = Math.round(
-    ((statsQuery.data?.donorRetention ?? 0) * 100),
-  );
+  const donorRetention = Math.round((statsQuery.data?.donorRetention ?? 0) * 100);
 
   const safehouses = safehousesQuery.data ?? [];
   const totalCapacity = safehouses.reduce(
@@ -258,6 +287,8 @@ const Admin = () => {
     { label: "Program completion rate", value: programCompletion, suffix: "%" },
   ];
 
+  const savingEdit = editMutation.isPending || scopeMutation.isPending;
+
   return (
     <DashboardLayout title="Admin Panel">
       {/* KPIs */}
@@ -285,7 +316,15 @@ const Admin = () => {
           <CardTitle className="text-base flex items-center gap-2">
             <Shield className="w-4 h-4" /> User management
           </CardTitle>
-          <Button variant="hero" size="sm" onClick={() => { setForm(EMPTY_FORM); setFormError(null); setAddOpen(true); }}>
+          <Button
+            variant="hero"
+            size="sm"
+            onClick={() => {
+              setForm(EMPTY_FORM);
+              setFormError(null);
+              setAddOpen(true);
+            }}
+          >
             <UserPlus className="w-4 h-4 mr-1" /> Add user
           </Button>
         </CardHeader>
@@ -360,13 +399,8 @@ const Admin = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => openScopeEditor(u)}
-                      title="Edit region / city"
-                      onClick={() => {
-                        setEditForm({ id: u.id, email: u.email ?? "", role: u.roles[0] ?? "Donor", newPassword: "", confirmPassword: "" });
-                        setEditError(null);
-                        setEditOpen(true);
-                      }}
+                      onClick={() => openEditDialog(u)}
+                      title="Edit user"
                     >
                       <Settings className="w-4 h-4" />
                     </Button>
@@ -378,69 +412,20 @@ const Admin = () => {
         </CardContent>
       </Card>
 
-      {/* Scope editor dialog — Founder-only on the backend (PUT
-          /api/adminusers/{id}/scope). Leaving both fields blank promotes
-          the user to Founder; Region only → Regional Manager; Region + City
-          → Location Manager (Admin) or Staff (Staff role). */}
-      <Dialog
-        open={!!scopeEditUser}
-        onOpenChange={(open) => !open && closeScopeEditor()}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit scope</DialogTitle>
-            <DialogDescription>
-              {scopeEditUser?.email ?? ""}
-              <br />
-              Set the user&apos;s Region and City. Staff and Location
-              Managers must have both. Leave both blank to promote an admin
-              to Founder (company-wide). Case and whitespace matter — they
-              must match values in the safehouses table exactly (e.g.{" "}
-              <code>Visayas</code> / <code>Cebu City</code>).
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="scope-region">Region</Label>
-              <Input
-                id="scope-region"
-                value={scopeRegion}
-                onChange={(e) => setScopeRegion(e.target.value)}
-                placeholder="e.g. Visayas"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="scope-city">City</Label>
-              <Input
-                id="scope-city"
-                value={scopeCity}
-                onChange={(e) => setScopeCity(e.target.value)}
-                placeholder="e.g. Cebu City"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={closeScopeEditor}
-              disabled={scopeMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="hero"
-              onClick={submitScope}
-              disabled={scopeMutation.isPending}
-            >
-              {scopeMutation.isPending ? "Saving…" : "Save scope"}
-      {/* Edit User Modal */}
+      {/* ── Edit user dialog ─────────────────────────────────────────
+          Covers identity (email), role, optional password reset, AND
+          scope (region + city) in one form. Save dispatches editMutation
+          and scopeMutation in sequence and only closes on both success. */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit user</DialogTitle>
-            <DialogDescription>Update the email or role for this account.</DialogDescription>
+            <DialogDescription>
+              Update identity, role, password, and organizational scope.
+              Region + City control which safehouses a Staff or Location
+              Manager can see — case and whitespace must match the safehouse
+              row exactly (e.g. <code>Visayas</code> / <code>Cebu City</code>).
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
@@ -449,12 +434,17 @@ const Admin = () => {
                 id="edit-email"
                 type="email"
                 value={editForm.email}
-                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, email: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="edit-password">
-                Password <span className="text-muted-foreground font-normal">(leave blank to keep current)</span>
+                Password{" "}
+                <span className="text-muted-foreground font-normal">
+                  (leave blank to keep current)
+                </span>
               </Label>
               <div className="relative">
                 <Input
@@ -463,7 +453,9 @@ const Admin = () => {
                   autoComplete="new-password"
                   placeholder="••••••••"
                   value={editForm.newPassword}
-                  onChange={(e) => setEditForm((f) => ({ ...f, newPassword: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, newPassword: e.target.value }))
+                  }
                   className="pr-10"
                 />
                 <button
@@ -471,15 +463,26 @@ const Admin = () => {
                   onClick={() => setShowEditPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
-                  aria-label={showEditPassword ? "Hide password" : "Show password"}
+                  aria-label={
+                    showEditPassword ? "Hide password" : "Show password"
+                  }
                 >
-                  {showEditPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+                  {showEditPassword ? (
+                    <EyeOff className="w-4 h-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-4 h-4" aria-hidden="true" />
+                  )}
                 </button>
               </div>
             </div>
             <div className="space-y-1">
               <Label>Role</Label>
-              <Select value={editForm.role} onValueChange={(v) => setEditForm((f) => ({ ...f, role: v }))}>
+              <Select
+                value={editForm.role}
+                onValueChange={(v) =>
+                  setEditForm((f) => ({ ...f, role: v }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -490,27 +493,65 @@ const Admin = () => {
                 </SelectContent>
               </Select>
             </div>
-            {editError && <p className="text-sm text-destructive">{editError}</p>}
+
+            {/* Scope fields */}
+            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+              <div className="space-y-1">
+                <Label htmlFor="edit-region">Region</Label>
+                <Input
+                  id="edit-region"
+                  value={editForm.region}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, region: e.target.value }))
+                  }
+                  placeholder="e.g. Visayas"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="edit-city">City</Label>
+                <Input
+                  id="edit-city"
+                  value={editForm.city}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, city: e.target.value }))
+                  }
+                  placeholder="e.g. Cebu City"
+                />
+              </div>
+            </div>
+
+            {editError && (
+              <p className="text-sm text-destructive">{editError}</p>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setEditOpen(false)}
+              disabled={savingEdit}
+            >
+              Cancel
+            </Button>
             <Button
               variant="hero"
-              disabled={editMutation.isPending || !editForm.email}
-              onClick={() => editMutation.mutate(editForm)}
+              disabled={savingEdit || !editForm.email}
+              onClick={handleSaveEdit}
             >
-              {editMutation.isPending ? "Saving…" : "Save changes"}
+              {savingEdit ? "Saving…" : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add User Modal */}
+      {/* ── Add user dialog ────────────────────────────────────────── */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add new user</DialogTitle>
-            <DialogDescription>Fill in the details below to create a new account.</DialogDescription>
+            <DialogDescription>
+              Fill in the details below to create a new account. Region and
+              City can be set afterwards from the user list.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
@@ -521,7 +562,9 @@ const Admin = () => {
                 autoComplete="email"
                 placeholder="you@ember-ngo.org"
                 value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
@@ -532,7 +575,9 @@ const Admin = () => {
                 autoComplete="new-password"
                 placeholder="••••••••"
                 value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, password: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
@@ -543,12 +588,17 @@ const Admin = () => {
                 autoComplete="new-password"
                 placeholder="••••••••"
                 value={form.confirm}
-                onChange={(e) => setForm((f) => ({ ...f, confirm: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, confirm: e.target.value }))
+                }
               />
             </div>
             <div className="space-y-1">
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}>
+              <Select
+                value={form.role}
+                onValueChange={(v) => setForm((f) => ({ ...f, role: v }))}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -564,10 +614,17 @@ const Admin = () => {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>
+              Cancel
+            </Button>
             <Button
               variant="hero"
-              disabled={createMutation.isPending || !form.email || !form.password || !form.confirm}
+              disabled={
+                createMutation.isPending ||
+                !form.email ||
+                !form.password ||
+                !form.confirm
+              }
               onClick={handleCreate}
             >
               {createMutation.isPending ? "Creating…" : "Create user"}

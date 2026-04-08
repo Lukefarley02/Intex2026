@@ -113,7 +113,7 @@ const toPayload = (f: SafehouseForm) => ({
 
 const Safehouses = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, isFounder } = useAuth();
   const canWrite = hasRole("Admin"); // backend gates on Founder further
 
   const { data, isLoading, isError } = useQuery<SafehouseRow[]>({
@@ -268,7 +268,8 @@ const Safehouses = () => {
         )}
       </div>
 
-      {/* ML Pipeline quick-link */}
+      {/* ML Pipeline quick-link — Founder only */}
+      {isFounder && (
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">
           <Brain className="w-4 h-4 text-muted-foreground" />
@@ -294,6 +295,7 @@ const Safehouses = () => {
           </div>
         </Link>
       </div>
+      )}
 
       {isError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive mb-4">
