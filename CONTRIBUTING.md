@@ -84,7 +84,7 @@ Follow the pattern in `Donors.tsx` (an existing mock-data page in `src/pages/` �
 3. `useEffect` + `apiFetch<T[]>('/api/educationrecords')` to load data (or use `@tanstack/react-query` if you prefer)
 4. Render using shadcn/ui `Table`, `Card`, etc. from `@/components/ui/*`
 5. Add the route in `App.tsx`, wrapped in `<ProtectedRoute roles={["Admin","Staff"]}>` as appropriate
-6. Add the nav entry in `DashboardLayout.tsx` (sidebar) for authenticated pages, or `PublicNav.tsx` for public pages. **Every sidebar entry must include a `roles: Array<"Admin"|"Staff"|"Donor">` tag** — the sidebar is role-filtered at render time via `hasRole()`. Use `["Admin"]` for admin-only pages, `["Admin","Staff"]` for case-management pages, and `["Donor"]` for the donor portal. Match this tag to the `<ProtectedRoute roles={[...]}>` on the route so the backend guard and the visible nav agree.
+6. Add the nav entry in `DashboardLayout.tsx` (sidebar) for authenticated pages, or `PublicNav.tsx` for public pages. **Every sidebar entry must include a `roles: Array<"Admin"|"Staff"|"Donor">` tag** — the sidebar is role-filtered at render time via `hasRole()`. Use `["Admin"]` for admin-only pages, `["Admin","Staff"]` for case-management pages, and `["Donor"]` for the donor portal. Match this tag to the `<ProtectedRoute roles={[...]}>` on the route so the backend guard and the visible nav agree. **For Founder-only pages** (top-level admins with no Region/City scope — e.g. ML Insights) also set `founderOnly: true` on the NavItem and pass the `founderOnly` prop to `<ProtectedRoute>`. On the frontend, use `const { isFounder } = useAuth()` to conditionally render any inline prompt card or link that leads into a Founder-only page.
 
 ### Step 5 — Test
 
