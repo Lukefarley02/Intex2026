@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // still used in features section
 import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
+import StatsCounter from "@/components/StatsCounter";
 import SafehouseMap from "@/components/SafehouseMap";
 import heroImage from "@/assets/hero-image.jpg";
 import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
@@ -213,6 +214,22 @@ const Index = () => {
         </div>
       </div>
     </section>
+
+    {/* Animated Stats Counter */}
+    {stats && care && (
+      <StatsCounter
+        bg="light"
+        duration={2000}
+        stats={[
+          { value: stats.girlsSupported,                        label: "Girls supported since founding",      format: "integer" },
+          { value: stats.safehouseCount,                        label: "Active safehouses across the Philippines", format: "integer" },
+          { value: Math.round(stats.retentionRate * 100),       label: "Donor retention rate",                format: "percent" },
+          { value: care.totalCounselingSessions,                label: "Counseling sessions held",            format: "integer" },
+          { value: care.totalHomeVisits,                        label: "Home & family visits made",           format: "integer" },
+          { value: Math.round(care.progressRate * 100),         label: "Of sessions show measurable progress",format: "percent" },
+        ]}
+      />
+    )}
 
     {/* Journey of Care */}
     <section id="how-we-care" className="container py-20 md:py-28">
