@@ -9,6 +9,7 @@ using Intex2026.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 // ---------- Services ----------
 
 // EF Core — application database
@@ -217,11 +218,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Seed roles and test users on startup
-using (var scope = app.Services.CreateScope())
-{
-    await RoleSeeder.SeedAsync(scope.ServiceProvider);
-}
+
 
 // One-time backfill: reconcile every safehouse's current_occupancy with the
 // live count of Active residents. The canonical schema ships with stale

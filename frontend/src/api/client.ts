@@ -1,7 +1,7 @@
 // Lightweight API client — calls go through the Vite proxy in dev
 // Automatically attaches JWT Bearer token from sessionStorage
 
-const BASE_URL = ""; // empty = same origin (proxy handles /api)
+const BASE_URL = import.meta.env.VITE_API_URL ?? ""; // empty = same origin (proxy handles /api)
 
 export async function apiFetch<T>(
   endpoint: string,

@@ -5,12 +5,16 @@ obj/
 *.suo
 *.db
 appsettings.*.local.json
-
+appsettings.Development.json
+backend/publish/
 
 # Node / Vite
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/.env.production
+frontend/.env.local
+frontend/.env*.local
 
 # IDE
 .vs/
