@@ -39,4 +39,5 @@ export async function apiFetch<T>(
   // 204 No Content
   if (res.status === 204) return undefined as T;
 
-  retu
+  return (await res.json()) as T;
+}

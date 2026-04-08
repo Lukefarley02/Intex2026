@@ -15,7 +15,15 @@ on `ApplicationUser`. See `API_REFERENCE.md` → "Access tiers" for the full rul
 | location@ember.org     | LocationEmber2026!   | Admin, Donor   | Visayas | Cebu City | Location Manager  | The single Cebu City safehouse and its residents / visitations / process recordings. Supporters scoped to `Visayas`. |
 | staff@ember.org        | StaffEmber2026!      | Staff, Donor   | Visayas | Cebu City | Staff             | Same Cebu City case data as the Location Manager, but **no monetary or in-kind donors** and `notesRestricted` is stripped. |
 | donor@ember.org        | DonorEmber2026!      | Donor          | —       | —         | Donor             | Only their own giving history via `/api/donorportal/me*`. No case-management access at all.                     |
-| admin@intex2026.org    | Admin123!@#Pass      | Admin          | —       | —         | Founder           | Legacy seeded founder account.                                                                                  |
+| admin@intex2026.org    | Admin123!@#Pass      | Admin          | —       | —         | Founder           | Legacy seeded founder account.       
+
+
+
+admin@ember.org --  AdminEmber2026!        Admin — company-wide (all data)
+regional@ember.org  --  RegionalEmber2026!   Admin — Visayas region only
+location@ember.org  --  LocationEmber2026!   Admin — Cebu City only
+staff@ember.orgStaff  --  Ember2026!        Staff — Cebu City
+donor@ember.org  --   DonorEmber2026!      Donor only                                                                           |
 
 ### Safehouse region / city reference
 
