@@ -2,8 +2,17 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Heart, DollarSign, Users, ArrowRight } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Heart, DollarSign, Users, ArrowRight, FileText, HandHeart, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { apiFetch } from "@/api/client";
 
 // ---- Types matching backend DonorPortalController & CampaignsController ----
@@ -47,6 +56,17 @@ interface Campaign {
   endDate: string | null;
 }
 
+// /api/public/safehouses response — public, no PII. Used to populate the
+// "Donate to a location" picker in the donor portal.
+interface PublicSafehouse {
+  safehouseId: number;
+  name: string;
+  city: string | null;
+  region: string | null;
+  capacity: number;
+  activeResidents: number;
+}
+
 // ---- Helpers ----
 
 const formatCurrency = (n: number) =>
@@ -55,6 +75,9 @@ const formatCurrency = (n: number) =>
 const formatDate = (iso: string | null) => (iso ? iso.slice(0, 10) : "—");
 
 const DonorPortal = () => {
+  const navigate = useNavigate();
+  const [pickedSafehouse, setPickedSafehouse] = useState<string>("");
+
   const profileQ = useQuery<DonorProfile>({
     queryKey: ["donor-profile"],
     queryFn: () => apiFetch<DonorProfile>("/api/donorportal/me"),
@@ -76,10 +99,20 @@ const DonorPortal = () => {
     queryFn: () => apiFetch<Campaign[]>("/api/campaigns"),
   });
 
+  // Safehouses from the public endpoint — used by the "Donate to a
+  // location" picker. This endpoint is [AllowAnonymous] and returns only
+  // name/city/region/capacity/active count, so it's safe to hit from a
+  // Donor-role JWT even though Donors cannot see the admin Safehouses page.
+  const safehousesQ = useQuery<PublicSafehouse[]>({
+    queryKey: ["public-safehouses"],
+    queryFn: () => apiFetch<PublicSafehouse[]>("/api/public/safehouses"),
+  });
+
   const profile = profileQ.data;
   const impact = impactQ.data;
   const donations = donationsQ.data ?? [];
   const campaigns = campaignsQ.data ?? [];
+  const safehouses = safehousesQ.data ?? [];
 
   const donorName =
     profile?.displayName ||
@@ -116,6 +149,27 @@ const DonorPortal = () => {
             <p className="text-white/80 text-xs sm:text-sm mt-1">
               Total Contributions
             </p>
+            <div className="mt-3 flex flex-col sm:items-end gap-2">
+              <Link to="/donate">
+                <Button
+                  size="sm"
+                  className="bg-white text-primary hover:bg-white/90 font-semibold w-full sm:w-auto"
+                >
+                  <HandHeart className="w-4 h-4 mr-1.5" />
+                  Make a donation
+                </Button>
+              </Link>
+              <Link to="/tax-receipt">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-white/10 text-white border border-white/30 hover:bg-white/20 font-semibold w-full sm:w-auto"
+                >
+                  <FileText className="w-4 h-4 mr-1.5" />
+                  Generate tax receipt
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -128,17 +182,17 @@ const DonorPortal = () => {
         </div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
+      {/* Stat cards — compact */}
+      <div className="grid sm:grid-cols-3 gap-3 mb-6">
         <Card className="rounded-xl shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                <Heart className="w-6 h-6 text-primary" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                <Heart className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold leading-none">{girlsHelped}</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xl font-bold leading-none">{girlsHelped}</p>
+                <p className="text-xs text-muted-foreground mt-1">
                   Girls Helped
                 </p>
               </div>
@@ -146,16 +200,16 @@ const DonorPortal = () => {
           </CardContent>
         </Card>
         <Card className="rounded-xl shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                <DollarSign className="w-6 h-6 text-secondary" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
+                <DollarSign className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold leading-none">
+                <p className="text-xl font-bold leading-none">
                   {formatCurrency(totalContributions)}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Total Given
                 </p>
               </div>
@@ -163,16 +217,16 @@ const DonorPortal = () => {
           </CardContent>
         </Card>
         <Card className="rounded-xl shadow-sm">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                <Users className="w-6 h-6 text-secondary" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-secondary" />
               </div>
               <div>
-                <p className="text-2xl font-bold leading-none">
+                <p className="text-xl font-bold leading-none">
                   {donationsMade}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Donations Made
                 </p>
               </div>
@@ -180,6 +234,67 @@ const DonorPortal = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Donate to a specific safehouse — compact dropdown.
+          The donor picks one safehouse from the list and clicks Donate,
+          which routes to /donate?location=<name> where the selection is
+          pre-seeded. Keeps the portal uncluttered; capacity numbers and
+          operational detail live inside the Donate form. */}
+      <Card className="rounded-xl shadow-sm mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-primary" />
+            Donate to a Safehouse
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select
+              value={pickedSafehouse}
+              onValueChange={setPickedSafehouse}
+              disabled={safehousesQ.isLoading || safehouses.length === 0}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue
+                  placeholder={
+                    safehousesQ.isLoading
+                      ? "Loading safehouses…"
+                      : safehouses.length === 0
+                        ? "No safehouses available"
+                        : "Choose a safehouse…"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {safehouses.map((s) => {
+                  const location = [s.city, s.region]
+                    .filter(Boolean)
+                    .join(", ");
+                  return (
+                    <SelectItem key={s.safehouseId} value={s.name}>
+                      {s.name}
+                      {location ? ` — ${location}` : ""}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="hero"
+              disabled={!pickedSafehouse}
+              onClick={() =>
+                navigate(
+                  `/donate?location=${encodeURIComponent(pickedSafehouse)}`,
+                )
+              }
+              className="sm:w-auto"
+            >
+              <HandHeart className="w-4 h-4 mr-1.5" />
+              Donate
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Two-column: Donation History + Active Campaigns */}
       <div className="grid lg:grid-cols-2 gap-6">
@@ -205,10 +320,10 @@ const DonorPortal = () => {
               </p>
             )}
             <div className="divide-y">
-              {donations.slice(0, 10).map((d) => (
+              {donations.slice(0, 5).map((d) => (
                 <div
                   key={d.donationId}
-                  className="grid grid-cols-[1fr_1.4fr_auto] gap-4 py-4 items-center text-sm"
+                  className="grid grid-cols-[1fr_1.4fr_auto] gap-4 py-2.5 items-center text-sm"
                 >
                   <span className="text-muted-foreground">
                     {formatDate(d.donationDate)}
@@ -271,9 +386,11 @@ const DonorPortal = () => {
                       {c.endDate ? ` · Ends ${c.endDate}` : ""}
                     </p>
                   </div>
-                  <Button variant="outline" className="w-full justify-center">
-                    Contribute <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  <Link to={`/donate?campaign=${encodeURIComponent(c.name)}`}>
+                    <Button variant="outline" className="w-full justify-center">
+                      Contribute <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
                 </div>
               );
             })}

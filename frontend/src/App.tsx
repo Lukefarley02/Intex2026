@@ -20,6 +20,7 @@ import Residents from "./pages/Residents";
 import Reports from "./pages/Reports";
 import StaffPortal from "./pages/StaffPortal";
 import DonorPortal from "./pages/DonorPortal";
+import TaxReceipt from "./pages/TaxReceipt";
 import Admin from "./pages/Admin";
 import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
@@ -115,6 +116,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff", "Donor"]}>
                   <DonorPortal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tax-receipt"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff", "Donor"]}>
+                  <TaxReceipt />
                 </ProtectedRoute>
               }
             />

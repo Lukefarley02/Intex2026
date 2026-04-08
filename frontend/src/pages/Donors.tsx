@@ -205,12 +205,14 @@ const toPayload = (f: SupporterForm) => ({
 const Donors = () => {
   const qc = useQueryClient();
   const { hasRole } = useAuth();
-  // Staff is blocked from monetary/in-kind donors by the backend, so on
-  // the Donors page (which only shows those two types) Staff gets no
-  // write actions. Admins of all tiers (founder/regional/location) get
-  // Add + Edit; only Founder's DELETE will actually succeed on the
-  // backend, but we still expose the button to all Admins and let the
-  // 403 come back through the toast error.
+  // Staff has **view-only** access to the Donors page — they can see
+  // every donor in their region but cannot add, edit, or delete. All
+  // donor CRUD is Admin-only; SupportersController enforces this on
+  // the backend (POST/PUT/DELETE for MonetaryDonor/InKindDonor rows
+  // return 403 for Staff callers). Admins of all tiers get Add + Edit;
+  // only Founder's DELETE will actually succeed on the backend, but we
+  // still expose the button to all Admins and let the 403 come back
+  // through the toast error.
   const canWrite = hasRole("Admin");
   const canDelete = hasRole("Admin");
 

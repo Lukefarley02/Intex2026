@@ -199,6 +199,7 @@ All three endpoints require a valid JWT token with the `Donor` role. The current
 | GET | `/api/donorportal/me` | Donor | Current donor's supporter profile |
 | GET | `/api/donorportal/me/donations` | Donor | Current donor's full donation history |
 | GET | `/api/donorportal/me/impact` | Donor | Aggregated giving stats for current donor |
+| GET | `/api/donorportal/me/tax-receipt?year=YYYY` | Donor | IRS Publication 1771 written acknowledgment payload for the given tax year (defaults to current year) |
 
 **GET `/api/donorportal/me` response:**
 ```json
@@ -251,6 +252,96 @@ Returns empty array `[]` if no donations found. Ordered by `donationDate` descen
 }
 ```
 Returns zeros and empty array if no donations found. Never throws 404.
+
+**GET `/api/donorportal/me/tax-receipt?year=YYYY` response:**
+```json
+{
+  "organization": {
+    "name": "Ember (Lighthouse Project)",
+    "legalName": "Ember Nonprofit, Inc.",
+    "ein": "XX-XXXXXXX",
+    "address1": "[Org street address]",
+    "address2": "",
+    "city": "[City]",
+    "state": "[State]",
+    "postalCode": "[ZIP]",
+    "country": "United States",
+    "email": "donations@ember.org",
+    "phone": "+1 (555) 555-0100",
+    "website": "https://ember.org"
+  },
+  "donor": {
+    "supporterId": 1,
+    "displayName": "Sarah Chen",
+    "firstName": "Sarah",
+    "lastName": "Chen",
+    "email": "sarah@example.com",
+    "country": "United States",
+    "region": "Online"
+  },
+  "taxYear": 2025,
+  "availableYears": [2025, 2024, 2023],
+  "issueDate": "2026-04-08T00:00:00Z",
+  "currencyCode": "USD",
+  "totalAmount": 750.00,
+  "donationCount": 4,
+  "donations": [
+    {
+      "donationId": 12,
+      "donationDate": "2025-02-14T00:00:00Z",
+      "donationType": "Monetary",
+      "amount": 150.00,
+      "estimatedValue": 150.00,
+      "campaignName": "Safehouse Expansion",
+      "isRecurring": false,
+      "currencyCode": "USD"
+    }
+  ],
+  "disclosure": "No goods or services were provided…",
+  "formReference": "Use this acknowledgment with IRS Schedule A (Form 1040) when itemizing charitable contributions."
+}
+```
+This is **not** a specific numbered IRS form. It is the standard 501(c)(3) written acknowledgment letter described in IRS Publication 1771, which US donors keep to support the charitable-contribution totals they enter on **Schedule A of Form 1040**. Form 8283 only applies to non-cash gifts over $500, which this flow does not collect. The frontend renders the response as a print-friendly letter at `/tax-receipt`; the browser's native print dialog offers "Save as PDF".
+
+---
+
+## Public (Unauthenticated)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/public/stats` | None | Aggregated landing-page pills (safehouse count, girls supported, retention, etc.) |
+| GET | `/api/public/donations` | None | Total raised + breakdown by top campaigns for the landing donut chart |
+| GET | `/api/public/care-story` | None | Aggregated care metrics (counseling sessions, home visits, outcomes) |
+| GET | `/api/public/safehouses` | None | Minimal safehouse list (name, city, capacity, active count — no resident identity) |
+| POST | `/api/public/donate` | None | Self-service donation intake used by the public Donate page |
+
+**POST `/api/public/donate` request:**
+```json
+{
+  "firstName": "Sarah",
+  "lastName": "Chen",
+  "email": "sarah@example.com",
+  "amount": 50.00,
+  "monthly": true,
+  "isAnonymous": false,
+  "campaignName": null
+}
+```
+- If `isAnonymous` is `true`, the other PII fields are ignored and a synthetic `anonymous-<guid>@ember.local` supporter row is created with `status = "Anonymous"`.
+- If `isAnonymous` is `false`, `email` is required. A supporter row is looked up by email and reused if found; otherwise a new `MonetaryDonor` row is created. This means a donor who later registers with the same email will see all of their prior gifts automatically in the donor portal.
+- `amount` must be greater than zero.
+
+**POST `/api/public/donate` response:**
+```json
+{
+  "donationId": 1234,
+  "supporterId": 567,
+  "email": "sarah@example.com",
+  "createdNewSupporter": true,
+  "isAnonymous": false
+}
+```
+No real payment processing happens — this is a capstone demo. The `Donation` row is recorded with `donation_type = "Monetary"`, `channel_source = "Website"`, `currency_code = "USD"`, and `campaign_name` defaults to `"General Fund"` if not provided.
 
 ---
 
