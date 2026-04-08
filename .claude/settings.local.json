@@ -4,7 +4,8 @@
       "Bash(python3)",
       "Bash(python3 -c ':*)",
       "Bash(python3 -c 'import json; json.load\\(open\\('\\\\''__TRACKED_VAR__'\\\\'', encoding='\\\\''utf-8'\\\\''\\)\\)')",
-      "Bash(python3 _update_notebooks.py)"
+      "Bash(python3 _update_notebooks.py)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

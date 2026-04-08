@@ -254,7 +254,7 @@ const DonorPortal = () => {
               onValueChange={setPickedSafehouse}
               disabled={safehousesQ.isLoading || safehouses.length === 0}
             >
-              <SelectTrigger className="flex-1">
+              <SelectTrigger className="flex-1" aria-label="Select a safehouse to donate to">
                 <SelectValue
                   placeholder={
                     safehousesQ.isLoading
