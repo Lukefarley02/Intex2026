@@ -104,11 +104,13 @@ const Dashboard = () => {
   const { data: socialData } = useQuery<SocialStats>({
     queryKey: ["social-stats"],
     queryFn: () => apiFetch<SocialStats>("/api/social/stats"),
+    retry: false,
   });
 
   const { data: mlData } = useQuery<MLInsights>({
     queryKey: ["ml-insights"],
     queryFn: () => apiFetch<MLInsights>("/api/mlinsights"),
+    retry: false,
   });
 
   const metrics = [
@@ -152,7 +154,7 @@ const Dashboard = () => {
       iconBg: "bg-red-100",
       iconColor: "text-red-600",
       pipeline: "Pipeline 01: Churn Prediction",
-      action: { to: "/donors", label: "Review" },
+      action: { to: "/ml-insights?tab=churn", label: "Review" },
     },
     {
       label: "Upgrade Opportunities",
@@ -162,7 +164,7 @@ const Dashboard = () => {
       iconBg: "bg-gold/10",
       iconColor: "text-gold",
       pipeline: "Pipeline 02: Donation Capacity",
-      action: { to: "/donors", label: "View list" },
+      action: { to: "/ml-insights?tab=capacity", label: "View list" },
     },
     {
       label: "Ready for Reintegration",
@@ -172,7 +174,7 @@ const Dashboard = () => {
       iconBg: "bg-emerald-100",
       iconColor: "text-emerald-600",
       pipeline: "Pipeline 04: Resident Outcomes",
-      action: { to: "/residents", label: "Review cases" },
+      action: { to: "/ml-insights?tab=outcomes", label: "Review cases" },
     },
     {
       label: "Safehouses Near Capacity",
@@ -182,7 +184,7 @@ const Dashboard = () => {
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
       pipeline: "Pipeline 05: Geographic Performance",
-      action: { to: "/safehouses", label: "View map" },
+      action: { to: "/ml-insights?tab=geographic", label: "View map" },
     },
   ];
 
