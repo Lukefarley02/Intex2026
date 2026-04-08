@@ -71,10 +71,10 @@ const Login = () => {
                 <ArrowLeft className="w-4 h-4" /> Back to home
               </Link>
               <Link
-                to="/register"
+                to="/donate"
                 className="md:hidden inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
               >
-                New user? Create account →
+                New user? Make a donation →
               </Link>
             </div>
             <h2 className="text-2xl font-bold">Sign in</h2>
@@ -137,8 +137,8 @@ const Login = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Create one
+            <Link to="/donate" className="text-primary hover:underline font-medium">
+              Make a donation to create one
             </Link>
           </p>
         </div>

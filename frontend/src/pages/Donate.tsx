@@ -128,9 +128,9 @@ const Donate = () => {
   const girlDays = Math.floor((activeAmount || 0) / 0.83);
 
   // Hardened password policy (matches backend Identity configuration):
-  // length ≥ 12, upper, lower, digit, non-alphanumeric.
+  // length ≥ 14, upper, lower, digit, non-alphanumeric.
   const validatePassword = (pw: string): string | null => {
-    if (pw.length < 12) return "Password must be at least 12 characters.";
+    if (pw.length < 14) return "Password must be at least 14 characters.";
     if (!/[A-Z]/.test(pw)) return "Password must contain an uppercase letter.";
     if (!/[a-z]/.test(pw)) return "Password must contain a lowercase letter.";
     if (!/[0-9]/.test(pw)) return "Password must contain a digit.";
@@ -660,7 +660,7 @@ const Donate = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 12 characters"
+                placeholder="At least 14 characters"
                 autoFocus
               />
             </div>
@@ -674,7 +674,7 @@ const Donate = () => {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Must be 12+ characters and include an uppercase letter, a lowercase letter, a digit, and a symbol.
+              Must be 14+ characters and include an uppercase letter, a lowercase letter, a digit, and a symbol.
             </p>
             {registerError && (
               <p className="text-sm text-destructive">{registerError}</p>
