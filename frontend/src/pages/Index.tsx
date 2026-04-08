@@ -274,7 +274,7 @@ const Index = () => {
           </div>
         </div>
         <div className="border-t border-card/10 mt-8 pt-6 text-xs text-center">
-          © 2026 Ember. All rights reserved. Privacy Policy.
+          © 2026 Ember. All rights reserved. <Link to="/privacy" className="underline hover:text-card">Privacy Policy</Link>.
         </div>
       </div>
     </footer>
