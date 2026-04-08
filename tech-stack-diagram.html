@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intex2026 — Tech Stack Diagram</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 40px 24px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #f97316, #fb923c);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    /* ── LAYER GRID ── */
+    .diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .layer {
+      display: flex;
+      align-items: stretch;
+      gap: 12px;
+      border-radius: 14px;
+      padding: 16px 20px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .layer-label {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      opacity: 0.55;
+      min-width: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+    }
+
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(4px);
+    }
+
+    .chip .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Layer colour themes */
+    .layer-client  { background: rgba(59, 130, 246, 0.07); }
+    .layer-frontend { background: rgba(249, 115, 22, 0.07); }
+    .layer-state   { background: rgba(168, 85, 247, 0.07); }
+    .layer-backend { background: rgba(16, 185, 129, 0.07); }
+    .layer-data    { background: rgba(251, 191, 36, 0.07); }
+    .layer-infra   { background: rgba(239, 68, 68, 0.07); }
+    .layer-ml      { background: rgba(20, 184, 166, 0.07); }
+    .layer-tooling { background: rgba(100, 116, 139, 0.07); }
+
+    /* Chip colours */
+    .blue   { background: rgba(59,130,246,0.15); color: #93c5fd; }
+    .blue .dot   { background: #3b82f6; }
+
+    .orange { background: rgba(249,115,22,0.15); color: #fdba74; }
+    .orange .dot { background: #f97316; }
+
+    .purple { background: rgba(168,85,247,0.15); color: #d8b4fe; }
+    .purple .dot { background: #a855f7; }
+
+    .green  { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+    .green .dot  { background: #10b981; }
+
+    .yellow { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .yellow .dot { background: #fbbf24; }
+
+    .red    { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .red .dot    { background: #ef4444; }
+
+    .teal   { background: rgba(20,184,166,0.15); color: #5eead4; }
+    .teal .dot   { background: #14b8a6; }
+
+    .slate  { background: rgba(100,116,139,0.15); color: #cbd5e1; }
+    .slate .dot  { background: #64748b; }
+
+    /* ── ARROWS between layers ── */
+    .arrow {
+      text-align: center;
+      font-size: 1.1rem;
+      color: #334155;
+      line-height: 1;
+      margin: -2px 0;
+    }
+
+    /* ── LEGEND ── */
+    .legend {
+      max-width: 900px;
+      margin: 28px auto 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .legend-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      margin-top: 36px;
+      font-size: 0.72rem;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Intex 2026 — Tech Stack</h1>
+  <p class="subtitle">INTEX W26 · IS 401 / 413 / 414 / 455 · Due April 10, 2026</p>
+
+  <div class="diagram">
+
+    <!-- CLIENT BROWSER -->
+    <div class="layer layer-client">
+      <div class="layer-label">Client</div>
+      <div class="chips">
+        <div class="chip blue"><span class="dot"></span>Browser</div>
+        <div class="chip blue"><span class="dot"></span>JWT (localStorage)</div>
+        <div class="chip blue"><span class="dot"></span>Content-Security-Policy (HTTP header)</div>
+      </div>
+    </div>
+
+    <div class="arrow">↕</div>
+
+    <!-- FRONTEND -->
+    <div class="layer layer-frontend">
+      <div class="layer-label">Frontend</div>
+      <div class="chips">
+        <div class="chip orange"><span class="dot"></span>React 18</div>
+        <div class="chip orange"><span class="dot"></span>TypeScript</div>
+        <div class="chip orange"><span class="dot"></span>Vite 6</div>
+        <div class="chip orange"><span class="dot"></span>react-router-dom v6</div>
+        <div class="chip orange"><span class="dot"></span>Tailwind CSS 3</div>
+        <div class="chip orange"><span class="dot"></span>shadcn/ui (Radix)</div>
+        <div class="chip orange"><span class="dot"></span>lucide-react</div>
+        <div class="chip orange"><span class="dot"></span>Inter font · Ember palette</div>
+      </div>
+    </div>
+
+    <!-- STATE / DATA LAYER -->
+    <div class="layer layer-state">
+      <div class="layer-label">State / Forms</div>
+      <div class="chips">
+        <div class="chip purple"><span class="dot"></span>@tanstack/react-query</div>
+        <div class="chip purple"><span class="dot"></span>react-hook-form</div>
+        <div class="chip purple"><span class="dot"></span>Zod (validation)</div>
+        <div class="chip purple"><span class="dot"></span>AuthContext (useAuth)</div>
+        <div class="chip purple"><span class="dot"></span>apiFetch (JWT auto-attach)</div>
+      </div>
+    </div>
+
+    <div class="arrow">↕</div>
+
+    <!-- BACKEND -->
+    <div class="layer layer-backend">
+      <div class="layer-label">Backend</div>
+      <div class="chips">
+        <div class="chip green"><span class="dot"></span>.NET 10 Web API (C#)</div>
+        <div class="chip green"><span class="dot"></span>Entity Framework Core</div>
+        <div class="chip green"><span class="dot"></span>ASP.NET Identity</div>
+        <div class="chip green"><span class="dot"></span>JWT Bearer Auth</div>
+        <div class="chip green"><span class="dot"></span>Swashbuckle / Swagger 7.2</div>
+        <div class="chip green"><span class="dot"></span>Role-based Authorization</div>
+        <div class="chip green"><span class="dot"></span>Roles: Admin · Staff · Donor</div>
+      </div>
+    </div>
+
+    <div class="arrow">↕</div>
+
+    <!-- DATA -->
+    <div class="layer layer-data">
+      <div class="layer-label">Data</div>
+      <div class="chips">
+        <div class="chip yellow"><span class="dot"></span>SQL Server (Azure SQL)</div>
+        <div class="chip yellow"><span class="dot"></span>17 tables (lighthouse_schema.sql)</div>
+        <div class="chip yellow"><span class="dot"></span>17 CSV seed files</div>
+        <div class="chip yellow"><span class="dot"></span>EF Core Migrations</div>
+      </div>
+    </div>
+
+    <div class="arrow">↕</div>
+
+    <!-- INFRASTRUCTURE -->
+    <div class="layer layer-infra">
+      <div class="layer-label">Infra</div>
+      <div class="chips">
+        <div class="chip red"><span class="dot"></span>Microsoft Azure</div>
+        <div class="chip red"><span class="dot"></span>Azure SQL</div>
+        <div class="chip red"><span class="dot"></span>HTTPS / TLS</div>
+        <div class="chip red"><span class="dot"></span>appsettings.*.local.json (secrets)</div>
+      </div>
+    </div>
+
+    <!-- ML (separate pipeline) -->
+    <div class="layer layer-ml">
+      <div class="layer-label">ML</div>
+      <div class="chips">
+        <div class="chip teal"><span class="dot"></span>Python</div>
+        <div class="chip teal"><span class="dot"></span>Jupyter Notebooks</div>
+        <div class="chip teal"><span class="dot"></span>ml-pipelines/ (IS 455)</div>
+      </div>
+    </div>
+
+    <!-- TOOLING -->
+    <div class="layer layer-tooling">
+      <div class="layer-label">Tooling</div>
+      <div class="chips">
+        <div class="chip slate"><span class="dot"></span>Vitest 2</div>
+        <div class="chip slate"><span class="dot"></span>@testing-library/react</div>
+        <div class="chip slate"><span class="dot"></span>jsdom</div>
+        <div class="chip slate"><span class="dot"></span>TypeScript strict</div>
+        <div class="chip slate"><span class="dot"></span>ESLint</div>
+        <div class="chip slate"><span class="dot"></span>Git</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="dot" style="background:#3b82f6"></span>Client / Browser</div>
+    <div class="legend-item"><span class="dot" style="background:#f97316"></span>Frontend</div>
+    <div class="legend-item"><span class="dot" style="background:#a855f7"></span>State &amp; Forms</div>
+    <div class="legend-item"><span class="dot" style="background:#10b981"></span>Backend API</div>
+    <div class="legend-item"><span class="dot" style="background:#fbbf24"></span>Database</div>
+    <div class="legend-item"><span class="dot" style="background:#ef4444"></span>Infrastructure</div>
+    <div class="legend-item"><span class="dot" style="background:#14b8a6"></span>ML Pipelines</div>
+    <div class="legend-item"><span class="dot" style="background:#64748b"></span>Tooling &amp; Testing</div>
+  </div>
+
+  <footer>Generated for INTEX W26 · April 2026</footer>
+
+</body>
+</html>
