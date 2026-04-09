@@ -4,16 +4,35 @@ import { useEffect, useRef, useState } from "react";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface StatItem {
+  /** The final numeric value to count up to. */
   value: number;
+  /** Short descriptive label shown above the number (1–2 lines). */
   label: string;
+  /**
+   * How to format the number:
+   *  "integer"  → 35,000
+   *  "decimal"  → 9.0  (one decimal place)
+   *  "percent"  → 70%
+   *  "currency" → $1,500
+   */
   format?: "integer" | "decimal" | "percent" | "currency";
+  /** Optional suffix appended after the formatted number (e.g. "+", "yrs"). */
   suffix?: string;
 }
 
 interface StatsCounterProps {
+  /** Array of stat items to display. */
   stats: StatItem[];
+  /** Optional Lora serif heading above the grid. */
   heading?: string;
-  bg?: "white" | "light" | "ember";
+  /**
+   * Background style:
+   *  "white"  → pure white bg, charcoal numbers (default)
+   *  "light"  → light grey (#F5F5F5), charcoal numbers
+   *  "dark"   → near-black bg, white numbers (full-bleed dark sections)
+   */
+  bg?: "white" | "light" | "dark";
+  /** Count-up animation duration in ms. Default: 2000. */
   duration?: number;
 }
 
@@ -63,6 +82,7 @@ function AnimatedNumber({
       if (startRef.current === null) startRef.current = timestamp;
       const elapsed = timestamp - startRef.current;
       const progress = Math.min(elapsed / duration, 1);
+      // Ease-out cubic: fast start, smooth landing
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplayed(eased * target);
 
@@ -82,7 +102,9 @@ function AnimatedNumber({
   return (
     <span>
       {formatValue(displayed, format)}
-      {suffix && <span className="text-5xl">{suffix}</span>}
+      {suffix && (
+        <span style={{ fontSize: "clamp(1.8rem, 3.5vw, 2.5rem)" }}>{suffix}</span>
+      )}
     </span>
   );
 }
@@ -98,6 +120,7 @@ export function StatsCounter({
   const sectionRef = useRef<HTMLDivElement>(null);
   const [hasTriggered, setHasTriggered] = useState(false);
 
+  // Fire count-up once when 25% of the section enters the viewport
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -116,34 +139,87 @@ export function StatsCounter({
     return () => observer.disconnect();
   }, [hasTriggered]);
 
-  const bgClass =
-    bg === "ember"
-      ? "gradient-ember text-white"
+  const bgStyle: React.CSSProperties =
+    bg === "dark"
+      ? { background: "#1a1a1a" }
       : bg === "light"
-      ? "bg-primary-light"
-      : "bg-white";
+      ? { background: "#F5F5F5" }
+      : { background: "#ffffff" };
 
-  const labelClass =
-    bg === "ember" ? "text-white/80" : "text-muted-foreground";
-
-  const numberClass =
-    bg === "ember" ? "text-white" : "text-foreground";
+  const labelColor = bg === "dark" ? "#999999" : "#6b6b6b";
+  const numberColor = bg === "dark" ? "#ffffff" : "#1a1a1a";
 
   return (
-    <section ref={sectionRef} className={`w-full py-16 px-6 ${bgClass}`}>
+    <section
+      ref={sectionRef}
+      style={{
+        ...bgStyle,
+        width: "100%",
+        padding: "96px 24px",
+      }}
+    >
       {heading && (
-        <h2 className="text-center text-2xl font-semibold mb-12 tracking-tight">
+        <h2
+          style={{
+            fontFamily: "'Lora', Georgia, serif",
+            fontSize: "clamp(2rem, 4vw, 2.8rem)",
+            fontWeight: 400,
+            lineHeight: "1.4em",
+            textAlign: "center",
+            marginBottom: "64px",
+            color: numberColor,
+          }}
+        >
           {heading}
         </h2>
       )}
 
-      <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+      <div
+        style={{
+          maxWidth: "1024px",
+          margin: "0 auto",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "64px 48px",
+        }}
+      >
         {stats.map((stat, i) => (
-          <div key={i} className="flex flex-col items-center text-center gap-3">
-            <p className={`text-sm leading-snug max-w-[200px] ${labelClass}`}>
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              gap: "16px",
+            }}
+          >
+            {/* Label above — Aileron, light weight, gray */}
+            <p
+              style={{
+                fontFamily: "'Aileron', 'Inter', system-ui, sans-serif",
+                fontSize: "1.1rem",
+                fontWeight: 300,
+                lineHeight: "1.6em",
+                color: labelColor,
+                maxWidth: "220px",
+                margin: 0,
+              }}
+            >
               {stat.label}
             </p>
-            <p className={`text-6xl md:text-7xl font-bold tracking-tight ${numberClass}`}>
+
+            {/* Large animated number — Lora serif, weight 400 */}
+            <p
+              style={{
+                fontFamily: "'Lora', Georgia, serif",
+                fontSize: "clamp(3.2rem, 6vw, 4.8rem)",
+                fontWeight: 400,
+                lineHeight: "1.1em",
+                color: numberColor,
+                margin: 0,
+              }}
+            >
               <AnimatedNumber
                 target={stat.value}
                 format={stat.format}

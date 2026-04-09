@@ -43,9 +43,11 @@ public class ResidentsController : ControllerBase
             r.CaseControlNo,
             r.InternalCode,
             r.CaseStatus,
+            r.CaseCategory,
             r.DateOfBirth,
             r.DateOfAdmission,
             r.CurrentRiskLevel,
+            r.AssignedSocialWorker,
             NotesRestricted = canSeeNotes ? r.NotesRestricted : null,
             Safehouse = r.Safehouse == null
                 ? null
