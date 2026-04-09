@@ -21,12 +21,4 @@ public class ApplicationUser : IdentityUser
     /// <summary>The city/location this user is scoped to (null = region-wide or company-wide).</summary>
     public string? City { get; set; }
 
-    /// <summary>
-    /// True when the account was created by staff with a temporary seed
-    /// password (e.g. via the "Log donation" flow). On the next successful
-    /// login the frontend will force the user into a password-change screen
-    /// before any other navigation. Cleared automatically in
-    /// AuthController.ChangePassword once the user sets a new password.
-    /// </summary>
-    public bool MustChangePassword { get; set; }
-}
+ 

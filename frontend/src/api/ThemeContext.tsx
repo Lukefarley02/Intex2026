@@ -13,7 +13,8 @@ interface ThemeState {
   setMode: (mode: ThemeMode) => void;
 }
 
-const STORAGE_KEY = "ember-theme";
+const COOKIE_NAME = "ember-theme";
+const COOKIE_MAX_DAYS = 365;
 const ThemeContext = createContext<ThemeState | null>(null);
 
 const getSystemTheme = (): "light" | "dark" =>
@@ -22,15 +23,27 @@ const getSystemTheme = (): "light" | "dark" =>
     ? "dark"
     : "light";
 
+// Read theme preference from a browser-accessible cookie (not httpOnly).
+const readThemeCookie = (): ThemeMode => {
+  if (typeof document === "undefined") return "system";
+  const match = document.cookie.match(
+    new RegExp("(?:^|; )" + COOKIE_NAME + "=([^;]*)")
+  );
+  const val = match ? decodeURIComponent(match[1]) : null;
+  if (val === "light" || val === "dark" || val === "system") return val;
+  return "system";
+};
+
+// Write theme preference as a browser-accessible cookie (SameSite=Lax, no HttpOnly).
+const writeThemeCookie = (mode: ThemeMode) => {
+  const expires = new Date(Date.now() + COOKIE_MAX_DAYS * 864e5).toUTCString();
+  document.cookie =
+    `${COOKIE_NAME}=${encodeURIComponent(mode)}; expires=${expires}; path=/; SameSite=Lax`;
+};
+
 const loadStoredMode = (): ThemeMode => {
   if (typeof window === "undefined") return "system";
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "light" || stored === "dark" || stored === "system") return stored;
-  } catch {
-    /* localStorage unavailable — fall through */
-  }
-  return "system";
+  return readThemeCookie();
 };
 
 const applyThemeClass = (resolved: "light" | "dark") => {
@@ -72,11 +85,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* non-fatal */
-    }
+    writeThemeCookie(next);
   }, []);
 
   const value = useMemo<ThemeState>(() => ({ mode, resolved, setMode }), [mode, resolved, setMode]);
