@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/api/ThemeContext";
 import { RootkitProvider, useRootkit } from "@/api/RootkitContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieConsent from "@/components/CookieConsent";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import RootkitOverlay from "@/components/RootkitOverlay";
 
 import Index from "./pages/Index";
@@ -64,6 +65,7 @@ const App = () => (
       <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <AuthProvider>
           <CookieConsent />
+          <ErrorBoundary>
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
@@ -204,6 +206,7 @@ const App = () => (
 
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

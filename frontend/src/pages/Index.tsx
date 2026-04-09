@@ -87,6 +87,7 @@ const Index = () => {
 
   return (
   <div className="min-h-screen bg-background">
+    <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[60] focus:bg-primary focus:text-primary-foreground focus:px-4 focus:py-2 focus:rounded-md">Skip to main content</a>
     {/* Sticky header wrapper — keeps the first-visit banner and PublicNav
         glued together so scrolling back up never leaves the nav floating
         on top of the re-emerging banner. */}
@@ -117,7 +118,7 @@ const Index = () => {
                 aria-label="Dismiss donate banner"
                 className="p-1 rounded hover:bg-card/10 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -127,7 +128,7 @@ const Index = () => {
       <PublicNav />
     </div>
 
-    <main>
+    <main id="main-content">
     {/* Hero — fixed so it never moves; content sections scroll over it */}
     <section id="mission" className="fixed inset-0 z-0 flex items-center overflow-hidden">
       <div className="absolute inset-0">
@@ -395,7 +396,7 @@ const Index = () => {
             </p>
           </div>
           <div>
-            <h4 className="text-card font-semibold mb-3">Quick links</h4>
+            <h3 className="text-card font-semibold mb-3">Quick links</h3>
             <div className="space-y-2 text-sm">
               <a href="#mission" className="block hover:text-card transition-colors">Our mission</a>
               <a href="#impact" className="block hover:text-card transition-colors">Impact</a>
@@ -404,7 +405,7 @@ const Index = () => {
             </div>
           </div>
           <div>
-            <h4 className="text-card font-semibold mb-3">Contact</h4>
+            <h3 className="text-card font-semibold mb-3">Contact</h3>
             <p className="text-sm">hello@ember-ngo.org</p>
             <p className="text-sm mt-1">Manila, Philippines</p>
           </div>

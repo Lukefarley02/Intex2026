@@ -292,7 +292,7 @@ const Donate = () => {
     setEmail((prev) => prev || p.email || "");
   }, [profileQ.data]);
 
-  const activeAmount = custom ? Number(custom) : amount;
+  const activeAmount = custom ? (Number(custom) || 0) : amount;
   // Program economics: the public anchor rate is "$25 shelters a girl
   // for a full month" — so monthly cost = $25, yearly = $300, daily =
   // $25/30 ≈ $0.833. Every impact figure on this page is derived from
@@ -318,6 +318,10 @@ const Donate = () => {
   const handleDonate = async () => {
     setFormError(null);
 
+    if (isNaN(activeAmount)) {
+      setFormError("Please enter a valid number for the donation amount.");
+      return;
+    }
     if (!activeAmount || activeAmount <= 0) {
       setFormError("Please choose a donation amount.");
       return;
@@ -330,6 +334,10 @@ const Donate = () => {
     }
     if (!anonymous && !email.trim()) {
       setFormError("Email is required unless you choose to donate anonymously.");
+      return;
+    }
+    if (!anonymous && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setFormError("Please enter a valid email address.");
       return;
     }
     if (designateToSafehouse && !selectedSafehouse) {

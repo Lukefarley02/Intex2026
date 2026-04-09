@@ -187,9 +187,9 @@ const DashboardLayout = ({
   const SidebarContent = () => (
     <>
       <Link to="/" className="flex items-center gap-2 px-4 py-5 text-sidebar-primary font-bold text-lg border-b border-sidebar-border">
-        <Flame className="w-6 h-6" /> Ember
+        <Flame className="w-6 h-6" aria-hidden="true" /> Ember
       </Link>
-      <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+      <nav aria-label="Sidebar navigation" className="flex-1 p-3 space-y-1 overflow-y-auto">
         {visibleTopLinks.map((item) => {
           const active = location.pathname === item.to;
           return (
@@ -203,7 +203,7 @@ const DashboardLayout = ({
                   : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
               }`}
             >
-              <item.icon className="w-4.5 h-4.5" />
+              <item.icon className="w-4.5 h-4.5" aria-hidden="true" />
               {item.label}
             </Link>
           );
@@ -245,7 +245,7 @@ const DashboardLayout = ({
                             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                         }`}
                       >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon className="w-4 h-4" aria-hidden="true" />
                         {item.label}
                       </Link>
                     );
@@ -282,14 +282,14 @@ const DashboardLayout = ({
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop sidebar */}
-      <aside className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 ${sidebarThemeClass}`}>
+      <aside aria-label="Main sidebar" className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 ${sidebarThemeClass}`}>
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40">
-          <div className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
+          <div role="presentation" className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
           <aside className={`relative w-60 h-full bg-sidebar flex flex-col ${sidebarThemeClass}`}>
             <button
               className="absolute top-4 right-3 text-sidebar-foreground"
