@@ -173,7 +173,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
   const SidebarContent = () => (
     <>
       <Link to="/" className="flex items-center gap-2 px-4 py-5 text-sidebar-primary font-bold text-lg border-b border-sidebar-border">
-        <Flame className="w-6 h-6" /> Ember Foundation
+        <Flame className="w-6 h-6" /> Ember
       </Link>
       <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
         {visibleTopLinks.map((item) => {

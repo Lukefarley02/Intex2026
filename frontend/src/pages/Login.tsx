@@ -43,7 +43,7 @@ const Login = () => {
         <div className="max-w-md space-y-8 text-center">
           <Flame className="w-16 h-16 mx-auto opacity-90" />
           <h1 className="text-4xl font-extrabold leading-tight">
-            Welcome back to Ember Foundation
+            Welcome back to Ember
           </h1>
           <p className="text-lg opacity-80 leading-relaxed">
             "The best way to find yourself is to lose yourself in the service of others."
@@ -56,7 +56,7 @@ const Login = () => {
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
-            <Flame className="w-8 h-8" /> Ember Foundation
+            <Flame className="w-8 h-8" /> Ember
           </div>
 
           <div>

@@ -87,11 +87,15 @@ const DonorPortal = () => {
   const impactQ = useQuery<DonorImpact>({
     queryKey: ["donor-impact"],
     queryFn: () => apiFetch<DonorImpact>("/api/donorportal/me/impact"),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const donationsQ = useQuery<DonationRow[]>({
     queryKey: ["donor-donations"],
     queryFn: () => apiFetch<DonationRow[]>("/api/donorportal/me/donations"),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const campaignsQ = useQuery<Campaign[]>({
