@@ -220,4 +220,9 @@ namespace Intex2026.Api.Migrations.Identity
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
-        
+                        .IsRequired();
+                });
+#pragma warning restore 612, 618
+        }
+    }
+}
