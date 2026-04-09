@@ -345,7 +345,7 @@ const HomeVisitation = () => {
   const detailResident = selected ? residentLookup.get(selected.residentId) : undefined;
 
   return (
-    <DashboardLayout title="Home Visitation & Case Conferences">
+    <DashboardLayout title="Home Visitation">
       <div className="max-w-6xl space-y-6">
 
         {/* Header */}
