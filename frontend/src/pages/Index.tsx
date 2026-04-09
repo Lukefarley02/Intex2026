@@ -17,12 +17,14 @@ import { useAuth } from "@/api/AuthContext";
 
 interface PublicStats {
   safehouseCount: number;
-  girlsSupported: number;
+  girlsSupported: number;     // actual count of residents ever served
   activeGirls: number;
   reintegratedGirls: number;
   totalRaised: number;
-  retentionRate: number; // 0..1
-  girlsHelped: number;   // totalRaised ÷ live cost-per-girl
+  retentionRate: number;      // 0..1
+  girlsHelped: number;        // full girl-years of care funded
+  monthsOfCareFunded: number; // linear: totalRaised ÷ monthly_cost
+  monthlyCostPerGirl: number;
   costPerGirl: number;
 }
 
@@ -146,9 +148,16 @@ const Index = () => {
             </a>
           </div>
           <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
+            {/* Primary hero stat: the actual count of residents ever
+                served by the program — an honest, non-derived number
+                that matches what a visitor would see if they walked
+                through every safehouse. Replaces the previous
+                `girlsHelped` pill which was derived from dollars raised
+                and could misleadingly inflate or deflate depending on
+                donation timing. */}
             <StatPill
-              value={stats ? String(stats.girlsHelped) : "…"}
-              label="girls helped"
+              value={stats ? String(stats.girlsSupported) : "…"}
+              label="girls sheltered"
             />
             <StatPill
               value={stats ? String(stats.safehouseCount) : "…"}

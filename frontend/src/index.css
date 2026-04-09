@@ -107,6 +107,33 @@
     --success: 95 45% 45%;
     --success-foreground: 20 14% 8%;
   }
+
+  /* Donor-only sidebar theme — a warm brick red that complements the
+     Ember orange primary without clashing with the teal used for
+     Admin/Staff sidebars. Applied via the `.donor-theme` class on the
+     sidebar <aside> so it only affects donor sessions and leaves the
+     rest of the app's palette untouched. */
+  .donor-theme {
+    --sidebar-background: 0 62% 34%;
+    --sidebar-foreground: 0 10% 96%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 62% 34%;
+    --sidebar-accent: 0 58% 28%;
+    --sidebar-accent-foreground: 0 10% 96%;
+    --sidebar-border: 0 45% 42%;
+    --sidebar-ring: 11 63% 46%;
+  }
+
+  .dark .donor-theme {
+    --sidebar-background: 0 45% 14%;
+    --sidebar-foreground: 0 15% 90%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 45% 14%;
+    --sidebar-accent: 0 40% 20%;
+    --sidebar-accent-foreground: 0 15% 95%;
+    --sidebar-border: 0 30% 26%;
+    --sidebar-ring: 11 75% 58%;
+  }
 }
 
 @layer base {

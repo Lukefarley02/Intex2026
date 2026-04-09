@@ -108,6 +108,12 @@ public class PublicController : ControllerBase
         // portal always show consistent "girls helped" numbers.
         var costPerGirl = await ImpactCalculator.GetCostPerGirlAsync(_context);
         var girlsHelped = ImpactCalculator.GirlsHelped(totalRaised, costPerGirl);
+        // Program-wide months of care funded by all donations combined.
+        // Linear in dollars raised, so the landing page can advertise a
+        // "months of care provided" figure that always reflects every
+        // dollar without the integer-rounding cliffs of girlsHelped.
+        var monthsOfCareFunded = ImpactCalculator.MonthsOfCare(totalRaised, costPerGirl);
+        var monthlyCostPerGirl = ImpactCalculator.MonthlyCostPerGirl(costPerGirl);
 
         return Ok(new
         {
@@ -118,6 +124,8 @@ public class PublicController : ControllerBase
             totalRaised,
             retentionRate = retention,
             girlsHelped,
+            monthsOfCareFunded,
+            monthlyCostPerGirl,
             costPerGirl
         });
     }
