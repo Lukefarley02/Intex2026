@@ -49,7 +49,7 @@ public class HomeVisitationsController : ControllerBase
             .OrderByDescending(v => v.VisitDate)
             .ToListAsync();
 
-        var userId = scope.UserId;
+        var callerId = _users.GetUserId(User);
         return list.Select(v => (object)new
         {
             v.VisitationId,
@@ -67,17 +67,16 @@ public class HomeVisitationsController : ControllerBase
             v.VisitOutcome,
             v.SocialWorker,
             v.CreatedByUserId,
-            // Admins can modify any row in scope; Staff can only modify
-            // rows they personally created. Legacy rows (null creator)
-            // are admin-only.
-            CanModify = scope.IsAdmin
-                || (scope.IsStaff && v.CreatedByUserId != null && v.CreatedByUserId == userId)
+            // `canModify` lets the frontend gate Edit/Delete buttons per-row
+            // without re-deriving the rule. Admins can always modify; Staff
+            // can only modify rows they created.
+            CanModify = scope.IsAdmin || v.CreatedByUserId == callerId
         }).ToList();
     }
 
     // GET /api/homevisitations/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<object>> GetHomeVisitation(int id)
+    public async Task<ActionResult<HomeVisitation>> GetHomeVisitation(int id)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
         var v = await _context.HomeVisitations
@@ -85,27 +84,7 @@ public class HomeVisitationsController : ControllerBase
             .FirstOrDefaultAsync(x => x.VisitationId == id);
         if (v == null) return NotFound();
         if (!await CanAccessResidentAsync(v.ResidentId, scope)) return Forbid();
-        var userId = scope.UserId;
-        return new
-        {
-            v.VisitationId,
-            v.ResidentId,
-            v.VisitDate,
-            v.VisitType,
-            v.Purpose,
-            v.LocationVisited,
-            v.FamilyMembersPresent,
-            v.FamilyCooperationLevel,
-            v.Observations,
-            v.SafetyConcernsNoted,
-            v.FollowUpNeeded,
-            v.FollowUpNotes,
-            v.VisitOutcome,
-            v.SocialWorker,
-            v.CreatedByUserId,
-            CanModify = scope.IsAdmin
-                || (scope.IsStaff && v.CreatedByUserId != null && v.CreatedByUserId == userId)
-        };
+        return v;
     }
 
     // POST /api/homevisitations
@@ -120,9 +99,11 @@ public class HomeVisitationsController : ControllerBase
             ? await _context.HomeVisitations.MaxAsync(v => v.VisitationId) + 1
             : 1;
         dto.VisitationId = nextId;
-        dto.CreatedByUserId = scope.UserId;
 
         if (dto.VisitDate == null) dto.VisitDate = DateTime.UtcNow;
+
+        // Stamp the caller as the owner. Trusted server-side.
+        dto.CreatedByUserId = _users.GetUserId(User);
 
         _context.HomeVisitations.Add(dto);
         await _context.SaveChangesAsync();
@@ -131,6 +112,10 @@ public class HomeVisitationsController : ControllerBase
     }
 
     // PUT /api/homevisitations/5
+    //
+    // Ownership rules:
+    //   Admin (any tier) — may edit any record inside their scope.
+    //   Staff            — may ONLY edit records they personally created.
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateHomeVisitation(int id,
         [FromBody] HomeVisitation dto)
@@ -146,11 +131,11 @@ public class HomeVisitationsController : ControllerBase
             && !await CanAccessResidentAsync(dto.ResidentId, scope))
             return Forbid();
 
-        // Staff can only edit visits they personally created.
-        if (scope.IsStaff && existing.CreatedByUserId != scope.UserId)
+        var callerId = _users.GetUserId(User);
+        if (!scope.IsAdmin && existing.CreatedByUserId != callerId)
             return Forbid();
 
-        // Preserve the original creator — don't let the PUT body overwrite it.
+        // Preserve the original owner regardless of what the client sent.
         dto.CreatedByUserId = existing.CreatedByUserId;
 
         _context.Entry(dto).State = EntityState.Modified;
@@ -164,16 +149,26 @@ public class HomeVisitationsController : ControllerBase
         return NoContent();
     }
 
-    // DELETE /api/homevisitations/5  — Founders only.
+    // DELETE /api/homevisitations/5
+    //
+    // Ownership rules:
+    //   Admin (any tier) — may delete any record inside their scope.
+    //   Staff            — may ONLY delete records they personally created.
+    //
+    // (Previously Founder-only. Relaxed so Staff can retract their own entries.)
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteHomeVisitation(int id)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
-        if (!scope.IsFounder) return Forbid();
 
         var v = await _context.HomeVisitations.FindAsync(id);
         if (v == null) return NotFound();
+        if (!await CanAccessResidentAsync(v.ResidentId, scope)) return Forbid();
+
+        var callerId = _users.GetUserId(User);
+        if (!scope.IsAdmin && v.CreatedByUserId != callerId)
+            return Forbid();
+
         _context.HomeVisitations.Remove(v);
         await _context.SaveChangesAsync();
         return NoContent();

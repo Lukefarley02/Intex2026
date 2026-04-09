@@ -49,6 +49,9 @@ public class HomeVisitation
     [Column("social_worker")]
     public string? SocialWorker { get; set; }
 
+    // Identity user id of the staff/admin who originally created this record.
+    // Used to enforce "staff can only edit/delete their own records" on PUT/DELETE.
+    // Nullable so historical rows from seed data (pre-migration) still load.
     [Column("created_by_user_id")]
     public string? CreatedByUserId { get; set; }
 }
