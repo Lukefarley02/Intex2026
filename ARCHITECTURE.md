@@ -29,12 +29,13 @@ Website/Intex2026/
 │   │   ├── SafehousesController.cs         # CRUD /api/safehouses — read scoped; POST/PUT admin-only; DELETE founder-only
 │   │   ├── ProcessRecordingsController.cs  # CRUD ?residentId — scoped through resident's safehouse; NotesRestricted admin-only; DELETE founder-only
 │   │   ├── HomeVisitationsController.cs    # CRUD ?residentId — scoped through resident's safehouse; DELETE founder-only
+│   │   ├── DonorMessagesController.cs       # POST /api/donor-messages, /api/donor-messages/bulk — admin sends templated in-app messages to donors
 │   │   ├── DashboardController.cs          # GET /api/dashboard/stats — KPIs scoped to caller's region; Staff sees zeros (no monetary visibility)
 │   │   ├── ReportsController.cs            # GET /api/reports/summary — IS 413 Reports & Analytics: donation trends, resident outcomes, safehouse performance, reintegration rates, Annual Accomplishment Report (caring/healing/teaching); scope-aware; Staff sees empty monetary sections
 │   │   ├── CampaignsController.cs          # GET /api/campaigns — aggregates from donations
 │   │   ├── AdminUsersController.cs         # GET /api/adminusers (filtered by caller's scope), PUT /api/adminusers/{id}/scope (Founder only)
 │   │   ├── PublicController.cs             # /api/public/stats, /safehouses, /donations, /care-story + POST /api/public/donate (anonymous self-service donation intake)
-│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact, /me/tax-receipt (Donor only; tax-receipt returns IRS Pub 1771 acknowledgment payload)
+│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact, /me/tax-receipt, /me/messages, /me/messages/{id}/read, /me/messages/read-all (Donor only)
 │   ├── Data/
 │   │   ├── ApplicationUser.cs       # Custom IdentityUser with Region + City properties (determines admin scope)
 │   │   ├── AppDbContext.cs          # DbContext for EmberApp DB (6 of 17 tables wired)
@@ -51,7 +52,8 @@ Website/Intex2026/
 │       ├── Safehouse.cs
 │       ├── Resident.cs
 │       ├── ProcessRecording.cs
-│       └── HomeVisitation.cs
+│       ├── HomeVisitation.cs
+│       └── DonorMessage.cs
 │
 └── frontend/                        # React + Vite + TypeScript + Tailwind + shadcn/ui
     ├── package.json
@@ -83,7 +85,8 @@ Website/Intex2026/
         │   ├── setup.ts             # Loaded before each test; imports @testing-library/jest-dom + mocks window.matchMedia
         │   └── example.test.ts      # Placeholder smoke test
         ├── components/
-        │   ├── ConfirmDialog.tsx    # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations; accepts optional `children` slot for extra inputs (e.g. delete-account password prompt)
+        │   ├── SendMessageDialog.tsx # Admin-facing dialog for sending templated in-app messages (ThankYou / Appeal) to one or many donors; supports single + bulk send
+│   ├── ConfirmDialog.tsx    # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations; accepts optional `children` slot for extra inputs (e.g. delete-account password prompt)
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
         │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; collapsible NavGroups (Case Management / Fundraising / Analytics / System) tagged by role and filtered via hasRole() — Donor-only sees Donor Portal, Staff sees Dashboard + case-mgmt tools (no Safehouses — embedded on the Staff Dashboard), Admin sees everything. Bottom-left footer is an "Account Settings" link to /account (sign out lives in the top header bar instead)
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
