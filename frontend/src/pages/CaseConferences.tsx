@@ -38,6 +38,7 @@ import {
   Users,
   Target,
   CheckCircle2,
+  Circle,
   Clock,
   PauseCircle,
   ChevronDown,
@@ -80,7 +81,7 @@ interface ConferenceGroup {
 }
 
 const CATEGORIES = ["Safety", "Education", "Physical Health", "Mental Health"];
-const STATUSES = ["In Progress", "On Hold", "Completed"];
+const STATUSES = ["Open", "In Progress", "On Hold", "Completed"];
 const SERVICES = ["Healing", "Legal", "Teaching", "Counseling", "Medical", "Livelihood", "Spiritual"];
 
 const displayName = (r: ResidentRow) =>
@@ -101,6 +102,8 @@ const statusIcon = (status: string) => {
       return <CheckCircle2 className="w-3.5 h-3.5" />;
     case "On Hold":
       return <PauseCircle className="w-3.5 h-3.5" />;
+    case "Open":
+      return <Circle className="w-3.5 h-3.5" />;
     default:
       return <Clock className="w-3.5 h-3.5" />;
   }
@@ -112,6 +115,8 @@ const statusColor = (status: string) => {
       return "bg-success/10 text-success border-success/20";
     case "On Hold":
       return "bg-warning/10 text-warning border-warning/20";
+    case "Open":
+      return "bg-muted text-muted-foreground border-border";
     default:
       return "bg-primary/10 text-primary border-primary/20";
   }
@@ -189,7 +194,7 @@ const CaseConferences = () => {
   useAuth();
 
   const [searchParams] = useSearchParams();
-  const initialResident = searchParams.get("residentId");
+  void searchParams; // kept for potential future deep-link use
 
   // Create / edit dialog
   const [open, setOpen] = useState(false);
@@ -206,9 +211,6 @@ const CaseConferences = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("__any__");
   const [statusFilter, setStatusFilter] = useState("__any__");
-  const [residentFilter, setResidentFilter] = useState(
-    initialResident ? initialResident : "__any__",
-  );
 
   // Collapsed conference groups
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -235,7 +237,6 @@ const CaseConferences = () => {
     return (plans ?? []).filter((ip) => {
       if (categoryFilter !== "__any__" && ip.planCategory !== categoryFilter) return false;
       if (statusFilter !== "__any__" && ip.status !== statusFilter) return false;
-      if (residentFilter !== "__any__" && String(ip.residentId) !== residentFilter) return false;
       if (q) {
         const res = residentLookup.get(ip.residentId);
         const haystack = [
@@ -251,7 +252,7 @@ const CaseConferences = () => {
       }
       return true;
     });
-  }, [plans, residentLookup, search, categoryFilter, statusFilter, residentFilter]);
+  }, [plans, residentLookup, search, categoryFilter, statusFilter]);
 
   // Group by case_conference_date, then split into upcoming vs past
   const { upcomingGroups, pastGroups } = useMemo(() => {
@@ -299,12 +300,10 @@ const CaseConferences = () => {
 
   const hasFilters =
     categoryFilter !== "__any__" ||
-    statusFilter !== "__any__" ||
-    residentFilter !== "__any__";
+    statusFilter !== "__any__";
   const clearFilters = () => {
     setCategoryFilter("__any__");
     setStatusFilter("__any__");
-    setResidentFilter("__any__");
   };
 
   const toggleGroup = (date: string) => {
@@ -387,19 +386,13 @@ const CaseConferences = () => {
     setOpen(true);
   };
 
-  // Unique residents that have plans (for filter dropdown)
-  const residentsWithPlans = useMemo(() => {
-    const ids = new Set((plans ?? []).map((ip) => ip.residentId));
-    return Array.from(ids)
-      .map((id) => residentLookup.get(id))
-      .filter(Boolean) as ResidentRow[];
-  }, [plans, residentLookup]);
 
   // Summary stats
   const stats = useMemo(() => {
     const all = plans ?? [];
     return {
       total: all.length,
+      open: all.filter((p) => p.status === "Open").length,
       inProgress: all.filter((p) => p.status === "In Progress").length,
       completed: all.filter((p) => p.status === "Completed").length,
       onHold: all.filter((p) => p.status === "On Hold").length,
@@ -512,7 +505,7 @@ const CaseConferences = () => {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
           <Card>
             <CardContent className="p-3 text-center">
               <p className="text-2xl font-bold">{stats.conferences}</p>
@@ -523,6 +516,12 @@ const CaseConferences = () => {
             <CardContent className="p-3 text-center">
               <p className="text-2xl font-bold">{stats.total}</p>
               <p className="text-xs text-muted-foreground">Total Plans</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
+              <p className="text-2xl font-bold text-muted-foreground">{stats.open}</p>
+              <p className="text-xs text-muted-foreground">Open</p>
             </CardContent>
           </Card>
           <Card>
@@ -766,24 +765,6 @@ const CaseConferences = () => {
                 {STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground font-medium">
-              Resident
-            </label>
-            <Select value={residentFilter} onValueChange={setResidentFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Any resident" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__any__">Any resident</SelectItem>
-                {residentsWithPlans.map((r) => (
-                  <SelectItem key={r.residentId} value={String(r.residentId)}>
-                    {displayName(r)}
                   </SelectItem>
                 ))}
               </SelectContent>
