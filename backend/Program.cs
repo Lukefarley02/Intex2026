@@ -182,6 +182,26 @@ using (var scope = app.Services.CreateScope())
             END
         ");
 
+        // Add created_by_user_id column to process_recordings and home_visitations
+        // so the backend can track who created each record and enforce per-row
+        // ownership for Staff users (Staff can only edit/delete their own rows).
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('process_recordings')
+                  AND name = 'created_by_user_id'
+            )
+            ALTER TABLE process_recordings ADD created_by_user_id NVARCHAR(450) NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('home_visitations')
+                  AND name = 'created_by_user_id'
+            )
+            ALTER TABLE home_visitations ADD created_by_user_id NVARCHAR(450) NULL;
+        ");
+
         // Seed roles
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

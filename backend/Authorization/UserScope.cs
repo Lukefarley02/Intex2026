@@ -30,6 +30,7 @@ public sealed class UserScope
         None               // unauthenticated / unknown
     }
 
+    public string? UserId { get; }
     public string? Region { get; }
     public string? City { get; }
     public ScopeLevel Level { get; }
@@ -54,11 +55,12 @@ public sealed class UserScope
         _                          => "none"
     };
 
-    private UserScope(ScopeLevel level, string? region, string? city)
+    private UserScope(ScopeLevel level, string? region, string? city, string? userId = null)
     {
         Level = level;
         Region = region;
         City = city;
+        UserId = userId;
     }
 
     /// <summary>
@@ -79,21 +81,23 @@ public sealed class UserScope
 
         var roles = await users.GetRolesAsync(user);
 
+        var uid = user.Id;
+
         // Admin wins over Staff which wins over Donor when computing scope
         if (roles.Contains("Admin"))
         {
             if (string.IsNullOrWhiteSpace(user.Region) && string.IsNullOrWhiteSpace(user.City))
-                return new UserScope(ScopeLevel.Founder, null, null);
+                return new UserScope(ScopeLevel.Founder, null, null, uid);
             if (string.IsNullOrWhiteSpace(user.City))
-                return new UserScope(ScopeLevel.RegionalManager, user.Region, null);
-            return new UserScope(ScopeLevel.LocationManager, user.Region, user.City);
+                return new UserScope(ScopeLevel.RegionalManager, user.Region, null, uid);
+            return new UserScope(ScopeLevel.LocationManager, user.Region, user.City, uid);
         }
         if (roles.Contains("Staff"))
-            return new UserScope(ScopeLevel.Staff, user.Region, user.City);
+            return new UserScope(ScopeLevel.Staff, user.Region, user.City, uid);
         if (roles.Contains("Donor"))
-            return new UserScope(ScopeLevel.Donor, user.Region, user.City);
+            return new UserScope(ScopeLevel.Donor, user.Region, user.City, uid);
 
-        return new UserScope(ScopeLevel.None, user.Region, user.City);
+        return new UserScope(ScopeLevel.None, user.Region, user.City, uid);
     }
 
     // ── Query filters ─────────────────────────────────────────────────────────

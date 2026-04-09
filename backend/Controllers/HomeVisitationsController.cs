@@ -49,6 +49,7 @@ public class HomeVisitationsController : ControllerBase
             .OrderByDescending(v => v.VisitDate)
             .ToListAsync();
 
+        var userId = scope.UserId;
         return list.Select(v => (object)new
         {
             v.VisitationId,
@@ -64,13 +65,19 @@ public class HomeVisitationsController : ControllerBase
             v.FollowUpNeeded,
             v.FollowUpNotes,
             v.VisitOutcome,
-            v.SocialWorker
+            v.SocialWorker,
+            v.CreatedByUserId,
+            // Admins can modify any row in scope; Staff can only modify
+            // rows they personally created. Legacy rows (null creator)
+            // are admin-only.
+            CanModify = scope.IsAdmin
+                || (scope.IsStaff && v.CreatedByUserId != null && v.CreatedByUserId == userId)
         }).ToList();
     }
 
     // GET /api/homevisitations/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<HomeVisitation>> GetHomeVisitation(int id)
+    public async Task<ActionResult<object>> GetHomeVisitation(int id)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
         var v = await _context.HomeVisitations
@@ -78,7 +85,27 @@ public class HomeVisitationsController : ControllerBase
             .FirstOrDefaultAsync(x => x.VisitationId == id);
         if (v == null) return NotFound();
         if (!await CanAccessResidentAsync(v.ResidentId, scope)) return Forbid();
-        return v;
+        var userId = scope.UserId;
+        return new
+        {
+            v.VisitationId,
+            v.ResidentId,
+            v.VisitDate,
+            v.VisitType,
+            v.Purpose,
+            v.LocationVisited,
+            v.FamilyMembersPresent,
+            v.FamilyCooperationLevel,
+            v.Observations,
+            v.SafetyConcernsNoted,
+            v.FollowUpNeeded,
+            v.FollowUpNotes,
+            v.VisitOutcome,
+            v.SocialWorker,
+            v.CreatedByUserId,
+            CanModify = scope.IsAdmin
+                || (scope.IsStaff && v.CreatedByUserId != null && v.CreatedByUserId == userId)
+        };
     }
 
     // POST /api/homevisitations
@@ -93,6 +120,7 @@ public class HomeVisitationsController : ControllerBase
             ? await _context.HomeVisitations.MaxAsync(v => v.VisitationId) + 1
             : 1;
         dto.VisitationId = nextId;
+        dto.CreatedByUserId = scope.UserId;
 
         if (dto.VisitDate == null) dto.VisitDate = DateTime.UtcNow;
 
@@ -117,6 +145,13 @@ public class HomeVisitationsController : ControllerBase
         if (existing.ResidentId != dto.ResidentId
             && !await CanAccessResidentAsync(dto.ResidentId, scope))
             return Forbid();
+
+        // Staff can only edit visits they personally created.
+        if (scope.IsStaff && existing.CreatedByUserId != scope.UserId)
+            return Forbid();
+
+        // Preserve the original creator — don't let the PUT body overwrite it.
+        dto.CreatedByUserId = existing.CreatedByUserId;
 
         _context.Entry(dto).State = EntityState.Modified;
         try { await _context.SaveChangesAsync(); }

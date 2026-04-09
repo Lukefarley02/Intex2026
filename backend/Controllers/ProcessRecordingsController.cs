@@ -56,6 +56,7 @@ public class ProcessRecordingsController : ControllerBase
             .ToListAsync();
 
         var canSeeNotes = scope.IsAdmin;
+        var userId = scope.UserId;
         return list.Select(p => (object)new
         {
             p.RecordingId,
@@ -72,8 +73,14 @@ public class ProcessRecordingsController : ControllerBase
             p.ReferralMade,
             p.FollowUpActions,
             p.SocialWorker,
+            p.CreatedByUserId,
             // notes_restricted is sensitive — admin (any tier) only.
-            NotesRestricted = canSeeNotes ? p.NotesRestricted : null
+            NotesRestricted = canSeeNotes ? p.NotesRestricted : null,
+            // Admins can modify any row in scope; Staff can only modify
+            // rows they personally created. Legacy rows (null creator)
+            // are admin-only.
+            CanModify = scope.IsAdmin
+                || (scope.IsStaff && p.CreatedByUserId != null && p.CreatedByUserId == userId)
         }).ToList();
     }
 
@@ -91,6 +98,7 @@ public class ProcessRecordingsController : ControllerBase
         if (!await CanAccessResidentAsync(p.ResidentId, scope)) return Forbid();
 
         var canSeeNotes = scope.IsAdmin;
+        var userId = scope.UserId;
         return new
         {
             p.RecordingId,
@@ -107,7 +115,10 @@ public class ProcessRecordingsController : ControllerBase
             p.ReferralMade,
             p.FollowUpActions,
             p.SocialWorker,
-            NotesRestricted = canSeeNotes ? p.NotesRestricted : null
+            p.CreatedByUserId,
+            NotesRestricted = canSeeNotes ? p.NotesRestricted : null,
+            CanModify = scope.IsAdmin
+                || (scope.IsStaff && p.CreatedByUserId != null && p.CreatedByUserId == userId)
         };
     }
 
@@ -124,6 +135,7 @@ public class ProcessRecordingsController : ControllerBase
             ? await _context.ProcessRecordings.MaxAsync(p => p.RecordingId) + 1
             : 1;
         dto.RecordingId = nextId;
+        dto.CreatedByUserId = scope.UserId;
 
         if (dto.SessionDate == null) dto.SessionDate = DateTime.UtcNow;
 
@@ -148,6 +160,13 @@ public class ProcessRecordingsController : ControllerBase
         if (existing.ResidentId != dto.ResidentId
             && !await CanAccessResidentAsync(dto.ResidentId, scope))
             return Forbid();
+
+        // Staff can only edit recordings they personally created.
+        if (scope.IsStaff && existing.CreatedByUserId != scope.UserId)
+            return Forbid();
+
+        // Preserve the original creator — don't let the PUT body overwrite it.
+        dto.CreatedByUserId = existing.CreatedByUserId;
 
         _context.Entry(dto).State = EntityState.Modified;
         try { await _context.SaveChangesAsync(); }
