@@ -362,8 +362,13 @@ const Residents = () => {
 
   const filtered = useMemo(() => {
     let rows = residents;
-    if (statusFilter !== ANY)
-      rows = rows.filter((r) => (r.caseStatus ?? "").trim() === statusFilter);
+    if (statusFilter !== ANY) {
+      if (statusFilter === "Closed" || statusFilter === "Transferred") {
+        rows = rows.filter((r) => (r.caseStatus ?? "").trim() === statusFilter);
+      } else {
+        rows = rows.filter((r) => deriveStage(r) === statusFilter);
+      }
+    }
     if (safehouseFilter !== ANY)
       rows = rows.filter((r) => (r.safehouse?.name ?? "") === safehouseFilter);
     if (priorityFilter !== ANY)
