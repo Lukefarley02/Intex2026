@@ -26,6 +26,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     // ----- In-Kind Donations -----
     public DbSet<InKindDonationItem> InKindDonationItems => Set<InKindDonationItem>();
 
+    // ----- Messaging -----
+    public DbSet<DonorMessage> DonorMessages => Set<DonorMessage>();
+
     // ----- Analytics -----
     public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
 
@@ -52,6 +55,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<InKindDonationItem>()
             .Property(i => i.EstimatedUnitValue)
             .HasColumnType("decimal(10,2)");
+        modelBuilder.Entity<DonorMessage>().ToTable("donor_messages");
         modelBuilder.Entity<SocialMediaPost>().ToTable("social_media_posts");
         modelBuilder.Entity<SocialMediaPost>()
             .Property(p => p.EstimatedDonationValuePhp)

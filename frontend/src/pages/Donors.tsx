@@ -17,7 +17,6 @@ import {
   Search,
   Plus,
   Send,
-  Filter,
   Pencil,
   Trash2,
   AlertTriangle,
@@ -33,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import LogDonationDialog from "@/components/LogDonationDialog";
+import SendMessageDialog from "@/components/SendMessageDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -226,9 +226,30 @@ const Donors = () => {
   const isStaffOnly = hasRole("Staff") && !hasRole("Admin");
   const [logDonationOpen, setLogDonationOpen] = useState(false);
 
+  // ---- Message dialog state ----
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgDonor, setMsgDonor] = useState<SupporterRow | null>(null);
+  const [bulkMsgOpen, setBulkMsgOpen] = useState(false);
+
+  const openSingleMessage = (row: SupporterRow) => {
+    setMsgDonor(row);
+    setMsgOpen(true);
+  };
+
+  // Map a SupporterRow into the shape SendMessageDialog expects.
+  const toDonorTarget = (s: SupporterRow) => ({
+    supporterId: s.supporterId,
+    displayName: displayName(s),
+    firstName: s.firstName,
+    lastName: s.lastName,
+    totalDonated: s.totalDonated,
+    lastGiftDate: s.lastGiftDate,
+  });
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DonorTypeFilter>("all");
-  const [onlyAtRisk, setOnlyAtRisk] = useState(false);
+  type RiskFilter = "all" | "Active" | "Watch" | "At risk";
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   // Always fetch both donor types server-side, then filter client-side
   // for snappy toggles between Monetary / In-Kind / All.
@@ -260,13 +281,12 @@ const Donors = () => {
         if (!haystack.includes(q)) return false;
       }
 
-      if (onlyAtRisk) {
-        const risk = computeRisk(s);
-        if (risk !== "At risk" && risk !== "Watch") return false;
+      if (riskFilter !== "all") {
+        if (computeRisk(s) !== riskFilter) return false;
       }
       return true;
     });
-  }, [supporters, typeFilter, search, onlyAtRisk]);
+  }, [supporters, typeFilter, search, riskFilter]);
 
   // Summary counts for the type pills
   const counts = useMemo(
@@ -455,16 +475,31 @@ const Donors = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant={onlyAtRisk ? "default" : "outline"}
-            size="sm"
-            onClick={() => setOnlyAtRisk((v) => !v)}
-          >
-            <Filter className="w-4 h-4 mr-1" /> At-risk
-          </Button>
+          <div className="flex items-center gap-1">
+            {(["all", "Active", "Watch", "At risk"] as RiskFilter[]).map((r) => (
+              <Button
+                key={r}
+                variant={riskFilter === r ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRiskFilter(r)}
+                className="h-8"
+              >
+                {r === "all" ? "All" : r}
+              </Button>
+            ))}
+          </div>
         </div>
         {canWrite && (
           <div className="flex items-center gap-2">
+            {filtered.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkMsgOpen(true)}
+              >
+                <Send className="w-4 h-4 mr-1" /> Message {filtered.length === supporters.length ? "all" : `${filtered.length}`}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -627,7 +662,8 @@ const Donors = () => {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8"
-                      aria-label={`Contact ${displayName(s)}`}
+                      aria-label={`Message ${displayName(s)}`}
+                      onClick={() => openSingleMessage(s)}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -913,6 +949,23 @@ const Donors = () => {
       <LogDonationDialog
         open={logDonationOpen}
         onOpenChange={setLogDonationOpen}
+      />
+
+      {/* ---- Single message dialog ---- */}
+      <SendMessageDialog
+        open={msgOpen}
+        onOpenChange={(v) => {
+          setMsgOpen(v);
+          if (!v) setMsgDonor(null);
+        }}
+        donor={msgDonor ? toDonorTarget(msgDonor) : null}
+      />
+
+      {/* ---- Bulk message dialog ---- */}
+      <SendMessageDialog
+        open={bulkMsgOpen}
+        onOpenChange={setBulkMsgOpen}
+        donors={filtered.map(toDonorTarget)}
       />
     </DashboardLayout>
   );

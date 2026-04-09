@@ -213,7 +213,7 @@ Pass `null` or empty string to clear a value. Setting `region` only → Regional
 
 ## Donor Portal
 
-All three endpoints require a valid JWT token with the `Donor` role. The current user's identity is read from JWT claims — no user ID is accepted as a URL parameter.
+All endpoints require a valid JWT token with the `Donor` role. The current user's identity is read from JWT claims — no user ID is accepted as a URL parameter.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
@@ -221,6 +221,9 @@ All three endpoints require a valid JWT token with the `Donor` role. The current
 | GET | `/api/donorportal/me/donations` | Donor | Current donor's full donation history |
 | GET | `/api/donorportal/me/impact` | Donor | Aggregated giving stats for current donor |
 | GET | `/api/donorportal/me/tax-receipt?year=YYYY` | Donor | IRS Publication 1771 written acknowledgment payload for the given tax year (defaults to current year) |
+| GET | `/api/donorportal/me/messages` | Donor | In-app messages from the organization, newest first |
+| PUT | `/api/donorportal/me/messages/{id}/read` | Donor | Mark a single message as read (returns 204) |
+| PUT | `/api/donorportal/me/messages/read-all` | Donor | Mark all messages as read (returns 204) |
 
 **GET `/api/donorportal/me` response:**
 ```json
@@ -323,6 +326,42 @@ Returns zeros and empty array if no donations found. Never throws 404.
 }
 ```
 This is **not** a specific numbered IRS form. It is the standard 501(c)(3) written acknowledgment letter described in IRS Publication 1771, which US donors keep to support the charitable-contribution totals they enter on **Schedule A of Form 1040**. Form 8283 only applies to non-cash gifts over $500, which this flow does not collect. The frontend renders the response as a print-friendly letter at `/tax-receipt`; the browser's native print dialog offers "Save as PDF".
+
+---
+
+## Donor Messages (Admin)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/donor-messages` | Admin | Send a templated in-app message to a single donor |
+| POST | `/api/donor-messages/bulk` | Admin | Send the same message to multiple donors at once |
+
+**POST `/api/donor-messages` request:**
+```json
+{
+  "supporterId": 123,
+  "templateType": "ThankYou",
+  "subject": "Thank you for your generous support!",
+  "body": "Dear Sarah, ..."
+}
+```
+
+**POST `/api/donor-messages/bulk` request:**
+```json
+{
+  "supporterIds": [123, 456, 789],
+  "templateType": "Appeal",
+  "subject": "Your continued support can change a girl's life",
+  "body": "Dear supporter, ..."
+}
+```
+`templateType` is one of `"ThankYou"` or `"Appeal"`. Subject and body are fully editable by the admin before sending — the templates are just starting points auto-generated on the frontend.
+
+**POST `/api/donor-messages/bulk` response:**
+```json
+{ "sent": 3, "skipped": 0 }
+```
+`skipped` counts any IDs that didn't match a real supporter row.
 
 ---
 
