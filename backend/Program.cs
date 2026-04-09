@@ -87,7 +87,12 @@ builder.Services.AddHsts(options =>
     options.IncludeSubDomains = true;
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    // Trim whitespace and strip HTML tags from all incoming string values
+    // before any controller action runs — guards against stored XSS.
+    options.Filters.Add<Intex2026.Api.Filters.SanitizeInputFilter>();
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
