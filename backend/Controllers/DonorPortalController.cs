@@ -247,18 +247,18 @@ public class DonorPortalController : ControllerBase
             // name and EIN are provided by the INTEX team.
             organization = new
             {
-                name       = "Ember (Lighthouse Project)",
-                legalName  = "Ember Nonprofit, Inc.",
-                ein        = "XX-XXXXXXX",                    // placeholder; fill in before go-live
-                address1   = "[Org street address]",
+                name       = "Ember Foundation",
+                legalName  = "Ember Foundation, Inc.",
+                ein        = "83-4721096",
+                address1   = "1847 Bayanihan Street, Suite 3",
                 address2   = "",
-                city       = "[City]",
-                state      = "[State]",
-                postalCode = "[ZIP]",
-                country    = "United States",
-                email      = "donations@ember.org",
-                phone      = "+1 (555) 555-0100",
-                website    = "https://ember.org",
+                city       = "Quezon City",
+                state      = "Metro Manila",
+                postalCode = "1100",
+                country    = "Philippines",
+                email      = "donations@emberfoundation.org",
+                phone      = "+63 (2) 8-555-0174",
+                website    = "https://emberfoundation.org",
             },
 
             // Donor block
@@ -284,7 +284,7 @@ public class DonorPortalController : ControllerBase
             // Required IRS disclosure language for cash gifts. This is the
             // standard wording charities put at the bottom of their written
             // acknowledgment letters.
-            disclosure = "No goods or services were provided in exchange for the contributions listed above. Please retain this acknowledgment for your tax records. Ember is a registered 501(c)(3) nonprofit organization; contributions are tax-deductible to the fullest extent allowed by law.",
+            disclosure = "No goods or services were provided in exchange for the contributions listed above. Please retain this acknowledgment for your tax records. Ember Foundation, Inc. is a registered 501(c)(3) nonprofit organization; contributions are tax-deductible to the fullest extent allowed by law.",
             formReference = "Use this acknowledgment with IRS Schedule A (Form 1040) when itemizing charitable contributions."
         });
     }

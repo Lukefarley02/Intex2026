@@ -296,7 +296,7 @@ const TaxReceipt = () => {
           {/* Signature */}
           <div className="pt-6">
             <p className="text-sm">With deep gratitude,</p>
-            <p className="mt-6 font-semibold">Ember Donor Services</p>
+            <p className="mt-6 font-semibold">Ember Foundation Donor Services</p>
             <p className="text-xs text-gray-500">{organization.email}</p>
           </div>
         </div>

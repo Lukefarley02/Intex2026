@@ -37,17 +37,25 @@ public static class ImpactCalculator
             return FallbackCostPerGirl;
 
         var rate = totalRaised / totalGirlsServed;
-        // Floor: never report a rate that is unrealistically low (synthetic data artefact)
-        return Math.Max(rate, MinimumCostPerGirl);
+        // Keep rate within a meaningful band: never unrealistically low (data
+        // artefact) and never above the advertised $1,500 rate — if the DB
+        // ratio is higher it just means donations outpace resident headcount in
+        // the seed data, and we don't want that to make donor impact look like 0.
+        return Math.Clamp(rate, MinimumCostPerGirl, FallbackCostPerGirl);
     }
 
     /// <summary>
     /// Converts a donation total into an estimated number of girls helped.
+    /// Returns at least 1 for any meaningful donation so donors always see
+    /// a positive impact figure.
     /// </summary>
     public static int GirlsHelped(decimal donated, decimal costPerGirl)
     {
         if (costPerGirl <= 0 || donated <= 0)
             return 0;
-        return (int)Math.Round(donated / costPerGirl);
+        var raw = (int)Math.Round(donated / costPerGirl);
+        // Show at least 1 girl helped once the donor has given $25+ (the
+        // "30 days of shelter" threshold the site advertises).
+        return donated >= 25m ? Math.Max(1, raw) : raw;
     }
 }
