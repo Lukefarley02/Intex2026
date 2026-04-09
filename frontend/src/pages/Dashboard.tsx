@@ -253,7 +253,7 @@ const Dashboard = () => {
         {/* Social Media Overview — live from /api/social/stats */}
         <Card className="rounded-xl shadow-sm flex flex-col min-h-0">
           <CardHeader className="pb-2 flex-shrink-0">
-            <CardTitle className="text-base flex items-center gap-2 text-secondary">
+            <CardTitle className="text-base flex items-center gap-2 text-secondary" aria-label={socialData ? "Social Media Overview" : "Social Media Overview — data pending"}>
               <Globe className="w-4 h-4" aria-hidden="true" /> Social Media Overview
             </CardTitle>
           </CardHeader>
@@ -352,7 +352,7 @@ const Dashboard = () => {
                   No recent donations recorded.
                 </p>
               )}
-              {data?.recentActivity.map((a, i) => {
+              {data?.recentActivity?.map((a, i) => {
                 const text = `${a.supporterName} donated $${Math.round(
                   a.amount,
                 ).toLocaleString()}`;
@@ -371,6 +371,7 @@ const Dashboard = () => {
                   </div>
                 );
               })}
+              {/* Show a system milestone placeholder when there are fewer than 3 recent donations to fill the activity feed */}
               {data?.recentActivity && data.recentActivity.length < 3 && (
                 <div className="flex items-start gap-2">
                   <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-gold/10 text-gold">

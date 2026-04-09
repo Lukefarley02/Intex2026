@@ -7,14 +7,14 @@ interface FlipCardProps {
   backContent?: ReactNode;
 }
 
-const FlipCard = ({ icon, title, backContent }: FlipCardProps) => {
+const FlipCard = ({ icon, title, description, backContent }: FlipCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
 
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Card flip area */}
       <div
-        className="relative w-full h-52 cursor-pointer"
+        className="relative w-full h-52 cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-xl"
         style={{ perspective: "1000px" }}
         onMouseEnter={() => setIsFlipped(true)}
         onMouseLeave={() => setIsFlipped(false)}
@@ -26,7 +26,7 @@ const FlipCard = ({ icon, title, backContent }: FlipCardProps) => {
         }}
         role="button"
         tabIndex={0}
-        aria-label={isFlipped ? `${title} — press Enter to go back` : `${title} — hover or press Enter to learn more`}
+        aria-label={isFlipped ? `${title} details, expanded` : `${title}, click to expand`}
       >
         <div
           className="relative w-full h-full transition-all duration-500"
@@ -44,6 +44,7 @@ const FlipCard = ({ icon, title, backContent }: FlipCardProps) => {
               {icon}
             </div>
             <h3 className="font-semibold text-foreground text-center text-base">{title}</h3>
+            <p className="text-sm text-muted-foreground text-center">{description}</p>
             {/* Flip hint */}
             <span className="absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-primary">
               Learn more →

@@ -41,7 +41,7 @@ const Login = () => {
       {/* Left: brand panel */}
       <div className="hidden lg:flex gradient-ember flex-col justify-center items-center p-12 text-primary-foreground">
         <div className="max-w-md space-y-8 text-center">
-          <Flame className="w-16 h-16 mx-auto opacity-90" />
+          <Flame className="w-16 h-16 mx-auto opacity-90" aria-hidden="true" />
           <h1 className="text-4xl font-extrabold leading-tight">
             Welcome back to Ember
           </h1>
@@ -56,7 +56,7 @@ const Login = () => {
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
-            <Flame className="w-8 h-8" /> Ember
+            <Flame className="w-8 h-8" aria-hidden="true" /> Ember
           </div>
 
           <div>
@@ -66,12 +66,6 @@ const Login = () => {
                 className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to home
-              </Link>
-              <Link
-                to="/donate"
-                className="md:hidden inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
-              >
-                New user? Make a donation →
               </Link>
             </div>
             <h2 className="text-2xl font-bold">Sign in</h2>

@@ -33,58 +33,33 @@ function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      background: '#1a1a2e',
-      color: '#fff',
-      padding: '1rem 2rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '1rem',
-      zIndex: 9999,
-      boxShadow: '0 -2px 10px rgba(0,0,0,0.3)',
-      flexWrap: 'wrap',
-    }}>
-      <p style={{ margin: 0, fontSize: '0.9rem', color: '#ccc', flex: 1 }}>
+    <div
+      role="dialog"
+      aria-label="Cookie consent banner"
+      className="fixed bottom-0 left-0 right-0 bg-foreground text-card p-4 sm:p-6 flex flex-wrap justify-between items-center gap-4 z-[9999] shadow-lg dark:shadow-2xl"
+    >
+      <p className="text-sm text-muted flex-1">
         We use cookies to keep you logged in and remember your preferences.
         See our{' '}
-        <a href="/privacy" style={{ color: '#e94560' }}>
+        <a
+          href="/privacy"
+          className="text-primary hover:text-primary-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-foreground rounded"
+        >
           Privacy Policy
         </a>
         {' '}for details.
       </p>
 
-      <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+      <div className="flex gap-3 flex-shrink-0">
         <button
           onClick={handleDecline}
-          style={{
-            background: 'transparent',
-            color: '#ccc',
-            border: '1px solid #555',
-            padding: '0.5rem 1.25rem',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-          }}
+          className="px-5 py-2 text-sm bg-transparent border border-muted text-muted hover:text-card hover:border-card rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-foreground"
         >
           Decline
         </button>
         <button
           onClick={handleAccept}
-          style={{
-            background: '#e94560',
-            color: '#fff',
-            border: 'none',
-            padding: '0.5rem 1.25rem',
-            borderRadius: 4,
-            cursor: 'pointer',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-          }}
+          className="px-5 py-2 text-sm font-bold bg-primary text-card hover:bg-primary-light rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-primary"
         >
           Accept
         </button>

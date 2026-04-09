@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/api/AuthContext";
 
 interface ProtectedRouteProps {
@@ -15,7 +15,11 @@ function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+      <div
+        className="min-h-screen flex items-center justify-center text-muted-foreground"
+        role="status"
+        aria-label="Loading"
+      >
         Loading...
       </div>
     );
@@ -37,11 +41,17 @@ function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
     const hasRequiredRole = roles.some((role) => user?.roles.includes(role));
     if (!hasRequiredRole) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-2 p-8 text-center">
+        <div
+          className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 text-center"
+          role="alert"
+        >
           <h2 className="text-2xl font-bold">Access Denied</h2>
           <p className="text-muted-foreground">
             You do not have permission to view this page.
           </p>
+          <Link to="/" className="text-primary hover:underline mt-4">
+            Return to dashboard
+          </Link>
         </div>
       );
     }
@@ -49,11 +59,17 @@ function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
 
   if (founderOnly && !isFounder) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-2 p-8 text-center">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4 p-8 text-center"
+        role="alert"
+      >
         <h2 className="text-2xl font-bold">Access Denied</h2>
         <p className="text-muted-foreground">
           This page is restricted to top-level administrators.
         </p>
+        <Link to="/" className="text-primary hover:underline mt-4">
+          Return to dashboard
+        </Link>
       </div>
     );
   }

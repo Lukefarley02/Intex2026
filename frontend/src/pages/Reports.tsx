@@ -291,7 +291,7 @@ const Reports = () => {
                         <div
                           className="h-full bg-primary"
                           style={{
-                            width: trendMax > 0 ? `${(t.total / trendMax) * 100}%` : "0%",
+                            width: `${(t.total / (trendMax || 1)) * 100}%`,
                           }}
                         />
                       </div>
