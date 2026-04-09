@@ -28,6 +28,5 @@ public class ApplicationUser : IdentityUser
     /// before any other navigation. Cleared automatically in
     /// AuthController.ChangePassword once the user sets a new password.
     /// </summary>
-    /// <summary>Forces the user to change their password on next login.</summary>
     public bool MustChangePassword { get; set; }
 }
