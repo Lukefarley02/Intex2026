@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card"; // still used in features section
 import PublicNav from "@/components/PublicNav";
 import StatPill from "@/components/StatPill";
-import StatsCounter from "@/components/StatsCounter";
 import SafehouseMap from "@/components/SafehouseMap";
+import FlipCard from "@/components/FlipCard";
+import AnimatedCounter from "@/components/AnimatedCounter";
+import { useCounterAnimation } from "@/hooks/useCounterAnimation";
 import heroImage from "@/assets/hero-image.jpg";
 import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -78,12 +80,6 @@ const Index = () => {
   const stats = statsQuery.data;
   const safehouses = safehousesQuery.data ?? [];
   const care = careStoryQuery.data;
-  const careError = careStoryQuery.isError;
-  const careStat = (
-    loading: boolean,
-    value: string | number | undefined,
-  ): string =>
-    loading ? "…" : value !== undefined ? String(value) : careError ? "—" : "…";
 
   return (
   <div className="min-h-screen bg-background">
@@ -126,18 +122,18 @@ const Index = () => {
     {/* Hero */}
     <section id="mission" className="relative overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroImage} alt="Girls supported by Ember" className="w-full h-full object-cover" width={1920} height={1080} />
+        <img src={heroImage} alt="Girls supported by Ember Foundation" className="w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
       </div>
       <div className="relative container py-24 md:py-36 lg:py-44">
         <div className="max-w-2xl space-y-6">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-card leading-tight">
+          <h1 className="animate-fade-in-up-1 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-card leading-tight">
             Every girl deserves a <span className="text-primary">safe place</span> to heal & grow
           </h1>
-          <p className="text-lg text-card/80 max-w-xl">
-            Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
+          <p className="animate-fade-in-up-2 text-lg text-card/80 max-w-xl">
+            Ember Foundation empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
             <Link to="/donate">
               <Button variant="hero" size="lg" className="text-base">
                 Support a girl's journey <Heart className="w-4 h-4 ml-1" aria-hidden="true" />
@@ -149,7 +145,7 @@ const Index = () => {
               </Button>
             </a>
           </div>
-          <div className="flex flex-wrap gap-3 pt-4">
+          <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
             <StatPill
               value={stats ? String(stats.girlsHelped) : "…"}
               label="girls helped"
@@ -178,58 +174,63 @@ const Index = () => {
             Restoring hope, one girl at a time
           </h2>
           <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
-            Ember exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate
+            Ember Foundation exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate
             girls who have experienced trafficking, abuse, and exploitation. We believe every girl
             deserves safety, dignity, and a future full of possibility.
           </p>
           <div className="grid sm:grid-cols-3 gap-8 pt-6 text-left">
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <Heart className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Protect</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Provide safe shelter and immediate care for girls rescued from dangerous situations.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Rehabilitate</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Walk alongside each girl through counseling, education, and personalized care plans.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
-                <UserCheck className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground">Reintegrate</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Equip girls with skills and family support to return confidently to their communities.
-              </p>
-            </div>
+            <FlipCard
+              icon={<Heart className="w-5 h-5 text-primary" />}
+              title="Protect"
+              description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Our Protection</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Safe spaces for healing
+                  </div>
+                </div>
+              }
+            />
+            <FlipCard
+              icon={<BookOpen className="w-5 h-5 text-primary" />}
+              title="Rehabilitate"
+              description="Walk alongside each girl through counseling, education, and personalized care plans."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Healing Process</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Personalized care & growth
+                  </div>
+                </div>
+              }
+            />
+            <FlipCard
+              icon={<UserCheck className="w-5 h-5 text-primary" />}
+              title="Reintegrate"
+              description="Equip girls with skills and family support to return confidently to their communities."
+              backContent={
+                <div className="space-y-2 h-full flex flex-col justify-center">
+                  <h4 className="font-semibold text-lg">Reintegration</h4>
+                  <p className="text-sm opacity-90 flex-grow">
+                    We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
+                  </p>
+                  <div className="pt-2 text-xs opacity-75">
+                    Independent, confident futures
+                  </div>
+                </div>
+              }
+            />
           </div>
         </div>
       </div>
     </section>
-
-    {/* Animated Stats Counter */}
-    {stats && care && (
-      <StatsCounter
-        bg="light"
-        duration={2000}
-        stats={[
-          { value: stats.girlsSupported,                        label: "Girls supported since founding",      format: "integer" },
-          { value: stats.safehouseCount,                        label: "Active safehouses across the Philippines", format: "integer" },
-          { value: Math.round(stats.retentionRate * 100),       label: "Donor retention rate",                format: "percent" },
-          { value: care.totalCounselingSessions,                label: "Counseling sessions held",            format: "integer" },
-          { value: care.totalHomeVisits,                        label: "Home & family visits made",           format: "integer" },
-          { value: Math.round(care.progressRate * 100),         label: "Of sessions show measurable progress",format: "percent" },
-        ]}
-      />
-    )}
 
     {/* Journey of Care */}
     <section id="how-we-care" className="container py-20 md:py-28">
@@ -250,7 +251,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.totalCounselingSessions.toLocaleString())}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.totalCounselingSessions} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Counseling sessions held</p>
               <p className="text-xs text-muted-foreground mt-1">One-on-one and group sessions with social workers</p>
@@ -264,7 +265,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.totalHomeVisits.toLocaleString())}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.totalHomeVisits} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home & family visits made</p>
               <p className="text-xs text-muted-foreground mt-1">Checking on girls in their communities and homes</p>
@@ -278,7 +279,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.progressRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.progressRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Of sessions show measurable progress</p>
               <p className="text-xs text-muted-foreground mt-1">Noted by social workers after each session</p>
@@ -296,7 +297,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.positiveEndRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.positiveEndRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Sessions end on a hopeful note</p>
               <p className="text-xs text-muted-foreground mt-1">Girls leaving sessions feeling calm, hopeful, or motivated</p>
@@ -310,7 +311,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care?.girlsRiskImproved)}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care?.girlsRiskImproved} />}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Girls moved from high to low risk</p>
               <p className="text-xs text-muted-foreground mt-1">Reduced from critical or high risk to medium or low</p>
@@ -324,7 +325,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.favorableVisitRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.favorableVisitRate * 100)}%` : "…"}
               </p>
               <p className="text-sm font-medium text-muted-foreground mt-1">Home visits end favorably</p>
               <p className="text-xs text-muted-foreground mt-1">Family environments assessed as safe and supportive</p>
@@ -375,7 +376,7 @@ const Index = () => {
         <div className="grid md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2 text-card font-bold text-lg mb-3">
-              <Heart className="w-5 h-5 text-primary" aria-hidden="true" /> Ember
+              <Heart className="w-5 h-5 text-primary" aria-hidden="true" /> Ember Foundation
             </div>
             <p className="text-sm leading-relaxed">
               Empowering NGOs in the Philippines to protect, nurture, and restore the lives of vulnerable girls.
@@ -397,7 +398,7 @@ const Index = () => {
           </div>
         </div>
         <div className="border-t border-card/10 mt-8 pt-6 text-xs text-center">
-          © 2026 Ember. All rights reserved. <Link to="/privacy" className="underline hover:text-card">Privacy Policy</Link>.
+          © 2026 Ember Foundation. All rights reserved. <Link to="/privacy" className="underline hover:text-card">Privacy Policy</Link>.
         </div>
       </div>
     </footer>
