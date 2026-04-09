@@ -537,27 +537,21 @@ const Residents = () => {
         )}
       </div>
 
-      {/* ML Pipeline quick-link — Founder only */}
+      {/* ML Insights quick-link — Founder only */}
       {isFounder && (
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">ML Insights</h2>
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
+            <Brain className="w-3.5 h-3.5" /> ML Insights:
+          </span>
+          <Link
+            to="/ml-insights?tab=outcomes"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Heart className="w-3.5 h-3.5 text-emerald-500" />
+            Resident Outcomes
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
         </div>
-        <Link to="/ml-insights?tab=outcomes" className="group block max-w-sm">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Pipeline 04</p>
-                <p className="text-sm font-semibold text-emerald-700">Resident Outcomes</p>
-              </div>
-              <Heart className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-            </div>
-            <p className="text-xs text-emerald-600/80 mb-2">Which residents are progressing toward reintegration? Risk-scores each resident and identifies readiness tiers.</p>
-            <span className="text-xs font-medium text-emerald-600 group-hover:underline">View outcomes analysis →</span>
-          </div>
-        </Link>
-      </div>
       )}
 
       {/* ── State messages ── */}

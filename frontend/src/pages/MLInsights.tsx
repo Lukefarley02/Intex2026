@@ -53,12 +53,13 @@ const PIPELINES = [
   {
     id: "churn",
     number: "01",
-    label: "Donor Churn",
+    label: "Donor Churn Risk",
     shortLabel: "Churn",
     icon: AlertTriangle,
-    color: "text-red-600",
-    bg: "bg-red-50",
-    border: "border-red-200",
+    color: "text-red-600 dark:text-red-400",
+    bg: "bg-red-50 dark:bg-red-950/30",
+    border: "border-red-200 dark:border-red-800",
+    badgeBg: "bg-red-100/80 dark:bg-red-900/40",
     description: "Which donors are at risk of lapsing? Predicts churn using recency, frequency, and donation history.",
     modelType: "Classification · Gradient Boosting",
     dataSource: "supporters + donations tables",
@@ -66,12 +67,13 @@ const PIPELINES = [
   {
     id: "capacity",
     number: "02",
-    label: "Donation Capacity",
+    label: "Giving Capacity",
     shortLabel: "Capacity",
     icon: ArrowUpCircle,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    border: "border-amber-200 dark:border-amber-800",
+    badgeBg: "bg-amber-100/80 dark:bg-amber-900/40",
     description: "Which donors have untapped giving potential? Tiers donors and identifies headroom for major gift asks.",
     modelType: "Regression · Random Forest",
     dataSource: "supporters + donations tables",
@@ -79,12 +81,13 @@ const PIPELINES = [
   {
     id: "social",
     number: "03",
-    label: "Social Media",
+    label: "Social Media Impact",
     shortLabel: "Social",
     icon: Globe,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
+    color: "text-blue-600 dark:text-blue-400",
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    border: "border-blue-200 dark:border-blue-800",
+    badgeBg: "bg-blue-100/80 dark:bg-blue-900/40",
     description: "What content drives donations? Analyzes post characteristics vs. donation conversion.",
     modelType: "Regression · Gradient Boosting",
     dataSource: "social_media_posts table",
@@ -95,9 +98,10 @@ const PIPELINES = [
     label: "Resident Outcomes",
     shortLabel: "Residents",
     icon: Heart,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/30",
+    border: "border-emerald-200 dark:border-emerald-800",
+    badgeBg: "bg-emerald-100/80 dark:bg-emerald-900/40",
     description: "Which residents are progressing toward reintegration? Risk-scores each resident monthly.",
     modelType: "Classification · Gradient Boosting",
     dataSource: "residents + counseling + health + education records",
@@ -105,12 +109,13 @@ const PIPELINES = [
   {
     id: "geographic",
     number: "05",
-    label: "Geographic",
+    label: "Safehouse Performance",
     shortLabel: "Geographic",
     icon: Building2,
-    color: "text-indigo-600",
-    bg: "bg-indigo-50",
-    border: "border-indigo-200",
+    color: "text-indigo-600 dark:text-indigo-400",
+    bg: "bg-indigo-50 dark:bg-indigo-950/30",
+    border: "border-indigo-200 dark:border-indigo-800",
+    badgeBg: "bg-indigo-100/80 dark:bg-indigo-900/40",
     description: "Which safehouses are performing best? Benchmarks efficiency and flags capacity issues.",
     modelType: "Regression + Clustering",
     dataSource: "safehouses + residents tables",
@@ -121,9 +126,10 @@ const PIPELINES = [
     label: "Channel ROI",
     shortLabel: "ROI",
     icon: TrendingUp,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
+    color: "text-violet-600 dark:text-violet-400",
+    bg: "bg-violet-50 dark:bg-violet-950/30",
+    border: "border-violet-200 dark:border-violet-800",
+    badgeBg: "bg-violet-100/80 dark:bg-violet-900/40",
     description: "Which acquisition channels deliver the highest lifetime-value donors?",
     modelType: "Regression · Gradient Boosting",
     dataSource: "supporters + donations tables",
@@ -131,12 +137,13 @@ const PIPELINES = [
   {
     id: "partners",
     number: "07",
-    label: "Partner Impact",
+    label: "Partner Effectiveness",
     shortLabel: "Partners",
     icon: Handshake,
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-    border: "border-teal-200",
+    color: "text-teal-600 dark:text-teal-400",
+    bg: "bg-teal-50 dark:bg-teal-950/30",
+    border: "border-teal-200 dark:border-teal-800",
+    badgeBg: "bg-teal-100/80 dark:bg-teal-900/40",
     description: "Which partner types and program areas drive the best safehouse outcomes?",
     modelType: "Correlation + Random Forest",
     dataSource: "partners + assignments + metrics (run notebook for live data)",
@@ -144,12 +151,13 @@ const PIPELINES = [
   {
     id: "inkind",
     number: "08",
-    label: "In-Kind Needs",
+    label: "In-Kind Needs Forecast",
     shortLabel: "In-Kind",
     icon: Package,
-    color: "text-orange-600",
-    bg: "bg-orange-50",
-    border: "border-orange-200",
+    color: "text-orange-600 dark:text-orange-400",
+    bg: "bg-orange-50 dark:bg-orange-950/30",
+    border: "border-orange-200 dark:border-orange-800",
+    badgeBg: "bg-orange-100/80 dark:bg-orange-900/40",
     description: "Are in-kind donations matching real needs? Forecasts monthly volumes and flags gaps.",
     modelType: "Time-series Forecasting · Random Forest",
     dataSource: "in_kind_donation_items (run notebook for live data)",
@@ -1237,7 +1245,7 @@ export default function MLInsights() {
                     : "bg-card border-border text-muted-foreground hover:bg-muted/40"
                 }`}
               >
-                <span className={`text-[10px] font-bold rounded px-1 py-0.5 ${isActive ? "bg-white/60" : "bg-muted"}`}>
+                <span className={`text-[10px] font-bold rounded px-1 py-0.5 ${isActive ? "bg-white/60 dark:bg-black/30" : "bg-muted"}`}>
                   {p.number}
                 </span>
                 <p.icon className="w-4 h-4" />
@@ -1254,9 +1262,9 @@ export default function MLInsights() {
           <div>
             <h2 className={`text-lg font-bold ${active.color} flex items-center gap-2`}>
               <active.icon className="w-5 h-5" />
-              Pipeline {active.number}: {active.label}
+              {active.label}
             </h2>
-            <p className="text-sm text-foreground/70 mt-1 max-w-xl">{active.description}</p>
+            <p className="text-sm text-foreground/70 dark:text-foreground/60 mt-1 max-w-xl">{active.description}</p>
           </div>
           <div className="text-right text-xs text-muted-foreground space-y-0.5">
             <p><span className="font-medium">Model:</span> {active.modelType}</p>

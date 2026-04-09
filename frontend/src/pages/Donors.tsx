@@ -24,6 +24,7 @@ import {
   ArrowUpCircle,
   TrendingUp,
   Brain,
+  ChevronRight,
   HandCoins,
   Lock,
 } from "lucide-react";
@@ -503,68 +504,36 @@ const Donors = () => {
         </Button>
       </div>
 
-      {/* ML Pipeline quick-links — Founder only */}
+      {/* ML Insights quick-links — Founder only */}
       {isFounder && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Brain className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              ML Insights
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Link to="/ml-insights?tab=churn" className="group block">
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Pipeline 01</p>
-                    <p className="text-sm font-semibold text-red-700">Donor Churn Prediction</p>
-                  </div>
-                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-red-600/80 mb-2">
-                  Which donors are at risk of lapsing? Identifies churn candidates by recency and giving history.
-                </p>
-                <span className="text-xs font-medium text-red-600 group-hover:underline">
-                  View churn analysis →
-                </span>
-              </div>
-            </Link>
-            <Link to="/ml-insights?tab=capacity" className="group block">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Pipeline 02</p>
-                    <p className="text-sm font-semibold text-amber-700">Donation Capacity</p>
-                  </div>
-                  <ArrowUpCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-amber-600/80 mb-2">
-                  Which donors have untapped giving potential? Tiers donors and flags upgrade opportunities.
-                </p>
-                <span className="text-xs font-medium text-amber-600 group-hover:underline">
-                  View capacity analysis →
-                </span>
-              </div>
-            </Link>
-            <Link to="/ml-insights?tab=roi" className="group block">
-              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Pipeline 06</p>
-                    <p className="text-sm font-semibold text-violet-700">Channel ROI</p>
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-violet-600/80 mb-2">
-                  Which acquisition channels deliver the highest lifetime-value donors?
-                </p>
-                <span className="text-xs font-medium text-violet-600 group-hover:underline">
-                  View ROI analysis →
-                </span>
-              </div>
-            </Link>
-          </div>
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
+            <Brain className="w-3.5 h-3.5" /> ML Insights:
+          </span>
+          <Link
+            to="/ml-insights?tab=churn"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+            Donor Churn Risk
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
+          <Link
+            to="/ml-insights?tab=capacity"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <ArrowUpCircle className="w-3.5 h-3.5 text-amber-500" />
+            Giving Capacity
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
+          <Link
+            to="/ml-insights?tab=roi"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
+            Channel ROI
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
         </div>
       )}
 
