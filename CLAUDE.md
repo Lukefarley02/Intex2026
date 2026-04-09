@@ -187,4 +187,12 @@ Run tests with `npm test` (watch mode) or `npm run test:run` (single pass). Only
 
 **Impact on this project:** Development-only; no production exposure. The dev server binds to localhost and is only running during active development on the team's machines.
 
-**Remediation path:** npm's proposed fix (`npm audit fix --force`) upgrades vitest from 2.x to 4.x, a two-major-version br
+---
+
+## Latest frontend updates (Apr 8 2026 - continued)
+
+- **Donation flow consolidated (Apr 8 2026)**: Registration page (`Register.tsx`) was removed entirely — the new account creation pathway is **exclusively through the donation flow**. When a donor completes their donation, they're prompted to create an account with an inline password dialog (no separate registration page). `Login.tsx` updated to direct new users to `/donate` instead of `/register`. Password requirement hardened to **14 characters minimum** (was 12, now consistent across donate flow, login hints, and register page password hints in Donate password prompt). `frontend/src/api/client.ts` fixed: API client now correctly uses `/api` proxy in development (routes to `https://localhost:5001`) and production Azure URL in non-dev builds.
+
+- **UI/UX improvements (Apr 8 2026)**: `Donate.tsx` header replaced `<PublicNav />` with a dedicated `<DonateHeader />` component (Ember logo only, no navigation links) for a clean, focused donation experience. All progress bars across the app (Safehouses occupancy, Admin KPIs, Donor campaign progress, Staff safehouse occupancy) changed from **orange-filled / teal-empty to green-filled / gray-empty** for better visual clarity of progress. Updated `src/components/ui/progress.tsx`: background changed to `bg-muted` (light gray), indicator changed to `bg-success` (green).
+
+- **Visibility-triggered animations (Apr 8 2026)**: Animated counters on the homepage (`Index.tsx`) now use `IntersectionObserver` to delay animation until the component becomes visible on screen — statistics no longer count up on page load if the user hasn't scrolled to them. `AnimatedCounter.tsx` wrapped with intersection observer (threshold 0.1); `StatPill.tsx` similarly wrapped so the `animate-count-up` class only applies after visibility. This improves perceived performance and creates a more engaging reveal effect as users scroll.
