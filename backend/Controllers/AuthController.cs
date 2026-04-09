@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using Intex2026.Api.Data;
+using Intex2026.Api.Models;
 
 namespace Intex2026.Api.Controllers;
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
-public record RegisterRequest(string Email, string Password, string? Role = null, string? Region = null, string? City = null);
+public record RegisterRequest(string Email, string Password, string? FirstName = null, string? LastName = null, string? Role = null, string? Region = null, string? City = null);
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string Token, string Email, IList<string> Roles, string? Region, string? City);
 public record ChangeEmailRequest(string NewEmail, string CurrentPassword);
@@ -26,15 +28,18 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly IConfiguration _config;
+    private readonly AppDbContext _context;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
-        IConfiguration config)
+        IConfiguration config,
+        AppDbContext context)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _config = config;
+        _context = context;
     }
 
     // POST /api/auth/register
@@ -58,11 +63,56 @@ public class AuthController : ControllerBase
         await _userManager.AddToRoleAsync(user, "Donor");
 
         // Optionally assign Staff or Admin (and still keep Donor)
+        var isAdminOrStaff = false;
         if (!string.IsNullOrWhiteSpace(request.Role))
         {
             var role = request.Role.Trim();
             if (role == "Staff" || role == "Admin")
+            {
                 await _userManager.AddToRoleAsync(user, role);
+                isAdminOrStaff = true;
+            }
+        }
+
+        // Create a Supporters row for regular donors so the DonorPortal
+        // works immediately after registration. Skip for Admin/Staff accounts
+        // (they access the portal via seeded records or are not donors).
+        // If the user already donated before registering, a Supporters row
+        // already exists — don't create a duplicate.
+        if (!isAdminOrStaff)
+        {
+            var existingSupporter = await _context.Supporters
+                .FirstOrDefaultAsync(s => s.Email == request.Email);
+
+            if (existingSupporter == null)
+            {
+                var nextId = await _context.Supporters.AnyAsync()
+                    ? await _context.Supporters.MaxAsync(s => s.SupporterId) + 1
+                    : 1;
+
+                var firstName = request.FirstName?.Trim() ?? "";
+                var lastName  = request.LastName?.Trim()  ?? "";
+                var displayName = string.IsNullOrWhiteSpace(firstName + lastName)
+                    ? request.Email.Split('@')[0]
+                    : $"{firstName} {lastName}".Trim();
+
+                _context.Supporters.Add(new Supporter
+                {
+                    SupporterId      = nextId,
+                    SupporterType    = "MonetaryDonor",
+                    FirstName        = firstName,
+                    LastName         = lastName,
+                    DisplayName      = displayName,
+                    Email            = request.Email,
+                    Country          = "United States",
+                    Region           = "Online",
+                    RelationshipType = "Donor",
+                    AcquisitionChannel = "Website",
+                    Status           = "Active",
+                    CreatedAt        = DateTime.UtcNow,
+                });
+                await _context.SaveChangesAsync();
+            }
         }
 
         var roles = await _userManager.GetRolesAsync(user);
