@@ -101,7 +101,18 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const DashboardLayout = ({ children, title }: { children: React.ReactNode; title: string }) => {
+const DashboardLayout = ({
+  children,
+  title,
+  fitViewport = false,
+}: {
+  children: React.ReactNode;
+  title: string;
+  // When true, the main content area is locked to `100vh - header` so
+  // pages can implement their own internal scroll containers and avoid
+  // page-level vertical scroll. Defaults to the existing flow layout.
+  fitViewport?: boolean;
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user, hasRole, isFounder } = useAuth();
@@ -259,10 +270,16 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
     </>
   );
 
+  // Donor-only sessions get the brick-red `donor-theme` palette on the
+  // sidebar so the warm red signals "this is your donor view" without
+  // touching the rest of the app's Ember palette. Admin/Staff sessions
+  // keep the default teal sidebar.
+  const sidebarThemeClass = effectiveRole === "Donor" ? "donor-theme" : "";
+
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30">
+      <aside className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 ${sidebarThemeClass}`}>
         <SidebarContent />
       </aside>
 
@@ -270,7 +287,7 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
-          <aside className="relative w-60 h-full bg-sidebar flex flex-col">
+          <aside className={`relative w-60 h-full bg-sidebar flex flex-col ${sidebarThemeClass}`}>
             <button
               className="absolute top-4 right-3 text-sidebar-foreground"
               onClick={() => setSidebarOpen(false)}
@@ -283,7 +300,12 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
         </div>
       )}
 
-      <div className="flex-1 lg:ml-60">
+      {/* min-w-0 lets this flex child shrink below its intrinsic content
+          width (default is min-content, which can force horizontal
+          overflow on the whole page if any grandchild is wide).
+          overflow-x-hidden is the belt-and-braces guarantee that no page
+          inside the layout can produce a horizontal scrollbar. */}
+      <div className="flex-1 lg:ml-60 min-w-0 overflow-x-hidden">
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-6 gap-4">
           <button className="lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
             <Menu className="w-5 h-5" aria-hidden="true" />
@@ -304,7 +326,15 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
             </button>
           </div>
         </header>
-        <main className="p-6">{children}</main>
+        <main
+          className={
+            fitViewport
+              ? "p-4 h-[calc(100vh-3.5rem)] overflow-hidden"
+              : "p-6"
+          }
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

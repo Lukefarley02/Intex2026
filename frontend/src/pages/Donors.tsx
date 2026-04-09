@@ -600,54 +600,73 @@ const Donors = () => {
               key={s.supporterId}
               className="rounded-xl shadow-sm hover:shadow-md transition-shadow"
             >
-              <CardContent className="p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-primary font-semibold">
-                      {initials(s)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{displayName(s)}</p>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] uppercase tracking-wide"
-                        >
-                          {typeLabel}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {s.email ?? "—"}
-                        {s.region ? ` · ${s.region}` : ""}
-                      </p>
-                    </div>
+              <CardContent className="p-4">
+                {/* Condensed row — min-w-0 + truncate on the left half lets
+                    long names/emails shrink gracefully instead of forcing
+                    a horizontal scrollbar on the whole page. Action
+                    buttons use size="icon" + h-8 w-8 so three of them
+                    take ~90px total instead of ~150px. */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                    {initials(s)}
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {formatCurrency(s.totalDonated)}
+
+                  {/* Left: name + type + email. min-w-0 allows truncation. */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-semibold truncate">
+                        {displayName(s)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.donationCount} gift{s.donationCount === 1 ? "" : "s"}
-                        {s.lastGiftDate
-                          ? ` · last ${s.lastGiftDate.slice(0, 10)}`
-                          : ""}
-                      </p>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] uppercase tracking-wide flex-shrink-0"
+                      >
+                        {typeLabel}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className={riskColor[risk]}>
-                      {risk}
-                    </Badge>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {s.email ?? "—"}
+                      {s.region ? ` · ${s.region}` : ""}
+                    </p>
+                  </div>
+
+                  {/* Middle: giving stats. Fixed-ish width, right-aligned.
+                      Hidden on very narrow screens to save horizontal space. */}
+                  <div className="hidden sm:block text-right flex-shrink-0">
+                    <p className="font-semibold text-sm leading-tight">
+                      {formatCurrency(s.totalDonated)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {s.donationCount} gift{s.donationCount === 1 ? "" : "s"}
+                      {s.lastGiftDate
+                        ? ` · ${s.lastGiftDate.slice(0, 10)}`
+                        : ""}
+                    </p>
+                  </div>
+
+                  {/* Risk badge — hidden on small screens. */}
+                  <Badge
+                    variant="outline"
+                    className={`${riskColor[risk]} hidden md:inline-flex flex-shrink-0`}
+                  >
+                    {risk}
+                  </Badge>
+
+                  {/* Action buttons — compact icon-only, fixed 32×32. */}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
+                      className="h-8 w-8"
                       aria-label={`Contact ${displayName(s)}`}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
                     {canWrite && (
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="h-8 w-8"
                         onClick={() => openEdit(s)}
                         aria-label={`Edit ${displayName(s)}`}
                       >
@@ -656,9 +675,9 @@ const Donors = () => {
                     )}
                     {canDelete && (
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
-                        className="text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
                         onClick={() => setToDelete(s)}
                         aria-label={`Delete ${displayName(s)}`}
                       >
@@ -666,6 +685,22 @@ const Donors = () => {
                       </Button>
                     )}
                   </div>
+                </div>
+
+                {/* Mobile-only giving stats row — surfaces the totals that
+                    are hidden from the compact header on narrow screens. */}
+                <div className="sm:hidden mt-2 pt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    <strong className="text-foreground">
+                      {formatCurrency(s.totalDonated)}
+                    </strong>{" "}
+                    · {s.donationCount} gift
+                    {s.donationCount === 1 ? "" : "s"}
+                    {s.lastGiftDate ? ` · ${s.lastGiftDate.slice(0, 10)}` : ""}
+                  </span>
+                  <Badge variant="outline" className={riskColor[risk]}>
+                    {risk}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
