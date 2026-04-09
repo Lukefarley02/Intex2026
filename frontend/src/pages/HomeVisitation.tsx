@@ -44,6 +44,10 @@ interface HomeVisitationRow {
   followUpNotes: string | null;
   visitOutcome: string | null;
   socialWorker: string | null;
+  createdByUserId: string | null;
+  // Server-computed: true if the current user is allowed to edit/delete.
+  // Admins can always modify; Staff can only modify rows they created.
+  canModify: boolean;
 }
 
 const displayName = (r: ResidentRow) =>
@@ -117,8 +121,10 @@ const toFormState = (v: HomeVisitationRow): FormState => ({
 
 const HomeVisitation = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
-  const isAdmin = hasRole("Admin");
+  // `useAuth` is still imported so future changes can re-introduce a
+  // role derivation if needed. Per-row edit/delete visibility is now
+  // driven by the server's `canModify` flag on each row.
+  useAuth();
   const [selectedResident, setSelectedResident] = useState<number | "all">("all");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -452,7 +458,8 @@ const HomeVisitation = () => {
                   v={v}
                   res={residentLookup.get(v.residentId)}
                   onEdit={() => openEdit(v)}
-                  onDelete={isAdmin ? () => setDeleteTarget(v) : undefined}
+                  onEditable={v.canModify}
+                  onDelete={v.canModify ? () => setDeleteTarget(v) : undefined}
                 />
               ))}
             </div>
@@ -478,7 +485,8 @@ const HomeVisitation = () => {
                 v={v}
                 res={residentLookup.get(v.residentId)}
                 onEdit={() => openEdit(v)}
-                onDelete={isAdmin ? () => setDeleteTarget(v) : undefined}
+                onEditable={v.canModify}
+                onDelete={v.canModify ? () => setDeleteTarget(v) : undefined}
               />
             ))}
           </div>
@@ -506,10 +514,13 @@ interface VisitCardProps {
   v: HomeVisitationRow;
   res?: ResidentRow;
   onEdit: () => void;
+  // Whether the Edit button should render (rows the caller didn't create
+  // are read-only for staff).
+  onEditable?: boolean;
   onDelete?: () => void;
 }
 
-const VisitCard = ({ v, res, onEdit, onDelete }: VisitCardProps) => (
+const VisitCard = ({ v, res, onEdit, onEditable = true, onDelete }: VisitCardProps) => (
   <Card>
     <CardContent className="p-5 space-y-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -535,28 +546,36 @@ const VisitCard = ({ v, res, onEdit, onDelete }: VisitCardProps) => (
           </Badge>
         )}
         <span className="ml-auto text-xs text-muted-foreground">{v.socialWorker ?? "—"}</span>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
-            onClick={onEdit}
-            aria-label="Edit visit"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </Button>
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={onDelete}
-              aria-label="Delete visit"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          )}
-        </div>
+        {/* Edit/Delete are gated by the backend's per-row `canModify` flag
+            (forwarded as `onEditable` + whether `onDelete` was passed).
+            Admins can modify anything in their scope; Staff can only
+            modify rows they personally created. */}
+        {(onEditable || onDelete) && (
+          <div className="flex items-center gap-1">
+            {onEditable && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onEdit}
+                aria-label="Edit visit"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={onDelete}
+                aria-label="Delete visit"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       {v.locationVisited && (
         <p className="text-sm text-muted-foreground flex items-center gap-1">
