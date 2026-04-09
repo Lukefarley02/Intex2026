@@ -26,6 +26,7 @@ import {
   ChevronRight,
   HandCoins,
   Lock,
+  Printer,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +36,8 @@ import LogDonationDialog from "@/components/LogDonationDialog";
 import SendMessageDialog from "@/components/SendMessageDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 
 // ---- Types ----
 //
@@ -405,6 +408,13 @@ const Donors = () => {
 
   const saving = createMut.isPending || updateMut.isPending;
 
+  // Compute active filters for print header
+  const printFilters = [
+    search.trim() ? { label: "Search", value: search } : null,
+    typeFilter !== "all" ? { label: "Type", value: typeFilter === "MonetaryDonor" ? "Monetary" : "In-Kind" } : null,
+    riskFilter !== "all" ? { label: "Risk", value: riskFilter } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
   // ---------------------------------------------------------------------
   // Staff view: a single "Log donation" card. Staff never see donor
   // totals, emails, search, filters, or the full browse list. The only
@@ -463,8 +473,14 @@ const Donors = () => {
 
   return (
     <DashboardLayout title="Donor Management">
+      <PrintReportHeader
+        title="Donor Report"
+        filters={printFilters}
+        count={filtered.length}
+      />
+
       {/* Top bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 print:hidden">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -490,7 +506,7 @@ const Donors = () => {
           </div>
         </div>
         {canWrite && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             {filtered.length > 0 && (
               <Button
                 variant="outline"
@@ -500,6 +516,13 @@ const Donors = () => {
                 <Send className="w-4 h-4 mr-1" /> Message {filtered.length === supporters.length ? "all" : `${filtered.length}`}
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+            >
+              <Printer className="w-4 h-4 mr-1" /> Print Report
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -515,7 +538,7 @@ const Donors = () => {
       </div>
 
       {/* Type filter pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6 print:hidden">
         <Button
           size="sm"
           variant={typeFilter === "all" ? "default" : "outline"}
@@ -541,7 +564,7 @@ const Donors = () => {
 
       {/* ML Insights quick-links — Founder only */}
       {isFounder && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
           <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
             <Brain className="w-3.5 h-3.5" /> ML Insights:
           </span>
@@ -574,28 +597,28 @@ const Donors = () => {
 
       {/* States */}
       {isLoading && (
-        <p className="text-sm text-muted-foreground">Loading donors…</p>
+        <p className="text-sm text-muted-foreground print:hidden">Loading donors…</p>
       )}
       {isError && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive print:hidden">
           Could not load donors from the server.
         </div>
       )}
       {!isLoading && !isError && filtered.length === 0 && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground print:hidden">
           No donors match the current filters.
         </p>
       )}
 
       {/* Result header */}
       {!isLoading && !isError && filtered.length > 0 && (
-        <p className="text-xs text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2 print:hidden">
           Showing {filtered.length} of {supporters.length} donors
         </p>
       )}
 
       {/* Cards */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 print:hidden">
         {filtered.map((s) => {
           const risk = computeRisk(s);
           const typeLabel = TYPE_LABELS[s.supporterType] ?? s.supporterType;
@@ -966,6 +989,21 @@ const Donors = () => {
         open={bulkMsgOpen}
         onOpenChange={setBulkMsgOpen}
         donors={filtered.map(toDonorTarget)}
+      />
+
+      {/* ---- Print Table ---- */}
+      <PrintTable
+        columns={[
+          { header: "Name", accessor: (r: SupporterRow) => r.organizationName || `${r.firstName ?? ""} ${r.lastName ?? ""}`.trim() },
+          { header: "Type", accessor: (r: SupporterRow) => r.supporterType === "MonetaryDonor" ? "Monetary" : "In-Kind" },
+          { header: "Email", accessor: (r: SupporterRow) => r.email ?? "" },
+          { header: "Region", accessor: (r: SupporterRow) => r.region ?? "" },
+          { header: "Total Donated", accessor: (r: SupporterRow) => r.totalDonated != null ? `$${r.totalDonated.toLocaleString()}` : "$0", align: "right" as const },
+          { header: "# Gifts", accessor: (r: SupporterRow) => String(r.donationCount ?? 0), align: "right" as const },
+          { header: "Last Gift", accessor: (r: SupporterRow) => r.lastGiftDate ? r.lastGiftDate.slice(0, 10) : "Never" },
+        ]}
+        data={filtered}
+        keyAccessor={(r: SupporterRow) => r.supporterId}
       />
     </DashboardLayout>
   );

@@ -1,8 +1,10 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import PrintReportHeader from "@/components/PrintReportHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import {
@@ -32,6 +34,7 @@ import {
   ChevronRight,
   Info,
   Brain,
+  Printer,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 
@@ -193,7 +196,7 @@ function KpiCard({
   iconColor: string;
 }) {
   return (
-    <Card className="rounded-xl shadow-sm">
+    <Card className="rounded-xl shadow-sm print:shadow-none print:border print:border-gray-300">
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-3">
           <span className="text-sm text-muted-foreground">{label}</span>
@@ -321,7 +324,7 @@ function DonorChurnView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Donor Recency Distribution</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -350,7 +353,7 @@ function DonorChurnView() {
             {topAtRisk.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">No at-risk donors detected.</p>
             ) : (
-              <div className="overflow-auto max-h-52">
+              <div className="overflow-auto max-h-52 print:max-h-none print:overflow-visible">
                 <table className="w-full text-xs">
                   <thead><tr className="border-b text-muted-foreground"><th className="text-left py-1">Donor</th><th className="text-right">Days</th><th className="text-right">LTV</th><th className="text-left pl-3">Channel</th></tr></thead>
                   <tbody>
@@ -450,7 +453,7 @@ function DonationCapacityView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Donor Capacity Tier Distribution</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -473,7 +476,7 @@ function DonationCapacityView() {
             {upgrades.length === 0 ? (
               <p className="text-sm text-muted-foreground py-8 text-center">No recurring donors with detected headroom.</p>
             ) : (
-              <div className="overflow-auto max-h-52">
+              <div className="overflow-auto max-h-52 print:max-h-none print:overflow-visible">
                 <table className="w-full text-xs">
                   <thead><tr className="border-b text-muted-foreground"><th className="text-left py-1">Donor</th><th className="text-right">Avg Gift</th><th className="text-right">Max Gift</th><th className="text-right">Headroom</th></tr></thead>
                   <tbody>
@@ -493,7 +496,7 @@ function DonationCapacityView() {
         </Card>
       </div>
 
-      <Card className="rounded-xl shadow-sm">
+      <Card className="rounded-xl shadow-sm print:hidden">
         <CardHeader><CardTitle className="text-base">Average Donation by Acquisition Channel</CardTitle></CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={180}>
@@ -590,7 +593,7 @@ function SocialMediaView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Reach by Platform</CardTitle></CardHeader>
           <CardContent>
             {platforms.length === 0 ? (
@@ -760,7 +763,7 @@ function ResidentOutcomesView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Reintegration Readiness Distribution</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -908,7 +911,7 @@ function GeographicView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Regional Utilization</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -1058,7 +1061,7 @@ function AcquisitionRoiView() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Avg Donation by Channel (Lifetime Value Proxy)</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -1268,7 +1271,7 @@ function PartnerEffectivenessView() {
 
       {/* Charts row */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Assignments by Program Area</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -1286,7 +1289,7 @@ function PartnerEffectivenessView() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Partners by Role Type</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -1339,7 +1342,7 @@ function PartnerEffectivenessView() {
 
       {/* Region breakdown + interpretation */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Active Partners by Region</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -1353,7 +1356,7 @@ function PartnerEffectivenessView() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm">
+        <Card className="rounded-xl shadow-sm print:hidden">
           <CardHeader><CardTitle className="text-base">Partner Type Split</CardTitle></CardHeader>
           <CardContent className="flex items-center justify-center">
             <ResponsiveContainer width="100%" height={200}>
@@ -1535,8 +1538,17 @@ export default function MLInsights() {
 
   return (
     <DashboardLayout title="ML Insights">
+      <PrintReportHeader
+        title={`ML Pipeline Report — ${active.label}`}
+        subtitle={active.description}
+        filters={[
+          { label: "Model", value: active.modelType },
+          { label: "Data Source", value: active.dataSource },
+        ]}
+      />
+
       {/* Pipeline selector */}
-      <div className="mb-6 overflow-x-auto pb-1">
+      <div className="mb-6 overflow-x-auto pb-1 print:hidden">
         <div className="flex gap-2 min-w-max">
           {PIPELINES.map((p) => {
             const isActive = p.id === activePipeline;
@@ -1568,9 +1580,18 @@ export default function MLInsights() {
             </h2>
             <p className="text-sm text-foreground/70 dark:text-foreground/60 mt-1 max-w-xl">{active.description}</p>
           </div>
-          <div className="text-right text-xs text-muted-foreground space-y-0.5">
-            <p><span className="font-medium">Model:</span> {active.modelType}</p>
-            <p><span className="font-medium">Source:</span> {active.dataSource}</p>
+          <div className="text-right space-y-2">
+            <button
+              onClick={() => window.print()}
+              className="mb-2 px-3 py-1.5 rounded-lg bg-primary text-white text-sm font-medium inline-flex items-center gap-2 hover:bg-primary/90 transition-colors"
+            >
+              <Printer className="w-4 h-4" />
+              Export PDF
+            </button>
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p><span className="font-medium">Model:</span> {active.modelType}</p>
+              <p><span className="font-medium">Source:</span> {active.dataSource}</p>
+            </div>
           </div>
         </div>
       </div>

@@ -43,12 +43,15 @@ import {
   PauseCircle,
   ChevronDown,
   ChevronRight,
+  Printer,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/api/AuthContext";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 
 // ---- Types ----
 interface ResidentRow {
@@ -491,8 +494,17 @@ const CaseConferences = () => {
     );
   };
 
+  // Compute printFilters for export
+  const printFilters = [
+    ...(categoryFilter !== "__any__" ? [{ label: "Category", value: categoryFilter }] : []),
+    ...(statusFilter !== "__any__" ? [{ label: "Status", value: statusFilter }] : []),
+    ...(residentFilter !== "__any__" ? [{ label: "Resident", value: residentLookup.get(Number(residentFilter))?.internalCode || residentLookup.get(Number(residentFilter))?.caseControlNo || residentFilter }] : []),
+    ...(search.trim() ? [{ label: "Search", value: search.trim() }] : []),
+  ];
+
   return (
     <DashboardLayout title="Case Conferences">
+      <PrintReportHeader title="Case Conference Report" filters={printFilters} count={filteredPlans.length} />
       <div className="max-w-6xl space-y-6">
         {/* Header */}
         <div>
@@ -545,7 +557,7 @@ const CaseConferences = () => {
         </div>
 
         {/* Top bar: search + new button */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="print:hidden flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -730,10 +742,18 @@ const CaseConferences = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-4 h-4" /> Print Report
+          </Button>
         </div>
 
         {/* Filter row */}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="print:hidden flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground font-medium">
               Category
@@ -1003,6 +1023,20 @@ const CaseConferences = () => {
         onConfirm={() => {
           if (deleteTarget) deleteMut.mutate(deleteTarget.planId);
         }}
+      />
+
+      <PrintTable
+        columns={[
+          { header: "Conf. Date", accessor: (r: InterventionPlanRow) => r.caseConferenceDate ? new Date(r.caseConferenceDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Unscheduled" },
+          { header: "Resident", accessor: (r: InterventionPlanRow) => residentLookup.get(r.residentId) ? displayName(residentLookup.get(r.residentId)!) : `#${r.residentId}` },
+          { header: "Category", accessor: (r: InterventionPlanRow) => r.planCategory ?? "" },
+          { header: "Status", accessor: (r: InterventionPlanRow) => r.status ?? "" },
+          { header: "Description", accessor: (r: InterventionPlanRow) => r.planDescription ?? "" },
+          { header: "Services", accessor: (r: InterventionPlanRow) => r.servicesProvided ?? "" },
+          { header: "Target Date", accessor: (r: InterventionPlanRow) => r.targetDate ? new Date(r.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" },
+        ]}
+        data={filteredPlans}
+        keyAccessor={(r: InterventionPlanRow) => r.planId}
       />
     </DashboardLayout>
   );
