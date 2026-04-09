@@ -25,7 +25,7 @@ const PublicNav = () => {
           className="flex items-center gap-2 font-bold text-xl text-primary"
         >
           <Flame className="w-7 h-7" aria-hidden="true" />
-          Ember Foundation
+          Ember
         </a>
 
         <div className="hidden md:flex items-center gap-8">

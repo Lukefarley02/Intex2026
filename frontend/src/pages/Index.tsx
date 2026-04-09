@@ -87,40 +87,45 @@ const Index = () => {
 
   return (
   <div className="min-h-screen bg-background">
-    {/* First-visit donate banner (unauthenticated, dismissible) */}
-    {showFirstVisitBanner && (
-      <div className="gradient-ember text-primary-foreground">
-        <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">
-              First time here? A $25 gift can shelter a girl for 30 days.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link to="/donate">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+    {/* Sticky header wrapper — keeps the first-visit banner and PublicNav
+        glued together so scrolling back up never leaves the nav floating
+        on top of the re-emerging banner. */}
+    <div className="sticky top-0 z-50">
+      {/* First-visit donate banner (unauthenticated, dismissible) */}
+      {showFirstVisitBanner && (
+        <div className="gradient-ember text-primary-foreground">
+          <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                First time here? A $25 gift can shelter a girl for 30 days.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link to="/donate">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+                >
+                  Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
+                </Button>
+              </Link>
+              <button
+                type="button"
+                onClick={dismissBanner}
+                aria-label="Dismiss donate banner"
+                className="p-1 rounded hover:bg-card/10 transition-colors"
               >
-                Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
-              </Button>
-            </Link>
-            <button
-              type="button"
-              onClick={dismissBanner}
-              aria-label="Dismiss donate banner"
-              className="p-1 rounded hover:bg-card/10 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    <PublicNav />
+      <PublicNav />
+    </div>
 
     <main>
     {/* Hero — fixed so it never moves; content sections scroll over it */}
@@ -131,12 +136,21 @@ const Index = () => {
       </div>
       <div className="relative container py-24 md:py-36 lg:py-44">
         <div className="max-w-2xl space-y-6">
-          <h1 className="animate-fade-in-up-1 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-card leading-tight">
-            Every girl deserves a <span className="text-primary">safe place</span> to heal & grow
+          <div className="animate-fade-in-up-1 flex items-baseline gap-3">
+            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[hsl(11_63%_38%)]">
+              Ember
+            </span>
+            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white dark:text-black">
+              Foundation
+            </span>
+          </div>
+          <h1 className="animate-fade-in-up-2 text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-card leading-tight">
+            Every girl deserves
+            <br />
+            <span className="text-primary">a safe place</span>
+            <br />
+            to heal & grow
           </h1>
-          <p className="animate-fade-in-up-2 text-lg text-card/80 max-w-xl">
-            Ember Foundation empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
-          </p>
           <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
             <Link to="/donate">
               <Button variant="hero" size="lg" className="text-base">
@@ -250,7 +264,7 @@ const Index = () => {
     </section>
 
     {/* Journey of Care */}
-    <section id="how-we-care" className="relative z-10 py-20 md:py-28" style={{ backgroundColor: 'hsl(11 60% 88%)' }}><div className="container">
+    <section id="how-we-care" className="relative z-10 py-20 md:py-28 bg-[hsl(11_60%_88%)] dark:bg-[hsl(11_40%_14%)]"><div className="container">
       <div className="text-center mb-14">
         <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">How we care</p>
         <h2 className="font-serif text-4xl md:text-5xl font-bold">Every girl receives consistent, personalized care</h2>
@@ -294,7 +308,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.progressRate * 100)}%` : "…"}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.progressRate * 100) : undefined} suffix="%" />}
               </p>
               <p className="text-base font-semibold text-foreground mt-1">Of sessions show measurable progress</p>
             </div>
@@ -311,7 +325,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.positiveEndRate * 100)}%` : "…"}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.positiveEndRate * 100) : undefined} suffix="%" />}
               </p>
               <p className="text-base font-semibold text-foreground mt-1">Sessions end on a hopeful note</p>
             </div>
@@ -337,7 +351,7 @@ const Index = () => {
             </div>
             <div>
               <p className="text-3xl font-extrabold text-foreground">
-                {careStoryQuery.isLoading ? "…" : care ? `${Math.round(care.favorableVisitRate * 100)}%` : "…"}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.favorableVisitRate * 100) : undefined} suffix="%" />}
               </p>
               <p className="text-base font-semibold text-foreground mt-1">Home visits end favorably</p>
             </div>
