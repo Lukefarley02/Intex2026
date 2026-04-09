@@ -338,6 +338,151 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Seeded supporter row for {Email}.", donorEmail);
         }
 
+        // Ensure partners and partner_assignments tables exist.
+        // These are in lighthouse_schema.sql but not in any EF Core migration,
+        // so on a fresh Azure SQL database they may not exist yet.
+        await appDb.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='partners' AND xtype='U')
+            BEGIN
+                CREATE TABLE partners (
+                    partner_id      INT             PRIMARY KEY,
+                    partner_name    NVARCHAR(200)   NOT NULL,
+                    partner_type    NVARCHAR(50)    NOT NULL,
+                    role_type       NVARCHAR(50)    NOT NULL,
+                    contact_name    NVARCHAR(200)   NOT NULL DEFAULT '',
+                    email           NVARCHAR(256)   NOT NULL DEFAULT '',
+                    phone           NVARCHAR(30)    NULL,
+                    region          NVARCHAR(100)   NOT NULL DEFAULT '',
+                    status          NVARCHAR(20)    NOT NULL DEFAULT 'Active',
+                    start_date      DATE            NULL,
+                    end_date        DATE            NULL,
+                    notes           NVARCHAR(MAX)   NULL
+                );
+            END
+        ");
+        await appDb.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='partner_assignments' AND xtype='U')
+            BEGIN
+                CREATE TABLE partner_assignments (
+                    assignment_id           INT             PRIMARY KEY,
+                    partner_id              INT             NOT NULL,
+                    safehouse_id            INT             NOT NULL,
+                    program_area            NVARCHAR(50)    NOT NULL,
+                    assignment_start        DATE            NULL,
+                    assignment_end          DATE            NULL,
+                    responsibility_notes    NVARCHAR(MAX)   NULL,
+                    is_primary              BIT             NOT NULL DEFAULT 0,
+                    status                  NVARCHAR(20)    NOT NULL DEFAULT 'Active',
+                    CONSTRAINT FK_partner_assignments_partner
+                        FOREIGN KEY (partner_id) REFERENCES partners(partner_id),
+                    CONSTRAINT FK_partner_assignments_safehouse
+                        FOREIGN KEY (safehouse_id) REFERENCES safehouses(safehouse_id)
+                );
+                CREATE INDEX IX_partner_assignments_partner  ON partner_assignments(partner_id);
+                CREATE INDEX IX_partner_assignments_safehouse ON partner_assignments(safehouse_id);
+            END
+        ");
+
+        // Seed partners + partner_assignments if tables are empty.
+        // These power the ML Insights Pipeline 07 (Partner Effectiveness) page.
+        // Data is taken directly from lighthouse_csv_v7/partners.csv (30 rows)
+        // and partner_assignments.csv (48 rows). Assignments with a NULL
+        // safehouse_id in the source CSV are skipped because the FK is NOT NULL.
+        if (!appDb.Partners.Any())
+        {
+            appDb.Partners.AddRange(
+                new Partner { PartnerId=1,  PartnerName="Ana Reyes",     PartnerType="Organization", RoleType="SafehouseOps", ContactName="Ana Reyes",     Email="ana-reyes@hopepartners.ph",         Phone="+63 993 532 6574", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,1,1),  Notes="Primary contractor" },
+                new Partner { PartnerId=2,  PartnerName="Maria Santos",  PartnerType="Individual",   RoleType="Evaluation",   ContactName="Maria Santos",  Email="maria-santos@pldt.net.ph",          Phone="+63 927 194 7224", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,1,21), Notes="Primary contractor" },
+                new Partner { PartnerId=3,  PartnerName="Elena Cruz",    PartnerType="Individual",   RoleType="Education",    ContactName="Elena Cruz",    Email="elena-cruz@eastern.com.ph",         Phone="+63 966 926 1711", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,2,10), Notes="Primary contractor" },
+                new Partner { PartnerId=4,  PartnerName="Sofia Dizon",   PartnerType="Organization", RoleType="Logistics",    ContactName="Sofia Dizon",   Email="sofia-dizon@bayanihanfoundation.ph", Phone="+63 947 400 6925", Region="Visayas",  Status="Active",   StartDate=new DateTime(2022,3,2),  Notes="Primary contractor" },
+                new Partner { PartnerId=5,  PartnerName="Grace Flores",  PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Grace Flores",  Email="grace-flores@yahoo.com.ph",         Phone="+63 991 333 5741", Region="Visayas",  Status="Active",   StartDate=new DateTime(2022,3,22), Notes="Primary contractor" },
+                new Partner { PartnerId=6,  PartnerName="Joy Garcia",    PartnerType="Individual",   RoleType="Maintenance",  ContactName="Joy Garcia",    Email="joy-garcia@yahoo.com.ph",           Phone="+63 995 384 8428", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,4,11), Notes="Primary contractor" },
+                new Partner { PartnerId=7,  PartnerName="Lina Mendoza",  PartnerType="Organization", RoleType="FindSafehouse",ContactName="Lina Mendoza",  Email="lina-mendoza@unityalliance.ph",     Phone="+63 955 786 5374", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,5,1),  Notes="Primary contractor" },
+                new Partner { PartnerId=8,  PartnerName="Noel Torres",   PartnerType="Individual",   RoleType="Logistics",    ContactName="Noel Torres",   Email="noel-torres@yahoo.com.ph",          Phone="+63 951 750 3803", Region="Visayas",  Status="Active",   StartDate=new DateTime(2022,5,21), Notes="Primary contractor" },
+                new Partner { PartnerId=9,  PartnerName="Mark Lopez",    PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Mark Lopez",    Email="mark-lopez@smart.com.ph",           Phone="+63 995 376 4598", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,6,10), Notes="Primary contractor" },
+                new Partner { PartnerId=10, PartnerName="Ramon Bautista", PartnerType="Organization",RoleType="Logistics",    ContactName="Ramon Bautista",Email="ramon-bautista@hopepartners.ph",    Phone="+63 915 924 6168", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,6,30), Notes="Primary contractor" },
+                new Partner { PartnerId=11, PartnerName="Paolo Navarro", PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Paolo Navarro", Email="paolo-navarro@eastern.com.ph",      Phone="+63 977 317 9179", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,7,20), Notes="Secondary contractor" },
+                new Partner { PartnerId=12, PartnerName="Jessa Ramos",   PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Jessa Ramos",   Email="jessa-ramos@smart.com.ph",          Phone="+63 937 371 3287", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,8,9),  Notes="Secondary contractor" },
+                new Partner { PartnerId=13, PartnerName="Mica Castillo", PartnerType="Organization", RoleType="Evaluation",   ContactName="Mica Castillo", Email="mica-castillo@faithgroup.ph",       Phone="+63 949 508 6930", Region="Visayas",  Status="Active",   StartDate=new DateTime(2022,8,29), Notes="Secondary contractor" },
+                new Partner { PartnerId=14, PartnerName="Leah Gomez",    PartnerType="Individual",   RoleType="Education",    ContactName="Leah Gomez",    Email="leah-gomez@eastern.com.ph",         Phone="+63 928 193 1771", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,9,18), Notes="Secondary contractor" },
+                new Partner { PartnerId=15, PartnerName="Ruth Naval",    PartnerType="Individual",   RoleType="Transport",    ContactName="Ruth Naval",    Email="ruth-naval@globe.com.ph",           Phone="+63 992 532 2040", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,10,8), Notes="Secondary contractor" },
+                new Partner { PartnerId=16, PartnerName="Ivan Pascual",  PartnerType="Organization", RoleType="SafehouseOps", ContactName="Ivan Pascual",  Email="ivan-pascual@kapatiranalliance.ph", Phone="+63 947 981 1188", Region="Visayas",  Status="Active",   StartDate=new DateTime(2022,10,28),Notes="Secondary contractor" },
+                new Partner { PartnerId=17, PartnerName="Aiko Rivera",   PartnerType="Individual",   RoleType="Logistics",    ContactName="Aiko Rivera",   Email="aiko-rivera@eastern.com.ph",        Phone="+63 967 887 6573", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,11,17),Notes="Secondary contractor" },
+                new Partner { PartnerId=18, PartnerName="Mara Salazar",  PartnerType="Individual",   RoleType="Education",    ContactName="Mara Salazar",  Email="mara-salazar@smart.com.ph",         Phone="+63 905 839 5315", Region="Luzon",    Status="Active",   StartDate=new DateTime(2022,12,7), Notes="Secondary contractor" },
+                new Partner { PartnerId=19, PartnerName="Paula Tan",     PartnerType="Organization", RoleType="Maintenance",  ContactName="Paula Tan",     Email="paula-tan@brightalliance.ph",       Phone="+63 998 619 4258", Region="Mindanao", Status="Active",   StartDate=new DateTime(2022,12,27),Notes="Secondary contractor" },
+                new Partner { PartnerId=20, PartnerName="Chris Uy",      PartnerType="Individual",   RoleType="Education",    ContactName="Chris Uy",      Email="chris-uy@eastern.com.ph",           Phone="+63 939 100 6310", Region="Mindanao", Status="Active",   StartDate=new DateTime(2023,1,16), Notes="Secondary contractor" },
+                new Partner { PartnerId=21, PartnerName="Ben Diaz",      PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Ben Diaz",      Email="ben-diaz@pldt.net.ph",              Phone="+63 976 345 1949", Region="Luzon",    Status="Active",   StartDate=new DateTime(2023,2,5),  Notes="Secondary contractor" },
+                new Partner { PartnerId=22, PartnerName="Kai Javier",    PartnerType="Organization", RoleType="Evaluation",   ContactName="Kai Javier",    Email="kai-javier@brightfoundation.ph",    Phone="+63 928 935 2133", Region="Visayas",  Status="Active",   StartDate=new DateTime(2023,2,25), Notes="Secondary contractor" },
+                new Partner { PartnerId=23, PartnerName="Tess Lim",      PartnerType="Individual",   RoleType="Maintenance",  ContactName="Tess Lim",      Email="tess-lim@globe.com.ph",             Phone="+63 936 775 8787", Region="Visayas",  Status="Active",   StartDate=new DateTime(2023,3,17), Notes="Secondary contractor" },
+                new Partner { PartnerId=24, PartnerName="Nina Vega",     PartnerType="Individual",   RoleType="Maintenance",  ContactName="Nina Vega",     Email="nina-vega@eastern.com.ph",          Phone="+63 951 533 4470", Region="Luzon",    Status="Active",   StartDate=new DateTime(2023,4,6),  Notes="Secondary contractor" },
+                new Partner { PartnerId=25, PartnerName="Rico Ramos",    PartnerType="Organization", RoleType="Maintenance",  ContactName="Rico Ramos",    Email="rico-ramos@globalalliance.ph",      Phone="+63 996 787 7118", Region="Mindanao", Status="Active",   StartDate=new DateTime(2023,4,26), Notes="Secondary contractor" },
+                new Partner { PartnerId=26, PartnerName="Maya Serrano",  PartnerType="Individual",   RoleType="SafehouseOps", ContactName="Maya Serrano",  Email="maya-serrano@yahoo.com.ph",         Phone="+63 965 330 2049", Region="Visayas",  Status="Active",   StartDate=new DateTime(2023,5,16), Notes="Secondary contractor" },
+                new Partner { PartnerId=27, PartnerName="Ivy Valdez",    PartnerType="Individual",   RoleType="Evaluation",   ContactName="Ivy Valdez",    Email="ivy-valdez@globe.com.ph",           Phone="+63 949 325 1117", Region="Visayas",  Status="Active",   StartDate=new DateTime(2023,6,5),  Notes="Secondary contractor" },
+                new Partner { PartnerId=28, PartnerName="Paul Yap",      PartnerType="Organization", RoleType="Education",    ContactName="Paul Yap",      Email="paul-yap@globalfoundation.ph",      Phone="+63 915 980 6413", Region="Visayas",  Status="Inactive", StartDate=new DateTime(2023,6,25), EndDate=new DateTime(2025,12,31), Notes="Secondary contractor" },
+                new Partner { PartnerId=29, PartnerName="June Cortez",   PartnerType="Individual",   RoleType="Education",    ContactName="June Cortez",   Email="june-cortez@smart.com.ph",          Phone="+63 955 652 3167", Region="Luzon",    Status="Inactive", StartDate=new DateTime(2023,7,15), EndDate=new DateTime(2025,12,31), Notes="Secondary contractor" },
+                new Partner { PartnerId=30, PartnerName="Lara Soriano",  PartnerType="Individual",   RoleType="Logistics",    ContactName="Lara Soriano",  Email="lara-soriano@eastern.com.ph",       Phone="+63 921 348 8749", Region="Mindanao", Status="Inactive", StartDate=new DateTime(2023,8,4),  EndDate=new DateTime(2025,12,31), Notes="Secondary contractor" }
+            );
+            await appDb.SaveChangesAsync();
+            logger.LogInformation("Seeded 30 partner rows.");
+        }
+
+        if (!appDb.PartnerAssignments.Any())
+        {
+            // Rows with null safehouse_id in the CSV are omitted (schema requires NOT NULL).
+            appDb.PartnerAssignments.AddRange(
+                new PartnerAssignment { AssignmentId=1,  PartnerId=1,  SafehouseId=8, ProgramArea="Operations", AssignmentStart=new DateTime(2022,1,1),  IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=2,  PartnerId=1,  SafehouseId=9, ProgramArea="Operations", AssignmentStart=new DateTime(2022,1,1),  IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=3,  PartnerId=2,  SafehouseId=4, ProgramArea="Wellbeing",  AssignmentStart=new DateTime(2022,1,21), IsPrimary=true,  Status="Active", ResponsibilityNotes="Evaluation support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=4,  PartnerId=3,  SafehouseId=9, ProgramArea="Education",  AssignmentStart=new DateTime(2022,2,10), IsPrimary=true,  Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=5,  PartnerId=3,  SafehouseId=6, ProgramArea="Education",  AssignmentStart=new DateTime(2022,2,10), IsPrimary=false, Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=6,  PartnerId=4,  SafehouseId=8, ProgramArea="Transport",  AssignmentStart=new DateTime(2022,3,2),  IsPrimary=true,  Status="Active", ResponsibilityNotes="Logistics support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=7,  PartnerId=5,  SafehouseId=2, ProgramArea="Operations", AssignmentStart=new DateTime(2022,3,22), IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                // row 8: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=9,  PartnerId=7,  SafehouseId=8, ProgramArea="Operations", AssignmentStart=new DateTime(2022,5,1),  IsPrimary=true,  Status="Active", ResponsibilityNotes="FindSafehouse support for safehouse operations" },
+                // row 10: safehouse_id null — skipped
+                // row 11: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=12, PartnerId=9,  SafehouseId=6, ProgramArea="Operations", AssignmentStart=new DateTime(2022,6,10), IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=13, PartnerId=9,  SafehouseId=3, ProgramArea="Operations", AssignmentStart=new DateTime(2022,6,10), IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                // row 14: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=15, PartnerId=11, SafehouseId=3, ProgramArea="Operations", AssignmentStart=new DateTime(2022,7,20), IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=16, PartnerId=11, SafehouseId=8, ProgramArea="Operations", AssignmentStart=new DateTime(2022,7,20), IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=17, PartnerId=12, SafehouseId=8, ProgramArea="Operations", AssignmentStart=new DateTime(2022,8,9),  IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=18, PartnerId=13, SafehouseId=1, ProgramArea="Wellbeing",  AssignmentStart=new DateTime(2022,8,29), IsPrimary=true,  Status="Active", ResponsibilityNotes="Evaluation support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=19, PartnerId=14, SafehouseId=2, ProgramArea="Education",  AssignmentStart=new DateTime(2022,9,18), IsPrimary=true,  Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=20, PartnerId=14, SafehouseId=7, ProgramArea="Education",  AssignmentStart=new DateTime(2022,9,18), IsPrimary=false, Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                // row 21: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=22, PartnerId=15, SafehouseId=2, ProgramArea="Transport",  AssignmentStart=new DateTime(2022,10,8), IsPrimary=false, Status="Active", ResponsibilityNotes="Transport support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=23, PartnerId=16, SafehouseId=4, ProgramArea="Operations", AssignmentStart=new DateTime(2022,10,28),IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=24, PartnerId=16, SafehouseId=7, ProgramArea="Operations", AssignmentStart=new DateTime(2022,10,28),IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                // row 25: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=26, PartnerId=17, SafehouseId=1, ProgramArea="Transport",  AssignmentStart=new DateTime(2022,11,17),IsPrimary=false, Status="Active", ResponsibilityNotes="Logistics support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=27, PartnerId=17, SafehouseId=9, ProgramArea="Transport",  AssignmentStart=new DateTime(2022,11,17),IsPrimary=false, Status="Active", ResponsibilityNotes="Logistics support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=28, PartnerId=18, SafehouseId=2, ProgramArea="Education",  AssignmentStart=new DateTime(2022,12,7), IsPrimary=true,  Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=29, PartnerId=18, SafehouseId=3, ProgramArea="Education",  AssignmentStart=new DateTime(2022,12,7), IsPrimary=false, Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=30, PartnerId=19, SafehouseId=7, ProgramArea="Maintenance",AssignmentStart=new DateTime(2022,12,27),IsPrimary=true,  Status="Active", ResponsibilityNotes="Maintenance support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=31, PartnerId=20, SafehouseId=4, ProgramArea="Education",  AssignmentStart=new DateTime(2023,1,16), IsPrimary=true,  Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=32, PartnerId=20, SafehouseId=5, ProgramArea="Education",  AssignmentStart=new DateTime(2023,1,16), IsPrimary=false, Status="Active", ResponsibilityNotes="Education support for safehouse operations" },
+                // row 33: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=34, PartnerId=22, SafehouseId=4, ProgramArea="Wellbeing",  AssignmentStart=new DateTime(2023,2,25), IsPrimary=true,  Status="Active", ResponsibilityNotes="Evaluation support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=35, PartnerId=22, SafehouseId=7, ProgramArea="Wellbeing",  AssignmentStart=new DateTime(2023,2,25), IsPrimary=false, Status="Active", ResponsibilityNotes="Evaluation support for safehouse operations" },
+                // row 36: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=37, PartnerId=24, SafehouseId=3, ProgramArea="Maintenance",AssignmentStart=new DateTime(2023,4,6),  IsPrimary=true,  Status="Active", ResponsibilityNotes="Maintenance support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=38, PartnerId=25, SafehouseId=5, ProgramArea="Maintenance",AssignmentStart=new DateTime(2023,4,26), IsPrimary=true,  Status="Active", ResponsibilityNotes="Maintenance support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=39, PartnerId=25, SafehouseId=8, ProgramArea="Maintenance",AssignmentStart=new DateTime(2023,4,26), IsPrimary=false, Status="Active", ResponsibilityNotes="Maintenance support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=40, PartnerId=26, SafehouseId=9, ProgramArea="Operations", AssignmentStart=new DateTime(2023,5,16), IsPrimary=true,  Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=41, PartnerId=26, SafehouseId=8, ProgramArea="Operations", AssignmentStart=new DateTime(2023,5,16), IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=42, PartnerId=26, SafehouseId=4, ProgramArea="Operations", AssignmentStart=new DateTime(2023,5,16), IsPrimary=false, Status="Active", ResponsibilityNotes="SafehouseOps support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=43, PartnerId=27, SafehouseId=5, ProgramArea="Wellbeing",  AssignmentStart=new DateTime(2023,6,5),  IsPrimary=true,  Status="Active", ResponsibilityNotes="Evaluation support for safehouse operations" },
+                // row 44: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=45, PartnerId=29, SafehouseId=1, ProgramArea="Education",  AssignmentStart=new DateTime(2023,7,15), AssignmentEnd=new DateTime(2025,12,31), IsPrimary=true,  Status="Ended", ResponsibilityNotes="Education support for safehouse operations" },
+                new PartnerAssignment { AssignmentId=46, PartnerId=29, SafehouseId=3, ProgramArea="Education",  AssignmentStart=new DateTime(2023,7,15), AssignmentEnd=new DateTime(2025,12,31), IsPrimary=false, Status="Ended", ResponsibilityNotes="Education support for safehouse operations" },
+                // row 47: safehouse_id null — skipped
+                new PartnerAssignment { AssignmentId=48, PartnerId=30, SafehouseId=8, ProgramArea="Transport",  AssignmentStart=new DateTime(2023,8,4),  AssignmentEnd=new DateTime(2025,12,31), IsPrimary=false, Status="Ended", ResponsibilityNotes="Logistics support for safehouse operations" }
+            );
+            await appDb.SaveChangesAsync();
+            logger.LogInformation("Seeded 38 partner_assignment rows (10 skipped: null safehouse_id).");
+        }
+
         logger.LogInformation("Database seeding completed.");
     }
     catch (Exception ex)
