@@ -47,6 +47,7 @@ import {
   Printer,
 } from "lucide-react";
 import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
@@ -586,7 +587,7 @@ const Residents = () => {
       )}
 
       {/* ── Resident cards ── */}
-      <div className="grid gap-4">
+      <div className="grid gap-4 print:hidden">
         {filtered.map((r) => {
           const stage = deriveStage(r);
           const stageIndex = stageSteps.indexOf(stage);
@@ -654,6 +655,22 @@ const Residents = () => {
           );
         })}
       </div>
+
+      {/* ── Print-friendly table ── */}
+      <PrintTable
+        columns={[
+          { header: "ID", accessor: (r: ResidentRow) => String(r.residentId) },
+          { header: "Name", accessor: (r: ResidentRow) => displayName(r) },
+          { header: "Safehouse", accessor: (r: ResidentRow) => r.safehouse?.name ?? "Unassigned" },
+          { header: "Stage", accessor: (r: ResidentRow) => deriveStage(r) },
+          { header: "Risk", accessor: (r: ResidentRow) => r.currentRiskLevel ?? "" },
+          { header: "Category", accessor: (r: ResidentRow) => r.caseCategory ?? "" },
+          { header: "Social Worker", accessor: (r: ResidentRow) => r.assignedSocialWorker ?? "" },
+          { header: "Admitted", accessor: (r: ResidentRow) => r.dateOfAdmission ? r.dateOfAdmission.slice(0, 10) : "" },
+        ]}
+        data={filtered}
+        keyAccessor={(r: ResidentRow) => r.residentId}
+      />
 
       {/* ──────────────────────────────────────────────────────────────────────
           DETAIL SHEET — full caseload inventory panel

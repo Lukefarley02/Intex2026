@@ -14,13 +14,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Home, MapPin, Users, Plus, Pencil, Trash2, Building2, Brain, ChevronRight } from "lucide-react";
+import { Home, MapPin, Users, Plus, Pencil, Trash2, Building2, Brain, ChevronRight, Printer } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 
 // ---- Types matching /api/safehouses projection ----
 interface SafehouseRow {
@@ -255,22 +257,28 @@ const Safehouses = () => {
 
   return (
     <DashboardLayout title="Safehouse Management">
-      <div className="flex items-center justify-between mb-6">
+      <PrintReportHeader title="Safehouse Report" count={safehouses.length} />
+      <div className="flex items-center justify-between mb-6 print:hidden">
         <p className="text-muted-foreground text-sm">
           {isLoading
             ? "Loading safehouses…"
             : `${safehouses.length} safehouse${safehouses.length === 1 ? "" : "s"}`}
         </p>
-        {canWrite && (
-          <Button variant="hero" size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" /> Add safehouse
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> Print Report
           </Button>
-        )}
+          {canWrite && (
+            <Button variant="hero" size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" /> Add safehouse
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ML Insights quick-link — Founder only */}
       {isFounder && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
           <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
             <Brain className="w-3.5 h-3.5" /> ML Insights:
           </span>
@@ -295,7 +303,7 @@ const Safehouses = () => {
         <p className="text-sm text-muted-foreground">No safehouses found.</p>
       )}
 
-      <div className="grid sm:grid-cols-2 gap-5">
+      <div className="grid sm:grid-cols-2 gap-5 print:hidden">
         {safehouses.map((sh) => {
           const capacity = sh.capacityGirls ?? 0;
           const current = sh.activeResidents ?? sh.storedOccupancy ?? 0;
@@ -569,6 +577,27 @@ const Safehouses = () => {
         onConfirm={() => {
           if (toDelete) deleteMut.mutate(toDelete.safehouseId);
         }}
+      />
+
+      {/* ---- Print table ---- */}
+      <PrintTable
+        columns={[
+          { header: "Name", accessor: (r: SafehouseRow) => r.name },
+          { header: "Code", accessor: (r: SafehouseRow) => r.safehouseCode ?? "" },
+          { header: "City", accessor: (r: SafehouseRow) => r.city ?? "" },
+          { header: "Region", accessor: (r: SafehouseRow) => r.region ?? "" },
+          { header: "Country", accessor: (r: SafehouseRow) => r.country ?? "" },
+          { header: "Status", accessor: (r: SafehouseRow) => r.status ?? "Active" },
+          { header: "Capacity", accessor: (r: SafehouseRow) => String(r.capacityGirls ?? 0), align: "right" as const },
+          { header: "Active", accessor: (r: SafehouseRow) => String(r.activeResidents ?? r.storedOccupancy ?? 0), align: "right" as const },
+          { header: "Utilization", accessor: (r: SafehouseRow) => {
+            const cap = r.capacityGirls ?? 1;
+            const occ = r.activeResidents ?? r.storedOccupancy ?? 0;
+            return `${Math.round((occ / cap) * 100)}%`;
+          }, align: "right" as const },
+        ]}
+        data={safehouses}
+        keyAccessor={(r: SafehouseRow) => r.safehouseId}
       />
     </DashboardLayout>
   );

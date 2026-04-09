@@ -328,25 +328,49 @@
   }
 }
 
-/* ─── Print styles ───────────────────────────────────────────────────────────
-   Used by the "Print / Save as PDF" button on management pages.
-   DashboardLayout already adds print:hidden to the sidebar and header;
-   these rules clean up remaining layout artefacts so the printout is
-   a clean, full-width document with no chrome.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ─── Print styles ─────────────────────────────────────────────────────────── */
 @media print {
-  /* Strip page background so white paper shows through */
-  body { background: white !important; color: black !important; }
+  /* Hide sidebar, header bar, scrollbars */
+  aside,
+  nav,
+  header,
+  [data-sidebar],
+  [role="navigation"] {
+    display: none !important;
+  }
 
-  /* Kill any overflow:hidden constraints so content isn't clipped */
-  .overflow-hidden, .overflow-x-hidden { overflow: visible !important; }
+  /* Let the main content area fill the page with no constraints */
+  main,
+  [data-main-content] {
+    margin: 0 !important;
+    padding: 0.5in !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
 
-  /* Remove viewport-lock height so pages can be as tall as needed */
-  .h-\[calc\(100vh-3\.5rem\)\] { height: auto !important; }
+  /* Reset body/html for print */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+  }
 
-  /* ML Insights: hide pipeline tabs/selector; only the active panel prints */
-  [data-pipeline-tabs] { display: none !important; }
+  /* Force white background on cards for print legibility */
+  .print\:bg-white {
+    background: white !important;
+  }
 
-  /* Don't break cards across pages when possible */
-  .rounded-xl, .rounded-lg { page-break-inside: avoid; break-inside: avoid; }
+  /* Prevent page breaks inside table rows and cards */
+  tr, .print-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Hide all dark-mode classes in print */
+  .dark {
+    color-scheme: light !important;
+  }
 }

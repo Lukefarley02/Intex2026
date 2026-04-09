@@ -330,10 +330,11 @@ const DashboardLayout = ({
           </div>
         </header>
         <main
+          data-main-content
           className={
             fitViewport
-              ? "p-4 h-[calc(100vh-3.5rem)] overflow-hidden"
-              : "p-6"
+              ? "p-4 h-[calc(100vh-3.5rem)] overflow-hidden print:h-auto print:overflow-visible"
+              : "p-6 print:p-0"
           }
         >
           {children}

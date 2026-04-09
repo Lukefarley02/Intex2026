@@ -40,12 +40,15 @@ import {
   Search,
   Users,
   CheckSquare,
+  Printer,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/api/AuthContext";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 
 // ---- Types ----
 interface ResidentRow {
@@ -344,8 +347,16 @@ const HomeVisitation = () => {
 
   const detailResident = selected ? residentLookup.get(selected.residentId) : undefined;
 
+  const printFilters = [
+    ...(visitTypeFilter !== "__any__" ? [{ label: "Visit Type", value: visitTypeFilter }] : []),
+    ...(dateFrom ? [{ label: "From", value: dateFrom }] : []),
+    ...(dateTo ? [{ label: "To", value: dateTo }] : []),
+    ...(search.trim() ? [{ label: "Search", value: search.trim() }] : []),
+  ];
+
   return (
     <DashboardLayout title="Home Visitation">
+      <PrintReportHeader title="Home Visitation Report" filters={printFilters} count={filteredVisits.length} />
       <div className="max-w-6xl space-y-6">
 
         {/* Header */}
@@ -368,7 +379,7 @@ const HomeVisitation = () => {
         )}
 
         {/* Top bar: search + action */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -378,18 +389,22 @@ const HomeVisitation = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Dialog
-            open={open}
-            onOpenChange={(o) => {
-              setOpen(o);
-              if (!o) { setEditingId(null); setForm(emptyForm); }
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2" onClick={openCreate}>
-                <Plus className="w-4 h-4" /> Log Visit
-              </Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button size="sm" className="gap-2" onClick={() => window.print()}>
+              <Printer className="w-4 h-4" /> Print Report
+            </Button>
+            <Dialog
+              open={open}
+              onOpenChange={(o) => {
+                setOpen(o);
+                if (!o) { setEditingId(null); setForm(emptyForm); }
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2" onClick={openCreate}>
+                  <Plus className="w-4 h-4" /> Log Visit
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
@@ -534,11 +549,12 @@ const HomeVisitation = () => {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
 
         {/* Filter row */}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 print:hidden">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground font-medium">Visit type</label>
             <Select value={visitTypeFilter} onValueChange={setVisitTypeFilter}>
@@ -777,6 +793,21 @@ const HomeVisitation = () => {
         destructive
         loading={deleteMut.isPending}
         onConfirm={() => { if (deleteTarget) deleteMut.mutate(deleteTarget.visitationId); }}
+      />
+
+      <PrintTable
+        columns={[
+          { header: "Date", accessor: (r: HomeVisitationRow) => r.visitDate ? new Date(r.visitDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "" },
+          { header: "Type", accessor: (r: HomeVisitationRow) => r.visitType ?? "" },
+          { header: "Resident", accessor: (r: HomeVisitationRow) => residentLookup.get(r.residentId) ? displayName(residentLookup.get(r.residentId)!) : `#${r.residentId}` },
+          { header: "Location", accessor: (r: HomeVisitationRow) => r.locationVisited ?? "" },
+          { header: "Social Worker", accessor: (r: HomeVisitationRow) => r.socialWorker ?? "" },
+          { header: "Family Coop.", accessor: (r: HomeVisitationRow) => r.familyCooperationLevel ?? "" },
+          { header: "Safety", accessor: (r: HomeVisitationRow) => r.safetyConcernsNoted ? "Yes" : "No" },
+          { header: "Follow-up", accessor: (r: HomeVisitationRow) => r.followUpNeeded ? "Yes" : "No" },
+        ]}
+        data={filteredVisits}
+        keyAccessor={(r: HomeVisitationRow) => r.visitationId}
       />
     </DashboardLayout>
   );
