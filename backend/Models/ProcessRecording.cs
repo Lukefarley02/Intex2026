@@ -51,4 +51,7 @@ public class ProcessRecording
 
     [Column("social_worker")]
     public string? SocialWorker { get; set; }
+
+    [Column("created_by_user_id")]
+    public string? CreatedByUserId { get; set; }
 }

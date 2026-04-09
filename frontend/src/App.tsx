@@ -29,6 +29,7 @@ import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
 import MLInsights from "./pages/MLInsights";
 import AccountSettings from "./pages/AccountSettings";
+import MyReports from "./pages/MyReports";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +116,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
                   <HomeVisitation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-reports"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <MyReports />
                 </ProtectedRoute>
               }
             />
