@@ -13,6 +13,13 @@ interface User {
   adminScope?: "founder" | "region" | "location" | null;
   region?: string | null;
   city?: string | null;
+  /**
+   * True when the account was provisioned with a temporary seed password
+   * (e.g. by staff via the Log Donation flow). The frontend uses this to
+   * force the donor into a password-change screen before any other
+   * navigation.
+   */
+  mustChangePassword?: boolean;
 }
 
 interface AuthState {
@@ -26,6 +33,12 @@ interface AuthState {
   hasRole: (role: string) => boolean;
   /** True only for top-level admins (Admin role with no Region/City scope). */
   isFounder: boolean;
+  /** True when the signed-in user must change their password before continuing. */
+  mustChangePassword: boolean;
+  /** Clear the mustChangePassword flag in local state after a successful reset. */
+  clearMustChangePassword: () => void;
+  /** Replace the stored JWT (e.g. after change-password returned a fresh one). */
+  setToken: (token: string) => void;
 }
 
 interface LoginResponse {
@@ -33,6 +46,7 @@ interface LoginResponse {
   expiration: string;
   email: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 // ---- Context ----
@@ -65,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             adminScope?: "founder" | "region" | "location" | null;
             region?: string | null;
             city?: string | null;
+            mustChangePassword?: boolean;
           }) => {
             setUser({
               email: data.email,
@@ -72,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               adminScope: data.adminScope ?? null,
               region: data.region ?? null,
               city: data.city ?? null,
+              mustChangePassword: data.mustChangePassword ?? false,
             });
           },
         )
@@ -107,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       adminScope?: "founder" | "region" | "location" | null;
       region?: string | null;
       city?: string | null;
+      mustChangePassword?: boolean;
     } = {};
     try {
       const meRes = await fetch(`${API_BASE}/api/auth/me`, {
@@ -123,6 +140,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       adminScope: scope.adminScope ?? null,
       region: scope.region ?? null,
       city: scope.city ?? null,
+      mustChangePassword:
+        scope.mustChangePassword ?? data.mustChangePassword ?? false,
     };
     setUser(nextUser);
     return nextUser;
@@ -162,6 +181,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const isFounder = user?.adminScope === "founder";
+  const mustChangePassword = user?.mustChangePassword === true;
+
+  const clearMustChangePassword = useCallback(() => {
+    setUser((u) => (u ? { ...u, mustChangePassword: false } : u));
+  }, []);
+
+  const replaceToken = useCallback((next: string) => {
+    sessionStorage.setItem("jwt", next);
+    setToken(next);
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -175,6 +204,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         hasRole,
         isFounder,
+        mustChangePassword,
+        clearMustChangePassword,
+        setToken: replaceToken,
       }}
     >
       {children}

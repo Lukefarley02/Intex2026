@@ -14,7 +14,13 @@ namespace Intex2026.Api.Controllers;
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 public record RegisterRequest(string Email, string Password, string? FirstName = null, string? LastName = null, string? Role = null, string? Region = null, string? City = null);
 public record LoginRequest(string Email, string Password);
-public record AuthResponse(string Token, string Email, IList<string> Roles, string? Region, string? City);
+public record AuthResponse(
+    string Token,
+    string Email,
+    IList<string> Roles,
+    string? Region,
+    string? City,
+    bool MustChangePassword);
 public record ChangeEmailRequest(string NewEmail, string CurrentPassword);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record DeleteAccountRequest(string CurrentPassword);
@@ -117,7 +123,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
-        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
     }
 
     // POST /api/auth/login
@@ -135,7 +141,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
-        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
     }
 
     // POST /api/auth/logout
@@ -161,6 +167,7 @@ public class AuthController : ControllerBase
             roles,
             region = user.Region,
             city = user.City,
+            mustChangePassword = user.MustChangePassword,
             // Convenience: derive admin scope so the frontend can show the right UI.
             // "founder" replaces the old "company" label and aligns with the
             // four-tier access model (founder / region / location / staff).
@@ -199,7 +206,7 @@ public class AuthController : ControllerBase
 
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
-        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
     }
 
     // POST /api/auth/change-password
@@ -216,6 +223,21 @@ public class AuthController : ControllerBase
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
+        // Clear the "must change password" flag — the user has satisfied the
+        // forced-reset. Rotate the security stamp so any *other* active JWTs
+        // for this account are invalidated, then mint a fresh token for the
+        // caller so they don't get bounced to the login screen on the next
+        // request (their current token would have the old stamp).
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwt(user, roles);
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
         // ChangePasswordAsync regenerates the user's SecurityStamp, which
         // immediately invalidates the caller's existing JWT (the OnTokenValidated
         // hook rejects tokens whose stamp no longer matches the DB). Return a

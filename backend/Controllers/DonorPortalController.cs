@@ -109,7 +109,11 @@ public class DonorPortalController : ControllerBase
                 d.ImpactUnit,
                 d.CampaignName,
                 d.IsRecurring,
-                d.ChannelSource
+                d.ChannelSource,
+                // Notes carries the item description for in-kind donations
+                // (e.g. "5 boxes of school supplies") so the donor portal
+                // can render it alongside the gift.
+                d.Notes
             })
             .ToListAsync();
 
@@ -250,10 +254,39 @@ public class DonorPortalController : ControllerBase
                 d.CampaignName,
                 d.IsRecurring,
                 d.CurrencyCode,
+                d.Notes,
             })
             .ToListAsync();
 
+        // Split into cash and non-cash per IRS Publication 1771. The cash
+        // section states dollar amounts; the non-cash section lists item
+        // descriptions only and does NOT state a dollar value on the
+        // acknowledgment letter (the donor is responsible for valuing
+        // non-cash gifts and must file Form 8283 for any single non-cash
+        // gift whose fair-market value exceeds $500).
+        static bool IsInKind(string? t) =>
+            !string.IsNullOrWhiteSpace(t) &&
+            (t.Equals("InKind", StringComparison.OrdinalIgnoreCase)
+             || t.Equals("In-Kind", StringComparison.OrdinalIgnoreCase)
+             || t.Equals("In Kind", StringComparison.OrdinalIgnoreCase));
+
+        var cashDonations = donations
+            .Where(d => !IsInKind(d.DonationType))
+            .ToList();
+        var nonCashDonations = donations
+            .Where(d => IsInKind(d.DonationType))
+            .ToList();
+
+        var totalCashAmount = cashDonations.Sum(d => d.Amount ?? d.EstimatedValue ?? 0m);
+        // Kept only for backwards compatibility with the older response
+        // shape — includes every donation and was never technically correct
+        // for in-kind gifts.
         var total = donations.Sum(d => d.Amount ?? d.EstimatedValue ?? 0m);
+
+        // Form 8283 is required on the donor's tax return when any single
+        // non-cash gift's claimed fair-market value exceeds $500. We flag
+        // it here so the frontend can show the notice on the receipt.
+        var form8283Required = nonCashDonations.Any(d => (d.EstimatedValue ?? 0m) > 500m);
 
         // Available years — helps the UI build a year dropdown.
         // Done as a separate projection outside SQL to avoid EF Core
@@ -309,15 +342,34 @@ public class DonorPortalController : ControllerBase
             availableYears,
             issueDate     = DateTime.UtcNow,
             currencyCode  = "USD",
+
+            // Legacy totals — retained so any older frontend code still
+            // renders something. New code should prefer `totalCashAmount`
+            // and iterate the split arrays below.
             totalAmount   = total,
             donationCount = donations.Count,
             donations,
+
+            // IRS Pub 1771 split ------------------------------------------
+            //
+            // Cash gifts carry a dollar value on the acknowledgment;
+            // non-cash gifts list only the item description and an
+            // "estimated value per donor" figure that the donor supplied
+            // when the gift was logged. The receipt makes clear that the
+            // donor — not the charity — is responsible for claiming the
+            // valuation on their tax return.
+            totalCashAmount,
+            cashDonations,
+            nonCashDonations,
+            nonCashCount = nonCashDonations.Count,
+            form8283Required,
 
             // Required IRS disclosure language for cash gifts. This is the
             // standard wording charities put at the bottom of their written
             // acknowledgment letters.
             disclosure = "No goods or services were provided in exchange for the contributions listed above. Please retain this acknowledgment for your tax records. Ember Foundation, Inc. is a registered 501(c)(3) nonprofit organization; contributions are tax-deductible to the fullest extent allowed by law.",
-            formReference = "Use this acknowledgment with IRS Schedule A (Form 1040) when itemizing charitable contributions."
+            nonCashDisclosure = "For non-cash (in-kind) contributions, the organization has described the items received but is not required (and is not permitted) to assign a dollar value for IRS purposes. The donor is solely responsible for determining the fair-market value of each item, and must file IRS Form 8283 (Noncash Charitable Contributions) with their return when the claimed value of any single item or group of similar items exceeds $500.",
+            formReference = "Use this acknowledgment with IRS Schedule A (Form 1040) when itemizing charitable contributions. File Form 8283 alongside Schedule A for any non-cash gift whose fair-market value exceeds $500."
         });
     }
 }

@@ -24,11 +24,14 @@ import {
   ArrowUpCircle,
   TrendingUp,
   Brain,
+  HandCoins,
+  Lock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import LogDonationDialog from "@/components/LogDonationDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -215,6 +218,12 @@ const Donors = () => {
   // through the toast error.
   const canWrite = hasRole("Admin");
   const canDelete = hasRole("Admin");
+  // Only Admins browse the donor list. Staff land on a restricted version
+  // of this page that surfaces ONLY the "Log donation" button — per the
+  // four-tier access model, Staff should never see donor totals, email
+  // addresses, or giving history. The full page is unreachable for them.
+  const isStaffOnly = hasRole("Staff") && !hasRole("Admin");
+  const [logDonationOpen, setLogDonationOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DonorTypeFilter>("all");
@@ -375,6 +384,62 @@ const Donors = () => {
 
   const saving = createMut.isPending || updateMut.isPending;
 
+  // ---------------------------------------------------------------------
+  // Staff view: a single "Log donation" card. Staff never see donor
+  // totals, emails, search, filters, or the full browse list. The only
+  // thing they can do from this page is log an in-person gift, which
+  // routes through the LogDonationDialog and hits POST /api/donations.
+  // Backend access control in SupportersController still silently clamps
+  // any other interaction Staff could attempt.
+  // ---------------------------------------------------------------------
+  if (isStaffOnly) {
+    return (
+      <DashboardLayout title="Donations">
+        <div className="max-w-2xl">
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <HandCoins className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="font-semibold text-lg">Log a donation</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Record a cash, check, or in-kind gift received in
+                    person. You'll be prompted to match it to an existing
+                    donor or create a new donor record.
+                  </p>
+                  <Button
+                    className="mt-4"
+                    variant="hero"
+                    onClick={() => setLogDonationOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Log donation
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="mt-4 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Lock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <p>
+              Donor giving history, totals, and contact information are
+              visible only to administrators. As staff, your role is to
+              log new gifts — the rest of the donor file is restricted
+              for privacy.
+            </p>
+          </div>
+        </div>
+
+        <LogDonationDialog
+          open={logDonationOpen}
+          onOpenChange={setLogDonationOpen}
+        />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Donor Management">
       {/* Top bar */}
@@ -398,9 +463,18 @@ const Donors = () => {
           </Button>
         </div>
         {canWrite && (
-          <Button variant="hero" size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" /> Add donor
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLogDonationOpen(true)}
+            >
+              <HandCoins className="w-4 h-4 mr-1" /> Log donation
+            </Button>
+            <Button variant="hero" size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" /> Add donor
+            </Button>
+          </div>
         )}
       </div>
 
@@ -829,6 +903,12 @@ const Donors = () => {
         onConfirm={() => {
           if (toDelete) deleteMut.mutate(toDelete.supporterId);
         }}
+      />
+
+      {/* ---- Log donation dialog (Admin view) ---- */}
+      <LogDonationDialog
+        open={logDonationOpen}
+        onOpenChange={setLogDonationOpen}
       />
     </DashboardLayout>
   );
