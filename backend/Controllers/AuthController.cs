@@ -16,6 +16,7 @@ public record AuthResponse(string Token, string Email, IList<string> Roles, stri
 public record ChangeEmailRequest(string NewEmail, string CurrentPassword);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record DeleteAccountRequest(string CurrentPassword);
+public record SetPasswordRequest(string NewPassword);
 
 // ── Controller ────────────────────────────────────────────────────────────────
 [ApiController]
@@ -165,7 +166,37 @@ public class AuthController : ControllerBase
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
-        return Ok(new { message = "Password changed successfully." });
+        // ChangePasswordAsync regenerates the user's SecurityStamp, which
+        // immediately invalidates the caller's existing JWT (the OnTokenValidated
+        // hook rejects tokens whose stamp no longer matches the DB). Return a
+        // fresh token here so the client can swap it in without losing their
+        // session — identical to the change-email flow.
+        var roles = await _userManager.GetRolesAsync(user);
+        var freshToken = GenerateJwt(user, roles);
+        return Ok(new { message = "Password changed successfully.", token = freshToken });
+    }
+
+    // POST /api/auth/set-password
+    // Sets a new password for the authenticated Donor without requiring the
+    // current password. Donors often have passwords saved by the browser and
+    // may not remember them when they want to change to something memorable.
+    // Uses a server-generated reset token internally so Identity's password
+    // policy is still enforced. Returns a fresh JWT (same reason as above —
+    // ResetPasswordAsync regenerates the SecurityStamp).
+    [Authorize(Roles = "Donor")]
+    [HttpPost("set-password")]
+    public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(User.Identity!.Name!);
+        if (user == null) return Unauthorized();
+
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await _userManager.ResetPasswordAsync(user, resetToken, request.NewPassword);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var freshToken = GenerateJwt(user, roles);
+        return Ok(new { message = "Password updated successfully.", token = freshToken });
     }
 
     // DELETE /api/auth/account
