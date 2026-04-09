@@ -10,6 +10,16 @@ const API_BASE =
 interface User {
   email: string;
   roles: string[];
+  adminScope?: "founder" | "region" | "location" | null;
+  region?: string | null;
+  city?: string | null;
+  /**
+   * True when the account was provisioned with a temporary seed password
+   * (e.g. by staff via the Log Donation flow). The frontend uses this to
+   * force the donor into a password-change screen before any other
+   * navigation.
+   */
+  mustChangePassword?: boolean;
 }
 
 interface AuthState {
@@ -21,6 +31,14 @@ interface AuthState {
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   hasRole: (role: string) => boolean;
+  /** True only for top-level admins (Admin role with no Region/City scope). */
+  isFounder: boolean;
+  /** True when the signed-in user must change their password before continuing. */
+  mustChangePassword: boolean;
+  /** Clear the mustChangePassword flag in local state after a successful reset. */
+  clearMustChangePassword: () => void;
+  /** Replace the stored JWT (e.g. after change-password returned a fresh one). */
+  setToken: (token: string) => void;
 }
 
 interface LoginResponse {
@@ -28,6 +46,7 @@ interface LoginResponse {
   expiration: string;
   email: string;
   roles: string[];
+  mustChangePassword?: boolean;
 }
 
 // ---- Context ----
@@ -53,9 +72,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!res.ok) throw new Error("Token expired");
           return res.json();
         })
-        .then((data: { email: string; roles: string[] }) => {
-          setUser({ email: data.email, roles: data.roles });
-        })
+        .then(
+          (data: {
+            email: string;
+            roles: string[];
+            adminScope?: "founder" | "region" | "location" | null;
+            region?: string | null;
+            city?: string | null;
+            mustChangePassword?: boolean;
+          }) => {
+            setUser({
+              email: data.email,
+              roles: data.roles,
+              adminScope: data.adminScope ?? null,
+              region: data.region ?? null,
+              city: data.city ?? null,
+              mustChangePassword: data.mustChangePassword ?? false,
+            });
+          },
+        )
         .catch(() => {
           sessionStorage.removeItem("jwt");
           setToken(null);
@@ -80,10 +115,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const data: LoginResponse = await res.json();
-    const nextUser: User = { email: data.email, roles: data.roles };
-    setToken(data.token);
-    setUser(nextUser);
     sessionStorage.setItem("jwt", data.token);
+    setToken(data.token);
+
+    // Fetch scope info (region/city/adminScope) so UI can gate founder-only features.
+    let scope: {
+      adminScope?: "founder" | "region" | "location" | null;
+      region?: string | null;
+      city?: string | null;
+      mustChangePassword?: boolean;
+    } = {};
+    try {
+      const meRes = await fetch(`${API_BASE}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
+      if (meRes.ok) scope = await meRes.json();
+    } catch {
+      /* non-fatal — scope stays empty */
+    }
+
+    const nextUser: User = {
+      email: data.email,
+      roles: data.roles,
+      adminScope: scope.adminScope ?? null,
+      region: scope.region ?? null,
+      city: scope.city ?? null,
+      mustChangePassword:
+        scope.mustChangePassword ?? data.mustChangePassword ?? false,
+    };
+    setUser(nextUser);
     return nextUser;
   }, []);
 
@@ -120,6 +180,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
+  const isFounder = user?.adminScope === "founder";
+  const mustChangePassword = user?.mustChangePassword === true;
+
+  const clearMustChangePassword = useCallback(() => {
+    setUser((u) => (u ? { ...u, mustChangePassword: false } : u));
+  }, []);
+
+  const replaceToken = useCallback((next: string) => {
+    sessionStorage.setItem("jwt", next);
+    setToken(next);
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -131,6 +203,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         logout,
         hasRole,
+        isFounder,
+        mustChangePassword,
+        clearMustChangePassword,
+        setToken: replaceToken,
       }}
     >
       {children}

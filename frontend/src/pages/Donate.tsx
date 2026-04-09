@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import PublicNav from "@/components/PublicNav";
+import DonateHeader from "@/components/DonateHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,59 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Heart, Check, Sparkles, FileText, Gift, UserCheck, MapPin } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { useAuth } from "@/api/AuthContext";
 
 const presets = [10, 25, 50, 100];
+
+// Plays a short two-note "ding" chime using the Web Audio API so we don't
+// have to ship an audio asset. Safari/iOS require the AudioContext to be
+// created inside a user-gesture handler, which is why we instantiate it
+// on demand inside handleDonate rather than at module load.
+const playDonationDing = () => {
+  try {
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return;
+    const ctx = new Ctor();
+    const now = ctx.currentTime;
+
+    const playTone = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      // Quick attack, gentle release so it sounds like a bell, not a beep.
+      gain.gain.setValueAtTime(0.0001, now + start);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now + start);
+      osc.stop(now + start + duration + 0.05);
+    };
+
+    // C6 → E6 rising two-note chime (cheerful confirmation).
+    playTone(1046.5, 0, 0.25);
+    playTone(1318.5, 0.18, 0.45);
+
+    // Release the context after the chime finishes so we don't leak it.
+    setTimeout(() => {
+      void ctx.close();
+    }, 900);
+  } catch {
+    // Audio is nice-to-have; never block the donation flow on it.
+  }
+};
 
 interface DonateResponse {
   donationId: number;
@@ -125,12 +173,21 @@ const Donate = () => {
   }, [profileQ.data]);
 
   const activeAmount = custom ? Number(custom) : amount;
-  const girlDays = Math.floor((activeAmount || 0) / 0.83);
+  // Program economics: the public anchor rate is "$25 shelters a girl
+  // for a full month" — so monthly cost = $25, yearly = $300, daily =
+  // $25/30 ≈ $0.833. Every impact figure on this page is derived from
+  // that baseline. For monthly gifts we annualize (× 12) so donors see
+  // the real 12-month impact of a recurring commitment.
+  const MONTHLY_COST_PER_GIRL = 25;
+  const DAILY_COST_PER_GIRL = MONTHLY_COST_PER_GIRL / 30;
+  const annualizedAmount = (activeAmount || 0) * (monthly ? 12 : 1);
+  const girlDays = Math.floor(annualizedAmount / DAILY_COST_PER_GIRL);
+  const girlMonths = Math.floor(annualizedAmount / MONTHLY_COST_PER_GIRL);
 
   // Hardened password policy (matches backend Identity configuration):
-  // length ≥ 12, upper, lower, digit, non-alphanumeric.
+  // length ≥ 14, upper, lower, digit, non-alphanumeric.
   const validatePassword = (pw: string): string | null => {
-    if (pw.length < 12) return "Password must be at least 12 characters.";
+    if (pw.length < 14) return "Password must be at least 14 characters.";
     if (!/[A-Z]/.test(pw)) return "Password must contain an uppercase letter.";
     if (!/[a-z]/.test(pw)) return "Password must contain a lowercase letter.";
     if (!/[0-9]/.test(pw)) return "Password must contain a digit.";
@@ -170,6 +227,7 @@ const Donate = () => {
         }),
       });
       setLastDonation(res);
+      playDonationDing();
 
       if (anonymous) {
         // Anonymous donors are not offered account creation — their row is
@@ -249,7 +307,7 @@ const Donate = () => {
     const linked = phase === "done-linked";
     return (
       <div className="min-h-screen bg-background">
-        <PublicNav />
+        <DonateHeader />
         <div className="container max-w-lg py-24 text-center space-y-6 animate-fade-in">
           <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto">
             <Check className="w-10 h-10 text-success" />
@@ -298,7 +356,7 @@ const Donate = () => {
   // ─────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background">
-      <PublicNav />
+      <DonateHeader />
       <div className="container max-w-2xl py-16 md:py-24">
         <div className="text-center mb-10">
           <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Make a difference</p>
@@ -315,13 +373,15 @@ const Donate = () => {
           <CardContent className="p-8 space-y-8">
             {/* Amount selector */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Choose an amount</Label>
-              <div className="grid grid-cols-4 gap-3">
+              <Label className="text-base font-semibold" id="amount-label">Choose an amount</Label>
+              <div className="grid grid-cols-4 gap-3" role="group" aria-labelledby="amount-label">
                 {presets.map((p) => (
                   <button
                     key={p}
                     type="button"
                     onClick={() => { setAmount(p); setCustom(""); }}
+                    aria-pressed={!custom && amount === p}
+                    aria-label={`Donate $${p}`}
                     className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                       !custom && amount === p
                         ? "border-primary bg-primary-light text-primary"
@@ -332,22 +392,26 @@ const Donate = () => {
                   </button>
                 ))}
               </div>
+              <Label htmlFor="custom-amount" className="sr-only">Custom donation amount</Label>
               <Input
+                id="custom-amount"
                 placeholder="Custom amount"
                 type="number"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 className="mt-2"
+                aria-label="Custom donation amount"
               />
             </div>
 
             {/* Frequency */}
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Frequency</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <Label className="text-base font-semibold" id="frequency-label">Frequency</Label>
+              <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="frequency-label">
                 <button
                   type="button"
                   onClick={() => setMonthly(true)}
+                  aria-pressed={monthly}
                   className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                     monthly ? "border-primary bg-primary-light text-primary" : "border-border"
                   }`}
@@ -357,6 +421,7 @@ const Donate = () => {
                 <button
                   type="button"
                   onClick={() => setMonthly(false)}
+                  aria-pressed={!monthly}
                   className={`rounded-lg py-3 text-sm font-semibold border-2 transition-all ${
                     !monthly ? "border-primary bg-primary-light text-primary" : "border-border"
                   }`}
@@ -392,56 +457,46 @@ const Donate = () => {
 
               {designateToSafehouse && (
                 <div className="space-y-2 pl-6">
-                  {safehousesQ.isLoading ? (
-                    <p className="text-sm text-muted-foreground">
-                      Loading safehouses…
-                    </p>
-                  ) : (safehousesQ.data?.length ?? 0) === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No safehouses are available right now.
-                    </p>
-                  ) : (
-                    <div className="grid gap-2">
-                      {safehousesQ.data!.map((s) => {
+                  {/* Dropdown picker — mirrors the safehouse selector on
+                      the Donor Portal ("My Impact") page so the two flows
+                      feel identical. Each option shows "Name — City, Region"
+                      just like the donor-portal version. */}
+                  <Select
+                    value={selectedSafehouse}
+                    onValueChange={setSelectedSafehouse}
+                    disabled={
+                      safehousesQ.isLoading ||
+                      (safehousesQ.data?.length ?? 0) === 0
+                    }
+                  >
+                    <SelectTrigger
+                      className="h-10 text-sm"
+                      aria-label="Select a safehouse to donate to"
+                    >
+                      <SelectValue
+                        placeholder={
+                          safehousesQ.isLoading
+                            ? "Loading safehouses…"
+                            : (safehousesQ.data?.length ?? 0) === 0
+                              ? "No safehouses available"
+                              : "Choose a safehouse…"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(safehousesQ.data ?? []).map((s) => {
                         const location = [s.city, s.region]
                           .filter(Boolean)
                           .join(", ");
-                        const isSelected = selectedSafehouse === s.name;
                         return (
-                          <button
-                            key={s.safehouseId}
-                            type="button"
-                            onClick={() => setSelectedSafehouse(s.name)}
-                            className={`text-left rounded-lg border-2 p-3 transition-all ${
-                              isSelected
-                                ? "border-primary bg-primary-light"
-                                : "border-border hover:border-primary/40"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="text-sm font-semibold">
-                                  {s.name}
-                                </p>
-                                {location && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {location}
-                                  </p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {s.activeResidents} of {s.capacity} girls
-                                  currently housed
-                                </p>
-                              </div>
-                              {isSelected && (
-                                <Check className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-                              )}
-                            </div>
-                          </button>
+                          <SelectItem key={s.safehouseId} value={s.name}>
+                            {s.name}
+                            {location ? ` — ${location}` : ""}
+                          </SelectItem>
                         );
                       })}
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
@@ -452,7 +507,24 @@ const Donate = () => {
               <div>
                 <p className="font-semibold text-primary">Your impact</p>
                 <p className="text-sm text-foreground/80 mt-1">
-                  Your ${activeAmount}{monthly ? "/month" : ""} gift supports a girl for <strong>{girlDays} days</strong> — providing shelter, meals, education, and counseling.
+                  {monthly ? (
+                    <>
+                      Your ${activeAmount}/month gift funds{" "}
+                      <strong>
+                        {girlMonths >= 24
+                          ? `${Math.floor(girlMonths / 12)} years`
+                          : `${girlMonths} ${girlMonths === 1 ? "month" : "months"}`}
+                      </strong>{" "}
+                      of care across a full year — shelter, meals, schooling,
+                      and counseling for a girl in our safehouses.
+                    </>
+                  ) : (
+                    <>
+                      Your ${activeAmount} gift provides{" "}
+                      <strong>{girlDays} days</strong> of shelter, meals,
+                      schooling, and counseling for a girl in a safehouse.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
@@ -651,7 +723,7 @@ const Donate = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 12 characters"
+                placeholder="At least 14 characters"
                 autoFocus
               />
             </div>
@@ -665,7 +737,7 @@ const Donate = () => {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Must be 12+ characters and include an uppercase letter, a lowercase letter, a digit, and a symbol.
+              Must be 14+ characters and include an uppercase letter, a lowercase letter, a digit, and a symbol.
             </p>
             {registerError && (
               <p className="text-sm text-destructive">{registerError}</p>

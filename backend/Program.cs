@@ -191,6 +191,19 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
+        // Seed the canonical four-tier test accounts (founder / regional /
+        // location / staff / donor) from RoleSeeder. This is the source of
+        // truth for region+city on those accounts — every startup the
+        // seeder will *update* an existing user's Region and City to match
+        // the values in TestUsers, so e.g. staff@ember.org is guaranteed to
+        // point at Visayas / Cebu City (matching location@ember.org).
+        //
+        // Without this call the staff test account keeps whatever region/city
+        // it happened to be created with, which is how the Staff Dashboard
+        // ended up with no safehouse card — the account's City didn't match
+        // any row in the safehouses table.
+        await RoleSeeder.SeedAsync(scope.ServiceProvider);
+
         // Ensure donor@ember.org has a Supporters row so DonorPortal works
         var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         const string donorEmail = "donor@ember.org";

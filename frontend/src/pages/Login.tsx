@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Flame, ArrowLeft } from "lucide-react";
 import { useAuth, landingFor } from "@/api/AuthContext";
-import PublicNav from "@/components/PublicNav";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -38,9 +37,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-    <PublicNav />
-    <div className="flex-1 grid lg:grid-cols-2">
+    <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left: brand panel */}
       <div className="hidden lg:flex gradient-teal flex-col justify-center items-center p-12 text-secondary-foreground">
         <div className="max-w-md space-y-8 text-center">
@@ -63,12 +60,20 @@ const Login = () => {
           </div>
 
           <div>
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to home
-            </Link>
+            <div className="flex flex-col gap-3 mb-6">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to home
+              </Link>
+              <Link
+                to="/donate"
+                className="md:hidden inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                New user? Make a donation →
+              </Link>
+            </div>
             <h2 className="text-2xl font-bold">Sign in</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials to access your dashboard
@@ -111,6 +116,9 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 14 characters.
+              </p>
             </div>
 
             <Button
@@ -126,13 +134,12 @@ const Login = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Create one
+            <Link to="/donate" className="text-primary hover:underline font-medium">
+              Make a donation to create one
             </Link>
           </p>
         </div>
       </div>
-    </div>
     </div>
   );
 };

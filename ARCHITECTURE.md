@@ -23,7 +23,7 @@ Website/Intex2026/
 │   │   └── UserScope.cs                    # Resolves caller into Founder/RegionalManager/LocationManager/Staff/Donor and exposes IQueryable filters
 │   ├── Controllers/
 │   │   ├── HealthController.cs             # GET /api/health — smoke test
-│   │   ├── AuthController.cs               # POST /api/auth/login|register|logout, GET /api/auth/me — embeds region/city/adminScope in JWT (founder|region|location)
+│   │   ├── AuthController.cs               # POST /api/auth/login|register|logout, GET /api/auth/me — embeds region/city/adminScope in JWT (founder|region|location); also POST /api/auth/change-email, POST /api/auth/change-password, DELETE /api/auth/account (all require current password)
 │   │   ├── SupportersController.cs         # CRUD /api/supporters — region-scoped; Staff is auto-restricted to non-monetary types
 │   │   ├── ResidentsController.cs          # CRUD /api/residents — scoped through parent safehouse city/region; NotesRestricted admin-only; POST/PUT/DELETE auto-recalculate safehouses.current_occupancy
 │   │   ├── SafehousesController.cs         # CRUD /api/safehouses — read scoped; POST/PUT admin-only; DELETE founder-only
@@ -63,36 +63,39 @@ Website/Intex2026/
     ├── index.html
     └── src/
         ├── main.tsx                 # Entry — renders <App />, imports index.css
-        ├── App.tsx                  # QueryClient → Tooltip → BrowserRouter → AuthProvider → Routes (with ProtectedRoute)
-        ├── index.css                # Tailwind directives + Ember CSS variable theme + .gradient-* utilities
+        ├── App.tsx                  # QueryClient → ThemeProvider → Tooltip → BrowserRouter → AuthProvider → Routes (with ProtectedRoute)
+        ├── index.css                # Tailwind directives + Ember CSS variable theme (:root light palette + .dark overrides for every theme token) + .gradient-* utilities
         ├── App.css                  # (legacy demo styles, unused)
         ├── vite-env.d.ts
         ├── api/
-        │   ├── client.ts            # apiFetch<T>() — typed fetch, auto-attaches JWT, 401 redirect
-        │   └── AuthContext.tsx      # React context: login/register/logout/hasRole, token in sessionStorage
+        │   ├── client.ts            # apiFetch<T>() — typed fetch with dev/prod URL routing (dev: /api proxy → localhost:5001, prod: Azure URL), auto-attaches JWT, 401 redirect
+        │   ├── AuthContext.tsx      # React context: login/register/logout/hasRole, token in sessionStorage
+        │   └── ThemeContext.tsx     # Light/dark/system theme provider — persists to localStorage (ember-theme), watches prefers-color-scheme live, toggles `dark` class on <html>
         ├── assets/
         │   └── hero-image.jpg       # Landing page hero
         ├── lib/
         │   └── utils.ts             # cn() helper (clsx + tailwind-merge)
         ├── hooks/
+        │   ├── useCounterAnimation.ts # Custom hook for animating numbers with easing; used by AnimatedCounter
         │   ├── use-mobile.tsx
         │   └── use-toast.ts
         ├── test/
         │   ├── setup.ts             # Loaded before each test; imports @testing-library/jest-dom + mocks window.matchMedia
         │   └── example.test.ts      # Placeholder smoke test
         ├── components/
-        │   ├── ConfirmDialog.tsx   # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations
+        │   ├── ConfirmDialog.tsx    # Reusable shadcn AlertDialog wrapper for IS 414 delete confirmations; accepts optional `children` slot for extra inputs (e.g. delete-account password prompt)
         │   ├── ProtectedRoute.tsx   # Route guard: checks isAuthenticated + optional role requirements
-        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; navItems are role-tagged (Admin/Staff/Donor) and filtered at render via hasRole() — Donor-only sees Donor Portal, Staff sees case-mgmt tools + Staff Portal, Admin sees everything
+        │   ├── DashboardLayout.tsx  # Sidebar layout for authenticated pages; collapsible NavGroups (Case Management / Fundraising / Analytics / System) tagged by role and filtered via hasRole() — Donor-only sees Donor Portal, Staff sees Dashboard + case-mgmt tools (no Safehouses — embedded on the Staff Dashboard), Admin sees everything. Bottom-left footer is an "Account Settings" link to /account (sign out lives in the top header bar instead)
         │   ├── PublicNav.tsx        # Top nav for public pages (mission/impact/safehouses + Login/Donate)
-        │   ├── StatPill.tsx         # Hero stat pill ("247 girls supported")
+        │   ├── DonateHeader.tsx     # Minimal header for /donate page (Ember logo only, no navigation)
+        │   ├── StatPill.tsx         # Hero stat pill with IntersectionObserver — animates count-up only when visible ("247 girls supported")
+        │   ├── AnimatedCounter.tsx  # Animated number display with IntersectionObserver — counts update only when scrolled into view
         │   ├── NavLink.tsx          # Wrapper around react-router NavLink with active/pending classNames
         │   └── ui/                  # shadcn/ui primitives (49 components: button, card, dialog, table, form, etc.)
         └── pages/
-            ├── Index.tsx            # Public landing — hero, features, safehouses, donation CTA, footer, + dismissible first-visit donate banner for unauthenticated visitors
-            ├── Donate.tsx           # Public donation form — POSTs to /api/public/donate; on success shows a "create a free account?" benefits dialog → inline password prompt → auto-login → /my-impact (anonymous opt-out saves donation under a synthetic supporter)
+            ├── Index.tsx            # Public landing — hero with animated stat pills (IntersectionObserver), features with flip-card animations, safehouses, donation CTA, footer
+            ├── Donate.tsx           # Self-service donation form (minimal header with logo only) — POSTs to /api/public/donate; on success shows "create account?" dialog → inline password prompt (14+ chars) → auto-login → /my-impact; anonymous opt-out saves under synthetic supporter
             ├── TaxReceipt.tsx       # Printable IRS Publication 1771 donation acknowledgment letter for donors (year picker, window.print() for Save as PDF); route /tax-receipt, protected for Admin/Staff/Donor
-            ├── Login.tsx            # Login form — wired to AuthContext.login(), Ember branded split layout
-            ├── Register.tsx         # Registration form — password confirm, auto-login on success
+            ├── Login.tsx            # Login form — directs new users to /donate instead of registration, password hint (14+ chars), wired to AuthContext.login()
             ├── Privacy.tsx          # Privacy policy (Ember styled)
             ├── Dashboard.tsx        

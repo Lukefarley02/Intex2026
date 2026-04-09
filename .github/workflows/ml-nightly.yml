@@ -1,0 +1,54 @@
+name: ML Nightly Retrain
+
+# Runs every night at 2 AM UTC (after Azure SQL maintenance window).
+# Can also be triggered manually from the Actions tab.
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    name: Retrain & Score ML Pipelines
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # Install the ODBC driver that pyodbc needs to reach Azure SQL.
+      - name: Install MSSQL ODBC Driver 18
+        run: |
+          curl -sSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] \
+            https://packages.microsoft.com/ubuntu/22.04/prod jammy main" \
+            | sudo tee /etc/apt/sources.list.d/mssql.list
+          sudo apt-get update -qq
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: ml-pipelines/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r ml-pipelines/requirements.txt
+
+      # The connection string is stored as a GitHub Actions secret named
+      # ML_DB_CONNECTION_STRING. Add it at:
+      #   Settings → Secrets and variables → Actions → New repository secret
+      #
+      # Value format (Azure SQL ODBC):
+      #   Driver={ODBC Driver 18 for SQL Server};
+      #   Server=tcp:<server>.database.windows.net,1433;
+      #   Database=EmberApp;Uid=<user>;Pwd=<password>;
+      #   Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;
+      - name: Run nightly retrain
+        env:
+          DB_CONNECTION_STRING: ${{ secrets.ML_DB_CONNECTION_STRING }}
+        run: |
+          cd ml-pipelines
+          python nightly_retrain.py

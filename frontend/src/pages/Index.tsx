@@ -17,12 +17,14 @@ import { useAuth } from "@/api/AuthContext";
 
 interface PublicStats {
   safehouseCount: number;
-  girlsSupported: number;
+  girlsSupported: number;     // actual count of residents ever served
   activeGirls: number;
   reintegratedGirls: number;
   totalRaised: number;
-  retentionRate: number; // 0..1
-  girlsHelped: number;   // totalRaised ÷ live cost-per-girl
+  retentionRate: number;      // 0..1
+  girlsHelped: number;        // full girl-years of care funded
+  monthsOfCareFunded: number; // linear: totalRaised ÷ monthly_cost
+  monthlyCostPerGirl: number;
   costPerGirl: number;
 }
 
@@ -146,9 +148,10 @@ const Index = () => {
             </a>
           </div>
           <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
+            {/* Primary hero stat: the actual count of residents ever served. */}
             <StatPill
-              value={stats ? String(stats.girlsHelped) : "…"}
-              label="girls helped"
+              value={stats ? String(stats.girlsSupported) : "…"}
+              label="girls sheltered"
             />
             <StatPill
               value={stats ? String(stats.safehouseCount) : "…"}

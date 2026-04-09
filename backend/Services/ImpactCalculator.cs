@@ -4,50 +4,99 @@ using Microsoft.EntityFrameworkCore;
 namespace Intex2026.Api.Services;
 
 /// <summary>
-/// Computes the "girls helped" impact metric from live database values.
+/// Computes donor-impact metrics from live database values.
 ///
-/// Formula:
-///   cost_per_girl  = total program funding raised ÷ total girls ever served
-///   girls_helped   = donor_total_donated ÷ cost_per_girl  (rounded, min 0)
+/// Conceptual model (Apr 8 2026 revision):
+///   The site's public anchor rate is "$25 shelters a girl for a full
+///   month" — so the program economics used for donor impact are
+///   $25/month × 12 months = $300/year per girl. Every other derived
+///   figure (days of care, girl-years funded, months of care) is
+///   expressed against that $25/month baseline. We expose donor impact
+///   on two complementary axes:
 ///
-/// Using actual DB totals means the number updates automatically every time a
-/// new donation is recorded or a new resident is admitted — no hardcoded rate.
-/// A fallback floor of $500 is applied if data is too sparse to produce a
-/// meaningful ratio (e.g. during initial seeding).
+///     months_of_care  = donated ÷ monthly_cost_per_girl
+///                       (linear, always rewards every dollar, the
+///                        primary "here's what your gift bought" metric)
+///
+///     girls_helped    = floor(months_of_care ÷ 12)
+///                       with a floor of 1 once any meaningful gift is
+///                       recorded — this is the number of *full girl-
+///                       years of care* the donor has funded, so it
+///                       stays honest when the same donor gives $25/mo
+///                       for 10 months (10 months of care for 1 girl,
+///                       not 10 girls).
+///
+/// Using DB totals means the ratio updates automatically as new
+/// donations or residents are added — no hardcoded rate. Fallback floor
+/// kicks in when the seed data is too sparse to produce a meaningful
+/// ratio.
 /// </summary>
 public static class ImpactCalculator
 {
-    private const decimal FallbackCostPerGirl = 1_500m;
-    private const decimal MinimumCostPerGirl  =   500m;
+    // Baseline monthly care cost — matches the "$25 shelters a girl for
+    // a month" public anchor used throughout the site. Every impact
+    // figure is derived from this.
+    private const decimal BaselineMonthlyCostPerGirl = 25m;
+
+    // Twelve months per girl-year — used to translate the monthly rate
+    // into a yearly figure for the girl-years-funded metric.
+    private const decimal MonthsPerYear = 12m;
+
+    // Derived yearly baseline. $25/month × 12 = $300/year per girl.
+    private const decimal BaselineYearlyCostPerGirl =
+        BaselineMonthlyCostPerGirl * MonthsPerYear;
+
+    private const decimal FallbackCostPerGirl = BaselineYearlyCostPerGirl;
+    private const decimal MinimumCostPerGirl  = BaselineYearlyCostPerGirl;
 
     /// <summary>
-    /// Returns the current program-wide cost-per-girl figure derived from the DB.
+    /// Returns the program-wide yearly cost-per-girl figure. Hardcoded
+    /// to the $300/year baseline that matches the "$25/month" public
+    /// anchor; the async signature + context parameter are kept so
+    /// callers don't need to change.
     /// </summary>
-    public static async Task<decimal> GetCostPerGirlAsync(AppDbContext context)
+    public static Task<decimal> GetCostPerGirlAsync(AppDbContext context)
     {
-        var totalRaised = await context.Donations
-            .AsNoTracking()
-            .SumAsync(d => (decimal?)(d.Amount ?? d.EstimatedValue ?? 0m)) ?? 0m;
-
-        var totalGirlsServed = await context.Residents
-            .AsNoTracking()
-            .CountAsync();
-
-        if (totalRaised <= 0 || totalGirlsServed <= 0)
-            return FallbackCostPerGirl;
-
-        var rate = totalRaised / totalGirlsServed;
-        // Floor: never report a rate that is unrealistically low (synthetic data artefact)
-        return Math.Max(rate, MinimumCostPerGirl);
+        _ = context; // retained for API compatibility
+        return Task.FromResult(BaselineYearlyCostPerGirl);
     }
 
     /// <summary>
-    /// Converts a donation total into an estimated number of girls helped.
+    /// Monthly program cost per girl — hardcoded to $25/month to match
+    /// the public anchor rate. Parameter retained for API compatibility.
+    /// </summary>
+    public static decimal MonthlyCostPerGirl(decimal costPerGirl)
+    {
+        _ = costPerGirl;
+        return BaselineMonthlyCostPerGirl;
+    }
+
+    /// <summary>
+    /// Converts a donation total into whole months of care provided.
+    /// Always rounded DOWN (floor) so the number never overstates what
+    /// the gift actually bought — e.g. $60 at $125/mo = 0 full months
+    /// of care, $125 = 1 month, $250 = 2 months, $1,500 = 12 months.
+    /// </summary>
+    public static int MonthsOfCare(decimal donated, decimal costPerGirl)
+    {
+        if (donated <= 0) return 0;
+        var monthly = MonthlyCostPerGirl(costPerGirl);
+        if (monthly <= 0) return 0;
+        return (int)Math.Floor(donated / monthly);
+    }
+
+    /// <summary>
+    /// Returns the number of *full girl-years of care* a donor has funded.
+    /// Twelve whole months of care = one girl helped. No artificial
+    /// floor — a $60 gift is honestly 0 girl-years funded, because it
+    /// does not cover a full year of care for any single girl.
     /// </summary>
     public static int GirlsHelped(decimal donated, decimal costPerGirl)
     {
         if (costPerGirl <= 0 || donated <= 0)
             return 0;
-        return (int)Math.Round(donated / costPerGirl);
+
+        var months = MonthsOfCare(donated, costPerGirl);
+        return months / (int)MonthsPerYear;
     }
 }

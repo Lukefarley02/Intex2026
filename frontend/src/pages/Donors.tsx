@@ -24,11 +24,14 @@ import {
   ArrowUpCircle,
   TrendingUp,
   Brain,
+  HandCoins,
+  Lock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import LogDonationDialog from "@/components/LogDonationDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -204,7 +207,7 @@ const toPayload = (f: SupporterForm) => ({
 
 const Donors = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
+  const { hasRole, isFounder } = useAuth();
   // Staff has **view-only** access to the Donors page — they can see
   // every donor in their region but cannot add, edit, or delete. All
   // donor CRUD is Admin-only; SupportersController enforces this on
@@ -215,6 +218,12 @@ const Donors = () => {
   // through the toast error.
   const canWrite = hasRole("Admin");
   const canDelete = hasRole("Admin");
+  // Only Admins browse the donor list. Staff land on a restricted version
+  // of this page that surfaces ONLY the "Log donation" button — per the
+  // four-tier access model, Staff should never see donor totals, email
+  // addresses, or giving history. The full page is unreachable for them.
+  const isStaffOnly = hasRole("Staff") && !hasRole("Admin");
+  const [logDonationOpen, setLogDonationOpen] = useState(false);
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DonorTypeFilter>("all");
@@ -375,6 +384,62 @@ const Donors = () => {
 
   const saving = createMut.isPending || updateMut.isPending;
 
+  // ---------------------------------------------------------------------
+  // Staff view: a single "Log donation" card. Staff never see donor
+  // totals, emails, search, filters, or the full browse list. The only
+  // thing they can do from this page is log an in-person gift, which
+  // routes through the LogDonationDialog and hits POST /api/donations.
+  // Backend access control in SupportersController still silently clamps
+  // any other interaction Staff could attempt.
+  // ---------------------------------------------------------------------
+  if (isStaffOnly) {
+    return (
+      <DashboardLayout title="Donations">
+        <div className="max-w-2xl">
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <HandCoins className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="font-semibold text-lg">Log a donation</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Record a cash, check, or in-kind gift received in
+                    person. You'll be prompted to match it to an existing
+                    donor or create a new donor record.
+                  </p>
+                  <Button
+                    className="mt-4"
+                    variant="hero"
+                    onClick={() => setLogDonationOpen(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Log donation
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="mt-4 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground flex items-start gap-2">
+            <Lock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <p>
+              Donor giving history, totals, and contact information are
+              visible only to administrators. As staff, your role is to
+              log new gifts — the rest of the donor file is restricted
+              for privacy.
+            </p>
+          </div>
+        </div>
+
+        <LogDonationDialog
+          open={logDonationOpen}
+          onOpenChange={setLogDonationOpen}
+        />
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Donor Management">
       {/* Top bar */}
@@ -398,9 +463,18 @@ const Donors = () => {
           </Button>
         </div>
         {canWrite && (
-          <Button variant="hero" size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" /> Add donor
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLogDonationOpen(true)}
+            >
+              <HandCoins className="w-4 h-4 mr-1" /> Log donation
+            </Button>
+            <Button variant="hero" size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" /> Add donor
+            </Button>
+          </div>
         )}
       </div>
 
@@ -429,8 +503,8 @@ const Donors = () => {
         </Button>
       </div>
 
-      {/* ML Pipeline quick-links — Admin only */}
-      {canWrite && (
+      {/* ML Pipeline quick-links — Founder only */}
+      {isFounder && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Brain className="w-4 h-4 text-muted-foreground" />
@@ -526,54 +600,73 @@ const Donors = () => {
               key={s.supporterId}
               className="rounded-xl shadow-sm hover:shadow-md transition-shadow"
             >
-              <CardContent className="p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-full bg-primary-light flex items-center justify-center text-primary font-semibold">
-                      {initials(s)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold">{displayName(s)}</p>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] uppercase tracking-wide"
-                        >
-                          {typeLabel}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {s.email ?? "—"}
-                        {s.region ? ` · ${s.region}` : ""}
-                      </p>
-                    </div>
+              <CardContent className="p-4">
+                {/* Condensed row — min-w-0 + truncate on the left half lets
+                    long names/emails shrink gracefully instead of forcing
+                    a horizontal scrollbar on the whole page. Action
+                    buttons use size="icon" + h-8 w-8 so three of them
+                    take ~90px total instead of ~150px. */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-primary-light flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+                    {initials(s)}
                   </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="text-right">
-                      <p className="font-semibold">
-                        {formatCurrency(s.totalDonated)}
+
+                  {/* Left: name + type + email. min-w-0 allows truncation. */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-semibold truncate">
+                        {displayName(s)}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.donationCount} gift{s.donationCount === 1 ? "" : "s"}
-                        {s.lastGiftDate
-                          ? ` · last ${s.lastGiftDate.slice(0, 10)}`
-                          : ""}
-                      </p>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] uppercase tracking-wide flex-shrink-0"
+                      >
+                        {typeLabel}
+                      </Badge>
                     </div>
-                    <Badge variant="outline" className={riskColor[risk]}>
-                      {risk}
-                    </Badge>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {s.email ?? "—"}
+                      {s.region ? ` · ${s.region}` : ""}
+                    </p>
+                  </div>
+
+                  {/* Middle: giving stats. Fixed-ish width, right-aligned.
+                      Hidden on very narrow screens to save horizontal space. */}
+                  <div className="hidden sm:block text-right flex-shrink-0">
+                    <p className="font-semibold text-sm leading-tight">
+                      {formatCurrency(s.totalDonated)}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground leading-tight">
+                      {s.donationCount} gift{s.donationCount === 1 ? "" : "s"}
+                      {s.lastGiftDate
+                        ? ` · ${s.lastGiftDate.slice(0, 10)}`
+                        : ""}
+                    </p>
+                  </div>
+
+                  {/* Risk badge — hidden on small screens. */}
+                  <Badge
+                    variant="outline"
+                    className={`${riskColor[risk]} hidden md:inline-flex flex-shrink-0`}
+                  >
+                    {risk}
+                  </Badge>
+
+                  {/* Action buttons — compact icon-only, fixed 32×32. */}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
                     <Button
-                      size="sm"
+                      size="icon"
                       variant="ghost"
+                      className="h-8 w-8"
                       aria-label={`Contact ${displayName(s)}`}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
                     {canWrite && (
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
+                        className="h-8 w-8"
                         onClick={() => openEdit(s)}
                         aria-label={`Edit ${displayName(s)}`}
                       >
@@ -582,9 +675,9 @@ const Donors = () => {
                     )}
                     {canDelete && (
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
-                        className="text-destructive hover:bg-destructive/10"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
                         onClick={() => setToDelete(s)}
                         aria-label={`Delete ${displayName(s)}`}
                       >
@@ -592,6 +685,22 @@ const Donors = () => {
                       </Button>
                     )}
                   </div>
+                </div>
+
+                {/* Mobile-only giving stats row — surfaces the totals that
+                    are hidden from the compact header on narrow screens. */}
+                <div className="sm:hidden mt-2 pt-2 border-t flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    <strong className="text-foreground">
+                      {formatCurrency(s.totalDonated)}
+                    </strong>{" "}
+                    · {s.donationCount} gift
+                    {s.donationCount === 1 ? "" : "s"}
+                    {s.lastGiftDate ? ` · ${s.lastGiftDate.slice(0, 10)}` : ""}
+                  </span>
+                  <Badge variant="outline" className={riskColor[risk]}>
+                    {risk}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -829,6 +938,12 @@ const Donors = () => {
         onConfirm={() => {
           if (toDelete) deleteMut.mutate(toDelete.supporterId);
         }}
+      />
+
+      {/* ---- Log donation dialog (Admin view) ---- */}
+      <LogDonationDialog
+        open={logDonationOpen}
+        onOpenChange={setLogDonationOpen}
       />
     </DashboardLayout>
   );

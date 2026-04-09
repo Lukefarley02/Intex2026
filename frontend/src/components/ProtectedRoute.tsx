@@ -1,13 +1,17 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/api/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   roles?: string[]; // If specified, user must have at least one of these roles
+  /** When true, only top-level admins (Founders) may access this route. */
+  founderOnly?: boolean;
 }
 
-function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
+  const { isAuthenticated, isLoading, user, isFounder, mustChangePassword } =
+    useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -19,6 +23,14 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Hard stop for users whose account was provisioned with a temporary
+  // seed password (e.g. new donors created by staff via the Log Donation
+  // flow). Until they've reset it, the only page they're allowed on is
+  // Account Settings. The banner on that page handles the reset flow.
+  if (mustChangePassword && location.pathname !== "/account") {
+    return <Navigate to="/account" replace />;
   }
 
   if (roles && roles.length > 0) {
@@ -33,6 +45,17 @@ function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
         </div>
       );
     }
+  }
+
+  if (founderOnly && !isFounder) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-2 p-8 text-center">
+        <h2 className="text-2xl font-bold">Access Denied</h2>
+        <p className="text-muted-foreground">
+          This page is restricted to top-level administrators.
+        </p>
+      </div>
+    );
   }
 
   return <>{children}</>;

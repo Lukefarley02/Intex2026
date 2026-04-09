@@ -22,7 +22,7 @@ on `ApplicationUser`. See `API_REFERENCE.md` → "Access tiers" for the full rul
 admin@ember.org --  AdminEmber2026!        Admin — company-wide (all data)
 regional@ember.org  --  RegionalEmber2026!   Admin — Visayas region only
 location@ember.org  --  LocationEmber2026!   Admin — Cebu City only
-staff@ember.orgStaff  --  Ember2026!        Staff — Cebu City
+staff@ember.org  --   StaffEmber2026!        Staff — Cebu City
 donor@ember.org  --   DonorEmber2026!      Donor only                                                                           |
 
 ### Safehouse region / city reference

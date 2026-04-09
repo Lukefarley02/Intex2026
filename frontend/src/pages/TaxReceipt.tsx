@@ -20,6 +20,18 @@ import { Printer, ArrowLeft } from "lucide-react";
 // opens the browser print dialog; saving to PDF is a native OS feature.
 // ─────────────────────────────────────────────────────────────────────────
 
+interface DonationRow {
+  donationId: number;
+  donationDate: string | null;
+  donationType: string | null;
+  amount: number | null;
+  estimatedValue: number | null;
+  campaignName: string | null;
+  isRecurring: boolean | null;
+  currencyCode: string | null;
+  notes: string | null;
+}
+
 interface TaxReceiptData {
   organization: {
     name: string;
@@ -48,19 +60,20 @@ interface TaxReceiptData {
   availableYears: number[];
   issueDate: string;
   currencyCode: string;
+  // Legacy totals — kept for backwards compatibility.
   totalAmount: number;
   donationCount: number;
-  donations: Array<{
-    donationId: number;
-    donationDate: string | null;
-    donationType: string | null;
-    amount: number | null;
-    estimatedValue: number | null;
-    campaignName: string | null;
-    isRecurring: boolean | null;
-    currencyCode: string | null;
-  }>;
+  donations: DonationRow[];
+  // IRS Pub 1771 split — cash gifts carry a dollar value on the letter;
+  // non-cash gifts show only item descriptions and trigger an 8283
+  // notice when any single item exceeds $500.
+  totalCashAmount: number;
+  cashDonations: DonationRow[];
+  nonCashDonations: DonationRow[];
+  nonCashCount: number;
+  form8283Required: boolean;
   disclosure: string;
+  nonCashDisclosure: string;
   formReference: string;
 }
 
@@ -136,7 +149,41 @@ const TaxReceipt = () => {
     );
   }
 
-  const { organization, donor, disclosure, formReference, totalAmount, donationCount, donations, issueDate } = data;
+  const {
+    organization,
+    donor,
+    disclosure,
+    nonCashDisclosure,
+    formReference,
+    // Prefer the new split arrays; fall back to the legacy fields for
+    // safety if an older backend responds without them.
+    cashDonations: cashDonationsRaw,
+    nonCashDonations: nonCashDonationsRaw,
+    totalCashAmount: totalCashAmountRaw,
+    nonCashCount: nonCashCountRaw,
+    form8283Required,
+    totalAmount,
+    donationCount,
+    donations,
+    issueDate,
+  } = data;
+
+  // Defensive fallbacks — if the server hasn't been redeployed with the
+  // split response yet, derive cash/non-cash buckets on the client.
+  const isInKind = (t: string | null) =>
+    !!t && /in[\s-]?kind/i.test(t);
+  const cashDonations: DonationRow[] =
+    cashDonationsRaw ?? donations.filter((d) => !isInKind(d.donationType));
+  const nonCashDonations: DonationRow[] =
+    nonCashDonationsRaw ?? donations.filter((d) => isInKind(d.donationType));
+  const totalCashAmount: number =
+    typeof totalCashAmountRaw === "number"
+      ? totalCashAmountRaw
+      : cashDonations.reduce(
+          (sum, d) => sum + Number(d.amount ?? d.estimatedValue ?? 0),
+          0,
+        );
+  const nonCashCount: number = nonCashCountRaw ?? nonCashDonations.length;
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -233,58 +280,124 @@ const TaxReceipt = () => {
             </p>
           </div>
 
-          {/* Donations table */}
+          {/* Cash contributions table ------------------------------------ */}
           {donationCount === 0 ? (
             <div className="border rounded-md p-4 text-sm text-gray-600 bg-gray-50">
               No donations are recorded for this tax year. Select a different year
               from the toolbar above.
             </div>
           ) : (
-            <div>
-              <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold mb-2">
-                Contributions ({donationCount})
-              </p>
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-2 font-semibold">Date</th>
-                    <th className="py-2 font-semibold">Campaign / Fund</th>
-                    <th className="py-2 font-semibold">Type</th>
-                    <th className="py-2 font-semibold text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donations.map((d) => (
-                    <tr key={d.donationId} className="border-b">
-                      <td className="py-2">{formatDate(d.donationDate)}</td>
-                      <td className="py-2">{d.campaignName || "General Fund"}</td>
-                      <td className="py-2">
-                        {d.donationType || "Monetary"}
-                        {d.isRecurring ? " · Recurring" : ""}
-                      </td>
-                      <td className="py-2 text-right font-mono">
-                        {formatCurrency(Number(d.amount ?? d.estimatedValue ?? 0))}
-                      </td>
-                    </tr>
-                  ))}
-                  <tr className="font-bold">
-                    <td className="py-3" colSpan={3}>
-                      Total contributions for {data.taxYear}
-                    </td>
-                    <td className="py-3 text-right font-mono">
-                      {formatCurrency(totalAmount)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <>
+              {cashDonations.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold mb-2">
+                    Cash contributions ({cashDonations.length})
+                  </p>
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="py-2 font-semibold">Date</th>
+                        <th className="py-2 font-semibold">Campaign / Fund</th>
+                        <th className="py-2 font-semibold">Type</th>
+                        <th className="py-2 font-semibold text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cashDonations.map((d) => (
+                        <tr key={d.donationId} className="border-b">
+                          <td className="py-2">{formatDate(d.donationDate)}</td>
+                          <td className="py-2">{d.campaignName || "General Fund"}</td>
+                          <td className="py-2">
+                            {d.donationType || "Monetary"}
+                            {d.isRecurring ? " · Recurring" : ""}
+                          </td>
+                          <td className="py-2 text-right font-mono">
+                            {formatCurrency(Number(d.amount ?? d.estimatedValue ?? 0))}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="font-bold">
+                        <td className="py-3" colSpan={3}>
+                          Total cash contributions for {data.taxYear}
+                        </td>
+                        <td className="py-3 text-right font-mono">
+                          {formatCurrency(totalCashAmount)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Non-cash contributions — NO dollar value in the body per
+                  IRS Pub 1771. The donor's own valuation is shown under a
+                  "donor estimate" column but the acknowledgment body makes
+                  clear that this value is not certified by the charity. */}
+              {nonCashDonations.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold mb-2">
+                    Non-cash (in-kind) contributions ({nonCashCount})
+                  </p>
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th className="py-2 font-semibold">Date</th>
+                        <th className="py-2 font-semibold">Description of items</th>
+                        <th className="py-2 font-semibold">Campaign</th>
+                        <th className="py-2 font-semibold text-right">
+                          Donor estimate
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {nonCashDonations.map((d) => (
+                        <tr key={d.donationId} className="border-b align-top">
+                          <td className="py-2">{formatDate(d.donationDate)}</td>
+                          <td className="py-2">
+                            {d.notes?.trim() || "Non-cash contribution"}
+                          </td>
+                          <td className="py-2">{d.campaignName || "General Fund"}</td>
+                          <td className="py-2 text-right text-gray-600">
+                            {d.estimatedValue != null
+                              ? `${formatCurrency(Number(d.estimatedValue))}*`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="text-[11px] text-gray-500 mt-2 italic">
+                    * Donor's own estimate of fair-market value at the time of
+                    the gift. {organization.name} does not certify this amount.
+                    The donor is solely responsible for determining and
+                    substantiating the deductible value of non-cash
+                    contributions on their tax return.
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
-          {/* IRS disclosure */}
+          {/* IRS disclosures ----------------------------------------------- */}
           <div className="border-t pt-4 text-xs text-gray-700 leading-relaxed space-y-2">
             <p>
-              <strong>IRS disclosure:</strong> {disclosure}
+              <strong>IRS disclosure (cash gifts):</strong> {disclosure}
             </p>
+            {nonCashDonations.length > 0 && (
+              <p>
+                <strong>IRS disclosure (non-cash gifts):</strong>{" "}
+                {nonCashDisclosure ??
+                  "For non-cash contributions, the organization has described the items received but cannot assign a dollar value for IRS purposes. The donor is solely responsible for determining fair-market value and must file IRS Form 8283 for any single item whose claimed value exceeds $500."}
+              </p>
+            )}
+            {form8283Required && (
+              <p className="border border-amber-300 bg-amber-50 text-amber-900 rounded-md p-2">
+                <strong>Form 8283 notice:</strong> One or more of your non-cash
+                contributions this year has a donor-estimated value above $500.
+                You must file IRS Form 8283 (Noncash Charitable Contributions)
+                along with your federal tax return to claim the deduction.
+              </p>
+            )}
             <p>{formReference}</p>
             <p className="text-gray-500">
               Keep this letter with your tax records. This acknowledgment is
@@ -296,7 +409,7 @@ const TaxReceipt = () => {
           {/* Signature */}
           <div className="pt-6">
             <p className="text-sm">With deep gratitude,</p>
-            <p className="mt-6 font-semibold">Ember Donor Services</p>
+            <p className="mt-6 font-semibold">Ember Foundation Donor Services</p>
             <p className="text-xs text-gray-500">{organization.email}</p>
           </div>
         </div>
