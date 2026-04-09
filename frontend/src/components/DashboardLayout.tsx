@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings, UserCog, ClipboardList } from "lucide-react";
+import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings, UserCog, ClipboardList, KeyRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/api/AuthContext";
 
@@ -97,7 +97,8 @@ const navGroups: NavGroup[] = [
     icon: Settings,
     roles: ["Admin"],
     items: [
-      { to: "/admin", icon: Shield, label: "Administration", roles: ["Admin"] },
+      { to: "/admin",              icon: Shield,    label: "Administration",      roles: ["Admin"] },
+      { to: "/password-requests",  icon: KeyRound,  label: "Password Requests",   roles: ["Admin"] },
     ],
   },
 ];

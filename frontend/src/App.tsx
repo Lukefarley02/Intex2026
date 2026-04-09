@@ -30,6 +30,8 @@ import HomeVisitation from "./pages/HomeVisitation";
 import MLInsights from "./pages/MLInsights";
 import AccountSettings from "./pages/AccountSettings";
 import MyReports from "./pages/MyReports";
+import ForgotPassword from "./pages/ForgotPassword";
+import PasswordRequests from "./pages/PasswordRequests";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/donate" element={<Donate />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/privacy" element={<Privacy />} />
 
             {/* Admin + Staff */}
@@ -178,6 +181,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin"]}>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/password-requests"
+              element={
+                <ProtectedRoute roles={["Admin"]}>
+                  <PasswordRequests />
                 </ProtectedRoute>
               }
             />

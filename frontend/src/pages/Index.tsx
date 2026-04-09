@@ -147,7 +147,7 @@ const Index = () => {
           <h1 className="animate-fade-in-up-2 text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-card leading-tight">
             Every girl deserves
             <br />
-            <span className="text-primary">a safe place</span>
+            <span className="text-primary text-4xl md:text-5xl lg:text-6xl block leading-none my-1">a safe place</span>
             <br />
             to heal & grow
           </h1>
@@ -184,8 +184,11 @@ const Index = () => {
       </div>
     </section>
 
-    {/* Spacer — pushes content below the fixed full-screen hero */}
-    <div className="relative z-10" style={{ height: "100vh" }} />
+    {/* Spacer — pushes content below the fixed full-screen hero.
+        pointer-events-none is essential: without it this div sits on top
+        of the z-0 fixed hero and intercepts all mouse clicks, making the
+        hero buttons (Donate / See our locations) completely non-functional. */}
+    <div className="relative z-10 pointer-events-none" style={{ height: "100vh" }} />
 
     {/* Mission */}
     <section id="mission-section" className="relative z-10 bg-card py-20 md:py-28">
@@ -275,7 +278,7 @@ const Index = () => {
 
       {/* Top row: volume of care */}
       <div className="grid md:grid-cols-3 gap-6 mb-6">
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center shrink-0">
               <BookOpen className="w-6 h-6 text-primary" />
@@ -288,7 +291,7 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center shrink-0">
               <Home className="w-6 h-6 text-primary" />
@@ -301,7 +304,7 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-primary-light flex items-center justify-center shrink-0">
               <TrendingUp className="w-6 h-6 text-primary" />
@@ -318,7 +321,7 @@ const Index = () => {
 
       {/* Bottom row: transformation metrics */}
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <Smile className="w-6 h-6 text-primary" />
@@ -331,7 +334,7 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <ShieldCheck className="w-6 h-6 text-primary" />
@@ -344,7 +347,7 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl">
+        <Card className="border-0 shadow-md rounded-xl cursor-pointer hover:shadow-lg transition-shadow">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <UserCheck className="w-6 h-6 text-primary" />
@@ -365,7 +368,7 @@ const Index = () => {
     <section id="impact" className="relative z-10 bg-card py-20 md:py-28">
       <div className="container">
         <div className="text-center mb-14">
-          <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-2">Our reach</p>
+          <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">Our reach</p>
           <h2 className="text-3xl md:text-4xl font-bold">Active safehouses across the Philippines</h2>
         </div>
         {safehousesQuery.isError && (

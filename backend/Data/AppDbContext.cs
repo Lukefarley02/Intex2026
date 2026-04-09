@@ -29,6 +29,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     // ----- Messaging -----
     public DbSet<DonorMessage> DonorMessages => Set<DonorMessage>();
 
+    // ----- Auth -----
+    public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
+
     // ----- Analytics -----
     public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
 
@@ -56,6 +59,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
             .Property(i => i.EstimatedUnitValue)
             .HasColumnType("decimal(10,2)");
         modelBuilder.Entity<DonorMessage>().ToTable("donor_messages");
+        modelBuilder.Entity<PasswordResetRequest>().ToTable("password_reset_requests");
         modelBuilder.Entity<SocialMediaPost>().ToTable("social_media_posts");
         modelBuilder.Entity<SocialMediaPost>()
             .Property(p => p.EstimatedDonationValuePhp)

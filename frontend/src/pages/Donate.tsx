@@ -202,6 +202,12 @@ const Donate = () => {
       setFormError("Please choose a donation amount.");
       return;
     }
+    if (activeAmount > 10000) {
+      setFormError(
+        "Donations over $10,000 require personal assistance from our team. Please contact us at hello@ember-ngo.org to arrange your gift — we'd love to speak with you directly.",
+      );
+      return;
+    }
     if (!anonymous && !email.trim()) {
       setFormError("Email is required unless you choose to donate anonymously.");
       return;

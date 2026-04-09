@@ -182,6 +182,24 @@ using (var scope = app.Services.CreateScope())
             END
         ");
 
+        // Ensure the password_reset_requests table exists (added Apr 9 2026).
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='password_reset_requests' AND xtype='U')
+            BEGIN
+                CREATE TABLE password_reset_requests (
+                    request_id            INT             PRIMARY KEY,
+                    email                 NVARCHAR(256)   NOT NULL,
+                    status                NVARCHAR(50)    NOT NULL DEFAULT 'Pending',
+                    created_at            DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+                    resolved_at           DATETIME2       NULL,
+                    resolved_by_user_id   NVARCHAR(450)   NULL,
+                    temp_password         NVARCHAR(200)   NULL
+                );
+                CREATE INDEX IX_pwd_reset_email  ON password_reset_requests(email);
+                CREATE INDEX IX_pwd_reset_status ON password_reset_requests(status);
+            END
+        ");
+
         // Add created_by_user_id column to process_recordings and home_visitations
         // so the backend can track who created each record and enforce per-row
         // ownership for Staff users (Staff can only edit/delete their own rows).

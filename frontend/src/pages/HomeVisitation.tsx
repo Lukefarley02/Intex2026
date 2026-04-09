@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,15 @@ const HomeVisitation = () => {
   // role derivation if needed. Per-row edit/delete visibility is now
   // driven by the server's `canModify` flag on each row.
   useAuth();
-  const [selectedResident, setSelectedResident] = useState<number | "all">("all");
+
+  // When navigating from a resident's detail panel via the "Home visits"
+  // button, the resident's ID is passed as ?residentId=N. We initialise the
+  // filter dropdown to that value so staff land directly on the right resident.
+  const [searchParams] = useSearchParams();
+  const initialResident = searchParams.get("residentId");
+  const [selectedResident, setSelectedResident] = useState<number | "all">(
+    initialResident ? Number(initialResident) : "all",
+  );
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);

@@ -556,3 +556,11 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 | POST | `/api/homevisitations` | Admin, Staff | Create a visitation record. Resident must be in scope. |
 | PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation. Both old and new resident must be in scope. |
 | DELETE | `/api/homevisitations/{id}` | Founder | Delete a visitation record. |
+
+## Password Reset Requests
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/password-reset/request` | None | Submit a forgot-password request for an email. Always returns 200 to avoid email enumeration. Creates a `password_reset_requests` row only when the email is found. |
+| GET | `/api/password-reset/requests` | Admin | List all pending password reset requests. |
+| POST | `/api/password-reset/requests/{id}/resolve` | Admin | Generate a one-time temp password, reset the user's password, set `MustChangePassword = true`, mark request resolved. Returns `{ requestId, email, tempPassword }` — shown once only. |

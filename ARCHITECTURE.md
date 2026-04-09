@@ -35,7 +35,8 @@ Website/Intex2026/
 │   │   ├── CampaignsController.cs          # GET /api/campaigns — aggregates from donations
 │   │   ├── AdminUsersController.cs         # GET /api/adminusers (filtered by caller's scope), PUT /api/adminusers/{id}/scope (Founder only)
 │   │   ├── PublicController.cs             # /api/public/stats, /safehouses, /donations, /care-story + POST /api/public/donate (anonymous self-service donation intake)
-│   │   └── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact, /me/tax-receipt, /me/messages, /me/messages/{id}/read, /me/messages/read-all (Donor only)
+│   │   ├── DonorPortalController.cs        # /api/donorportal/me, /me/donations, /me/impact, /me/tax-receipt, /me/messages, /me/messages/{id}/read, /me/messages/read-all (Donor only)
+│   │   └── PasswordResetController.cs      # POST /api/password-reset/request (anonymous), GET /api/password-reset/requests (Admin), POST /api/password-reset/requests/{id}/resolve (Admin)
 │   ├── Data/
 │   │   ├── ApplicationUser.cs       # Custom IdentityUser with Region + City properties (determines admin scope)
 │   │   ├── AppDbContext.cs          # DbContext for EmberApp DB (6 of 17 tables wired)
@@ -53,7 +54,8 @@ Website/Intex2026/
 │       ├── Resident.cs
 │       ├── ProcessRecording.cs
 │       ├── HomeVisitation.cs
-│       └── DonorMessage.cs
+│       ├── DonorMessage.cs
+│       └── PasswordResetRequest.cs     # Self-service password reset requests; status Pending→Resolved; temp_password generated on resolve
 │
 └── frontend/                        # React + Vite + TypeScript + Tailwind + shadcn/ui
     ├── package.json
@@ -99,6 +101,8 @@ Website/Intex2026/
             ├── Index.tsx            # Public landing — hero with animated stat pills (IntersectionObserver), features with flip-card animations, safehouses, donation CTA, footer
             ├── Donate.tsx           # Self-service donation form (minimal header with logo only) — POSTs to /api/public/donate; on success shows "create account?" dialog → inline password prompt (14+ chars) → auto-login → /my-impact; anonymous opt-out saves under synthetic supporter
             ├── TaxReceipt.tsx       # Printable IRS Publication 1771 donation acknowledgment letter for donors (year picker, window.print() for Save as PDF); route /tax-receipt, protected for Admin/Staff/Donor
-            ├── Login.tsx            # Login form — directs new users to /donate instead of registration, password hint (14+ chars), wired to AuthContext.login()
+            ├── Login.tsx            # Login form — directs new users to /donate instead of registration, password hint (14+ chars), wired to AuthContext.login(); "Forgot password?" links to /forgot-password
+            ├── ForgotPassword.tsx   # Public self-service page — submits email to POST /api/password-reset/request; always shows success to avoid email enumeration; ember gradient left panel
+            ├── PasswordRequests.tsx # Admin-only page (/password-requests) — lists pending reset requests, "Resolve" generates a one-time temp password; shown in sidebar under System
             ├── Privacy.tsx          # Privacy policy (Ember styled)
             ├── Dashboard.tsx        

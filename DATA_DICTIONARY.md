@@ -224,6 +224,19 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 | created_at | CreatedAt | Yes (default GETUTCDATE()) |
 | read_at | ReadAt | Yes (nullable, set on mark-read) |
 
+### password_reset_requests (app-created, no seed CSV)
+**Status: Complete** — Model + controller + frontend pages. Not part of the canonical `lighthouse_schema.sql`; table is created on app startup via raw SQL in `Program.cs`.
+
+| SQL Column | C# Property | In Model? |
+|---|---|---|
+| request_id | RequestId | Yes (PK, non-identity, generated via MaxAsync+1) |
+| email | Email | Yes (email of the requesting user) |
+| status | Status | Yes ("Pending" → "Resolved") |
+| created_at | CreatedAt | Yes (default GETUTCDATE()) |
+| resolved_at | ResolvedAt | Yes (nullable) |
+| resolved_by_user_id | ResolvedByUserId | Yes (nullable, Identity user ID of resolving admin) |
+| temp_password | TempPassword | Yes (nullable; cleared after resolution) |
+
 ### social_media_posts (812 rows)
 **Status: Missing**
 
@@ -243,7 +256,7 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 
 | Status | Count | Tables |
 |---|---|---|
-| Complete | 7 | safehouses, supporters, donations, residents, process_recordings, home_visitations, donor_messages |
+| Complete | 8 | safehouses, supporters, donations, residents, process_recordings, home_visitations, donor_messages, password_reset_requests |
 | Missing | 11 | partners, partner_assignments, donation_allocations, in_kind_donation_items, education_records, health_wellbeing_records, intervention_plans, incident_reports, social_media_posts, safehouse_monthly_metrics, public_impact_snapshots |
 
 **Next priority:** Build controllers for the 4 complete models that lack them (donations, safehouses, process_recordings, home_visitations), then build the 11 missing models starting with the "Must" priority tables from API_REFERENCE.md.

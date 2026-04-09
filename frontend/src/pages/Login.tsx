@@ -39,7 +39,7 @@ const Login = () => {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left: brand panel */}
-      <div className="hidden lg:flex gradient-teal flex-col justify-center items-center p-12 text-secondary-foreground">
+      <div className="hidden lg:flex gradient-ember flex-col justify-center items-center p-12 text-primary-foreground">
         <div className="max-w-md space-y-8 text-center">
           <Flame className="w-16 h-16 mx-auto opacity-90" />
           <h1 className="text-4xl font-extrabold leading-tight">
@@ -103,9 +103,9 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a href="#" className="text-xs text-primary hover:underline">
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <Input
                 id="password"
