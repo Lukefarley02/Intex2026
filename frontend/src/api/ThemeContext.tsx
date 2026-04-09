@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { hasConsentedToCookies } from "@/api/cookieConsent";
 
 // Three preference values. "system" follows the OS-level color scheme and
 // re-evaluates live whenever the user toggles their OS theme.
@@ -24,8 +25,10 @@ const getSystemTheme = (): "light" | "dark" =>
     : "light";
 
 // Read theme preference from a browser-accessible cookie (not httpOnly).
+// Only reads if the user has accepted cookie consent (GDPR).
 const readThemeCookie = (): ThemeMode => {
   if (typeof document === "undefined") return "light";
+  if (!hasConsentedToCookies()) return "light"; // no consent → default
   const match = document.cookie.match(
     new RegExp("(?:^|; )" + COOKIE_NAME + "=([^;]*)")
   );
@@ -35,7 +38,9 @@ const readThemeCookie = (): ThemeMode => {
 };
 
 // Write theme preference as a browser-accessible cookie (SameSite=Lax, no HttpOnly).
+// Only writes if the user has accepted cookie consent (GDPR).
 const writeThemeCookie = (mode: ThemeMode) => {
+  if (!hasConsentedToCookies()) return; // respect GDPR — no cookie without consent
   const expires = new Date(Date.now() + COOKIE_MAX_DAYS * 864e5).toUTCString();
   document.cookie =
     `${COOKIE_NAME}=${encodeURIComponent(mode)}; expires=${expires}; path=/; SameSite=Lax`;
