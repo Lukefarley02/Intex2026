@@ -44,6 +44,10 @@ interface ProcessRecordingRow {
   referralMade: boolean | null;
   followUpActions: string | null;
   socialWorker: string | null;
+  createdByUserId: string | null;
+  // Server-computed: true if the current user is allowed to edit/delete.
+  // Admins can always modify; Staff can only modify rows they created.
+  canModify: boolean;
 }
 
 const displayName = (r: ResidentRow) =>
@@ -105,8 +109,10 @@ const toFormState = (p: ProcessRecordingRow): FormState => ({
 
 const ProcessRecording = () => {
   const qc = useQueryClient();
-  const { hasRole } = useAuth();
-  const isAdmin = hasRole("Admin");
+  // `useAuth` is still imported in case a future change needs the caller's
+  // role, but per-row edit/delete visibility is driven by the server's
+  // `canModify` flag so we no longer need an `isAdmin` derivation here.
+  useAuth();
   const [selectedResident, setSelectedResident] = useState<number | "all">("all");
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -452,17 +458,21 @@ const ProcessRecording = () => {
                     <span className="ml-auto text-xs text-muted-foreground">
                       {p.socialWorker ?? "—"}
                     </span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => openEdit(p)}
-                        aria-label="Edit recording"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      {isAdmin && (
+                    {/* Edit and delete are gated on `canModify` which the
+                        backend stamps per-row: admins can always modify,
+                        staff can only modify rows they personally created.
+                        Legacy rows with no owner fall through to admin-only. */}
+                    {p.canModify && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openEdit(p)}
+                          aria-label="Edit recording"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -472,8 +482,8 @@ const ProcessRecording = () => {
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                   {(p.emotionalStateObserved || p.emotionalStateEnd) && (
                     <p className="text-sm text-muted-foreground">
