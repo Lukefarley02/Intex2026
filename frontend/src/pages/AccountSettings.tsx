@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAuth } from "@/api/AuthContext";
 import { useTheme, type ThemeMode } from "@/api/ThemeContext";
+import { useRootkit } from "@/api/RootkitContext";
 import { Sun, Moon, Monitor, Mail, KeyRound, Trash2, ShieldAlert } from "lucide-react";
 
 // The API base the AuthContext was built against. Duplicated here because
@@ -78,8 +79,10 @@ const AccountSettings = () => {
     mustChangePassword,
     clearMustChangePassword,
     setToken,
+    isFounder,
   } = useAuth();
   const { mode, resolved, setMode } = useTheme();
+  const { active: rootkitMode, toggle: toggleRootkit } = useRootkit();
   const navigate = useNavigate();
 
   // --- Email change form ---
@@ -463,6 +466,23 @@ const AccountSettings = () => {
           )}
         </div>
       </ConfirmDialog>
+
+      {/* 🍺 Rootkit mode — tiny inline toggle at the very bottom, Founder-only.
+           User must scroll past all settings to find it. */}
+      {isFounder && (
+        <div className="flex justify-end mt-16 mb-4">
+          <button
+            type="button"
+            onClick={toggleRootkit}
+            className="px-2 py-1 text-[10px] rounded
+                       text-transparent hover:text-muted-foreground
+                       bg-transparent hover:bg-muted/60
+                       transition-all duration-300 cursor-default hover:cursor-pointer"
+          >
+            {rootkitMode ? "exit rootkit mode" : "swap to rootkit mode"}
+          </button>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
