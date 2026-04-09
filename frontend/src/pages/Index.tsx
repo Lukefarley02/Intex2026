@@ -127,13 +127,13 @@ const Index = () => {
       </div>
       <div className="relative container py-24 md:py-36 lg:py-44">
         <div className="max-w-2xl space-y-6">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-card leading-tight">
+          <h1 className="animate-fade-in-up-1 text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-card leading-tight">
             Every girl deserves a <span className="text-primary">safe place</span> to heal & grow
           </h1>
-          <p className="text-lg text-card/80 max-w-xl">
+          <p className="animate-fade-in-up-2 text-lg text-card/80 max-w-xl">
             Ember Foundation empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
           </p>
-          <div className="flex flex-wrap gap-3">
+          <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
             <Link to="/donate">
               <Button variant="hero" size="lg" className="text-base">
                 Support a girl's journey <Heart className="w-4 h-4 ml-1" aria-hidden="true" />
@@ -145,7 +145,7 @@ const Index = () => {
               </Button>
             </a>
           </div>
-          <div className="flex flex-wrap gap-3 pt-4">
+          <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
             <StatPill
               value={stats ? String(stats.girlsHelped) : "…"}
               label="girls helped"
