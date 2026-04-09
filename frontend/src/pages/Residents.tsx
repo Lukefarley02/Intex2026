@@ -44,7 +44,9 @@ import {
   RefreshCw,
   AlertTriangle,
   Gavel,
+  Printer,
 } from "lucide-react";
+import PrintReportHeader from "@/components/PrintReportHeader";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
@@ -470,10 +472,20 @@ const Residents = () => {
 
   const anyFilterActive = statusFilter !== ANY || safehouseFilter !== ANY || priorityFilter !== ANY || categoryFilter !== ANY;
 
+  const printFilters = [
+    ...(statusFilter !== ANY ? [{ label: "Stage", value: statusFilter }] : []),
+    ...(safehouseFilter !== ANY ? [{ label: "Safehouse", value: safehouseFilter }] : []),
+    ...(priorityFilter !== ANY ? [{ label: "Priority", value: priorityFilter }] : []),
+    ...(categoryFilter !== ANY ? [{ label: "Category", value: categoryFilter }] : []),
+    ...(search.trim() ? [{ label: "Search", value: search.trim() }] : []),
+  ];
+
   return (
     <DashboardLayout title="Caseload Inventory">
+      <PrintReportHeader title="Caseload Inventory" filters={printFilters} count={filtered.length} />
+
       {/* ── Top bar ── */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 print:hidden">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -483,15 +495,20 @@ const Residents = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {canWrite && (
-          <Button variant="hero" size="sm" onClick={openCreate}>
-            <Plus className="w-4 h-4 mr-1" /> Add resident
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> Print Report
           </Button>
-        )}
+          {canWrite && (
+            <Button variant="hero" size="sm" onClick={openCreate}>
+              <Plus className="w-4 h-4 mr-1" /> Add resident
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
+      <div className="flex flex-wrap items-end gap-3 mb-4 print:hidden">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground font-medium">Program stage</label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -545,7 +562,7 @@ const Residents = () => {
 
       {/* ML Insights quick-link — Founder only */}
       {isFounder && (
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="mb-5 flex flex-wrap items-center gap-2 print:hidden">
           <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
             <Brain className="w-3.5 h-3.5" /> ML Insights:
           </span>

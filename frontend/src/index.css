@@ -327,3 +327,26 @@
     animation-delay: 720ms;
   }
 }
+
+/* ─── Print styles ───────────────────────────────────────────────────────────
+   Used by the "Print / Save as PDF" button on management pages.
+   DashboardLayout already adds print:hidden to the sidebar and header;
+   these rules clean up remaining layout artefacts so the printout is
+   a clean, full-width document with no chrome.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Strip page background so white paper shows through */
+  body { background: white !important; color: black !important; }
+
+  /* Kill any overflow:hidden constraints so content isn't clipped */
+  .overflow-hidden, .overflow-x-hidden { overflow: visible !important; }
+
+  /* Remove viewport-lock height so pages can be as tall as needed */
+  .h-\[calc\(100vh-3\.5rem\)\] { height: auto !important; }
+
+  /* ML Insights: hide pipeline tabs/selector; only the active panel prints */
+  [data-pipeline-tabs] { display: none !important; }
+
+  /* Don't break cards across pages when possible */
+  .rounded-xl, .rounded-lg { page-break-inside: avoid; break-inside: avoid; }
+}

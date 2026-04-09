@@ -282,13 +282,13 @@ const DashboardLayout = ({
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop sidebar */}
-      <aside aria-label="Main sidebar" className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 ${sidebarThemeClass}`}>
+      <aside aria-label="Main sidebar" className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 print:hidden ${sidebarThemeClass}`}>
         <SidebarContent />
       </aside>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-40">
+        <div className="lg:hidden print:hidden fixed inset-0 z-40">
           <div role="presentation" className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
           <aside className={`relative w-60 h-full bg-sidebar flex flex-col ${sidebarThemeClass}`}>
             <button
@@ -308,8 +308,8 @@ const DashboardLayout = ({
           overflow on the whole page if any grandchild is wide).
           overflow-x-hidden is the belt-and-braces guarantee that no page
           inside the layout can produce a horizontal scrollbar. */}
-      <div className="flex-1 lg:ml-60 min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-6 gap-4">
+      <div className="flex-1 lg:ml-60 print:ml-0 min-w-0 overflow-x-hidden">
+        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-6 gap-4 print:hidden">
           <button className="lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
             <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
