@@ -9,7 +9,7 @@ const DonateHeader = () => {
           className="flex items-center gap-2 font-bold text-xl text-primary hover:opacity-80 transition-opacity"
         >
           <Flame className="w-7 h-7" aria-hidden="true" />
-          Ember
+          Ember Foundation
         </a>
       </div>
     </header>

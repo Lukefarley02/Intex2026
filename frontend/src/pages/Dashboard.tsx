@@ -393,7 +393,7 @@ const Dashboard = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
-                      Ember case management online
+                      Ember Foundation case management online
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       System milestone

@@ -20,7 +20,7 @@ const Privacy = () => (
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">What we collect</h2>
             <p>
-              Ember collects only the information needed to operate the platform
+              Ember Foundation collects only the information needed to operate the platform
               and protect the girls in our care. This includes account details
               for staff and donors, donation records, and resident case notes
               that are restricted to authorized personnel.
@@ -40,7 +40,7 @@ const Privacy = () => (
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">How we protect it</h2>
             <p>
-              Ember enforces role-based access control, JWT authentication,
+              Ember Foundation enforces role-based access control, JWT authentication,
               HTTPS-only delivery, and a strict Content Security Policy. We
               minimize data retention and audit access to sensitive fields.
             </p>

@@ -122,7 +122,7 @@ const Index = () => {
     {/* Hero */}
     <section id="mission" className="relative overflow-hidden">
       <div className="absolute inset-0">
-        <img src={heroImage} alt="Girls supported by Ember" className="w-full h-full object-cover" width={1920} height={1080} />
+        <img src={heroImage} alt="Girls supported by Ember Foundation" className="w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
       </div>
       <div className="relative container py-24 md:py-36 lg:py-44">
@@ -174,7 +174,7 @@ const Index = () => {
             Restoring hope, one girl at a time
           </h2>
           <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
-            Ember exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate
+            Ember Foundation exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate
             girls who have experienced trafficking, abuse, and exploitation. We believe every girl
             deserves safety, dignity, and a future full of possibility.
           </p>
@@ -376,7 +376,7 @@ const Index = () => {
         <div className="grid md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center gap-2 text-card font-bold text-lg mb-3">
-              <Heart className="w-5 h-5 text-primary" aria-hidden="true" /> Ember
+              <Heart className="w-5 h-5 text-primary" aria-hidden="true" /> Ember Foundation
             </div>
             <p className="text-sm leading-relaxed">
               Empowering NGOs in the Philippines to protect, nurture, and restore the lives of vulnerable girls.
