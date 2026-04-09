@@ -1202,6 +1202,325 @@ function StaticInsightView({
   );
 }
 
+// ─── Pipeline 07: Partner Effectiveness ──────────────────────────────────────
+
+function PartnerEffectivenessView() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["ml-partner-effectiveness"],
+    queryFn: () => apiFetch<any>("/api/mlinsights/partner-effectiveness"),
+  });
+  if (isLoading) return <LoadingSkeleton />;
+
+  const byProgramArea: { area: string; count: number }[] = data?.byProgramArea ?? [];
+  const byRoleType: { role: string; count: number }[] = data?.byRoleType ?? [];
+  const byRegion: { region: string; count: number }[] = data?.byRegion ?? [];
+  const byType: { type: string; count: number }[] = data?.byType ?? [];
+  const coverage: any[] = data?.coveragePerSafehouse ?? [];
+
+  const coverageAreaColors: Record<string, string> = {
+    Education: COLORS.secondary,
+    Wellbeing: COLORS.green,
+    Operations: COLORS.primary,
+    Logistics: COLORS.gold,
+  };
+
+  const totalSafehouses = coverage.length;
+  const gapSafehouses = coverage.filter((s) => s.areasCovered < 3).length;
+
+  const interpretation = data
+    ? [
+        `${data.totalActivePartners} active partners are deployed across ${totalSafehouses} safehouses, averaging ${data.avgPartnersPerSafehouse} partners and ${data.avgAreasPerSafehouse} program areas per location.`,
+        data.safehousesWithFullCoverage === totalSafehouses
+          ? "Every safehouse has broad coverage across at least 3 program areas — strong partner health."
+          : `${gapSafehouses} safehouse${gapSafehouses !== 1 ? "s" : ""} have coverage in fewer than 3 program areas — these are priority gaps for new partner recruitment.`,
+        data.topRoleType
+          ? `${data.topRoleType} is the most common partner role. Ensure this isn't crowding out under-represented areas like Wellbeing and Education.`
+          : "",
+      ].filter(Boolean)
+    : [];
+
+  const actions: string[] = data
+    ? [
+        gapSafehouses > 0
+          ? `Prioritize recruiting partners for the ${gapSafehouses} safehouse${gapSafehouses !== 1 ? "s" : ""} with fewer than 3 program areas covered.`
+          : "Maintain current partner coverage — schedule quarterly reviews to catch any lapses.",
+        byType.find((t) => t.type === "Individual")?.count ?? 0 >
+        (byType.find((t) => t.type === "Organization")?.count ?? 0)
+          ? "Convert individual partner relationships into formal organizational agreements for more reliable, scalable support."
+          : "Strong organizational partner base — continue formalizing new relationships at the organizational level.",
+        `${byRegion[byRegion.length - 1]?.region ?? "Underserved regions"} have the fewest active partners — make this a priority region for new outreach.`,
+        "Set a minimum standard: every active safehouse must have at least 3 active partners across Education, Wellbeing, and Operations.",
+        "Run the Partner Effectiveness notebook monthly and add partnership scores to the safehouse management page.",
+      ]
+    : [];
+
+  return (
+    <div className="space-y-6">
+      {/* KPI row */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Active Partners" value={data?.totalActivePartners ?? "—"} sub="Across all safehouses" icon={Handshake} iconBg="bg-teal-100 dark:bg-teal-950/50" iconColor="text-teal-600 dark:text-teal-400" />
+        <KpiCard label="Avg Partners / Safehouse" value={data?.avgPartnersPerSafehouse ?? "—"} sub="Active assignments" icon={Building2} iconBg="bg-indigo-100 dark:bg-indigo-950/50" iconColor="text-indigo-600 dark:text-indigo-400" />
+        <KpiCard label="Avg Areas Covered" value={data?.avgAreasPerSafehouse ?? "—"} sub="Out of 4 program areas" icon={CheckCircle2} iconBg="bg-emerald-100 dark:bg-emerald-950/50" iconColor="text-emerald-600 dark:text-emerald-400" />
+        <KpiCard label="Full Coverage" value={data ? `${data.safehousesWithFullCoverage}/${totalSafehouses}` : "—"} sub="Safehouses with 3+ areas" icon={Users} iconBg="bg-amber-100 dark:bg-amber-950/50" iconColor="text-amber-600 dark:text-amber-400" />
+      </div>
+
+      {/* Charts row */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Assignments by Program Area</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byProgramArea} margin={{ left: -10 }}>
+                <XAxis dataKey="area" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => [`${v} assignments`, "Count"]} />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {byProgramArea.map((d) => (
+                    <Cell key={d.area} fill={coverageAreaColors[d.area] ?? COLORS.muted} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Partners by Role Type</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byRoleType} layout="vertical" margin={{ left: 10 }}>
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="role" tick={{ fontSize: 11 }} width={100} />
+                <Tooltip formatter={(v: number) => [`${v} partners`, "Count"]} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} fill={COLORS.secondary} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Safehouse coverage table */}
+      <Card className="rounded-xl shadow-sm">
+        <CardHeader><CardTitle className="text-base">Coverage by Safehouse</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b text-muted-foreground">
+                  <th className="text-left py-1.5 font-medium">Safehouse</th>
+                  <th className="text-center">Education</th>
+                  <th className="text-center">Wellbeing</th>
+                  <th className="text-center">Operations</th>
+                  <th className="text-center">Logistics</th>
+                  <th className="text-right">Partners</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coverage.map((s: any) => (
+                  <tr key={s.safehouseName} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="py-1.5 font-medium">{s.safehouseName}</td>
+                    {(["hasEducation", "hasWellbeing", "hasOperations", "hasLogistics"] as const).map((key) => (
+                      <td key={key} className="text-center">
+                        {s[key]
+                          ? <span className="text-emerald-500">✓</span>
+                          : <span className="text-red-400">✗</span>}
+                      </td>
+                    ))}
+                    <td className="text-right text-muted-foreground">{s.partnerCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Region breakdown + interpretation */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Active Partners by Region</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={byRegion} layout="vertical" margin={{ left: 10 }}>
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                <YAxis type="category" dataKey="region" tick={{ fontSize: 11 }} width={120} />
+                <Tooltip formatter={(v: number) => [`${v} partners`, "Count"]} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} fill={COLORS.primary} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Partner Type Split</CardTitle></CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={byType} dataKey="count" nameKey="type" cx="50%" cy="50%" outerRadius={75} label={({ type, percent }: any) => `${type} ${Math.round(percent * 100)}%`} labelLine={false}>
+                  {byType.map((_: any, i: number) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => [`${v} partners`, ""]} />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <InterpretationCard>
+          {interpretation.map((p, i) => <p key={i}>{p}</p>)}
+        </InterpretationCard>
+        <ActionsCard actions={actions} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Pipeline 08: In-Kind Needs Forecast ─────────────────────────────────────
+
+function InKindNeedsView() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["ml-inkind-needs"],
+    queryFn: () => apiFetch<any>("/api/mlinsights/inkind-needs"),
+  });
+  if (isLoading) return <LoadingSkeleton />;
+
+  const byCategory: { category: string; quantity: number; estimatedValue: number }[] = data?.byCategory ?? [];
+  const byCondition: { condition: string; count: number }[] = data?.byCondition ?? [];
+  const byMonth: { month: string; quantity: number }[] = data?.byMonth ?? [];
+  const byIntendedUse: { use: string; quantity: number }[] = data?.byIntendedUse ?? [];
+
+  const conditionColors: Record<string, string> = {
+    New: COLORS.green,
+    Good: COLORS.secondary,
+    Fair: COLORS.amber,
+  };
+
+  const categoryColors = [COLORS.primary, COLORS.secondary, COLORS.gold, COLORS.green, COLORS.red, COLORS.amber];
+
+  const topCategory = data?.topCategory ?? "—";
+  const conditionRate = data?.conditionRate ?? 0;
+  const fairCount = byCondition.find((c) => c.condition === "Fair")?.count ?? 0;
+  const totalItems = byCondition.reduce((s, c) => s + c.count, 0);
+
+  const interpretation = data
+    ? [
+        `${data.totalQuantity.toLocaleString()} items received across ${byCategory.length} categories, with an estimated total value of ${fmtCurrency(Number(data.totalEstimatedValue))}.`,
+        `${topCategory} is the highest-volume donation category — verify this matches actual program needs or adjust donation campaigns accordingly.`,
+        conditionRate >= 0.85
+          ? `${fmtPct(conditionRate)} of items arrived in Good or New condition — strong donor quality standards.`
+          : `Only ${fmtPct(conditionRate)} of items arrived in Good or New condition. ${fairCount} item${fairCount !== 1 ? "s" : ""} were rated Fair — consider adding clearer quality guidance to donation requests.`,
+      ]
+    : [];
+
+  const actions: string[] = data
+    ? [
+        `Promote ${byCategory[byCategory.length - 1]?.category ?? "under-donated categories"} donations — they are the lowest-volume category but likely needed.`,
+        "Add Medical Supplies and Hygiene Kits to your public wish list — make these the top priority in all in-kind donor communications.",
+        conditionRate < 0.85
+          ? "Add a clear quality standard to in-kind intake: 'New or Like-New condition only for Medical and Hygiene items'."
+          : "Continue communicating condition expectations to donors — your current quality rate is strong.",
+        byMonth.length >= 2 && byMonth[byMonth.length - 1].quantity < byMonth[0].quantity
+          ? "Donations appear to be declining recently — launch a targeted in-kind drive to replenish stock."
+          : "Launch a 'March Medical Drive' to fill the typical Q1 supply gap with corporate partnerships.",
+        "Run the In-Kind Needs Forecast notebook quarterly and update the safehouse wish list based on current gap analysis.",
+      ]
+    : [];
+
+  return (
+    <div className="space-y-6">
+      {/* KPI row */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard label="Total Items Received" value={data?.totalQuantity?.toLocaleString() ?? "—"} sub="All time" icon={Package} iconBg="bg-orange-100 dark:bg-orange-950/50" iconColor="text-orange-600 dark:text-orange-400" />
+        <KpiCard label="Est. Total Value" value={data ? fmtCurrency(Number(data.totalEstimatedValue)) : "—"} sub="Donor estimated value" icon={TrendingUp} iconBg="bg-violet-100 dark:bg-violet-950/50" iconColor="text-violet-600 dark:text-violet-400" />
+        <KpiCard label="Top Category" value={topCategory} sub="Highest donation volume" icon={Heart} iconBg="bg-red-100 dark:bg-red-950/50" iconColor="text-red-500 dark:text-red-400" />
+        <KpiCard label="Good / New Condition" value={fmtPct(conditionRate)} sub="Items meeting quality bar" icon={CheckCircle2} iconBg="bg-emerald-100 dark:bg-emerald-950/50" iconColor="text-emerald-600 dark:text-emerald-400" />
+      </div>
+
+      {/* Charts row 1 */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Donations by Category (Quantity)</CardTitle></CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={byCategory} margin={{ left: -10 }}>
+                <XAxis dataKey="category" tick={{ fontSize: 10 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(v: number, name: string) => [name === "quantity" ? `${v} items` : fmtCurrency(v), name === "quantity" ? "Quantity" : "Est. Value"]} />
+                <Bar dataKey="quantity" radius={[4, 4, 0, 0]}>
+                  {byCategory.map((_: any, i: number) => <Cell key={i} fill={categoryColors[i % categoryColors.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Item Condition on Arrival</CardTitle></CardHeader>
+          <CardContent className="flex items-center justify-center">
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie data={byCondition} dataKey="count" nameKey="condition" cx="50%" cy="50%" outerRadius={80}
+                  label={({ condition, percent }: any) => `${condition} ${Math.round(percent * 100)}%`} labelLine={false}>
+                  {byCondition.map((d: any) => <Cell key={d.condition} fill={conditionColors[d.condition] ?? COLORS.muted} />)}
+                </Pie>
+                <Tooltip formatter={(v: number) => [`${v} items`, ""]} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts row 2 */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Monthly Donation Volume (Last 12 Months)</CardTitle></CardHeader>
+          <CardContent>
+            {byMonth.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">No monthly data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={byMonth} margin={{ left: -10 }}>
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => [`${v} items`, "Quantity"]} />
+                  <Bar dataKey="quantity" fill={COLORS.primary} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl shadow-sm">
+          <CardHeader><CardTitle className="text-base">Donations by Intended Use</CardTitle></CardHeader>
+          <CardContent>
+            {byIntendedUse.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">No intended use data available.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={byIntendedUse} layout="vertical" margin={{ left: 10 }}>
+                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="use" tick={{ fontSize: 11 }} width={80} />
+                  <Tooltip formatter={(v: number) => [`${v} items`, "Quantity"]} />
+                  <Bar dataKey="quantity" radius={[0, 4, 4, 0]} fill={COLORS.gold} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        <InterpretationCard>
+          {interpretation.map((p, i) => <p key={i}>{p}</p>)}
+        </InterpretationCard>
+        <ActionsCard actions={actions} />
+      </div>
+    </div>
+  );
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function MLInsights() {
@@ -1263,48 +1582,8 @@ export default function MLInsights() {
       {activePipeline === "outcomes" && <ResidentOutcomesView />}
       {activePipeline === "geographic" && <GeographicView />}
       {activePipeline === "roi" && <AcquisitionRoiView />}
-      {activePipeline === "partners" && (
-        <StaticInsightView
-          title="Partner Effectiveness"
-          dataNote="partners + partner_assignments tables"
-          findings={[
-            { heading: "Program Area Diversity Drives Outcomes", body: "Safehouses with coverage across Education, Wellbeing, AND Operations outperform single-area houses by 15–25 points on education progress metrics." },
-            { heading: "Education Partners Are Highest Impact", body: "The presence of a dedicated Education partner is the strongest single predictor of above-average education progress (correlation ~0.6)." },
-            { heading: "Organizational > Individual Partners", body: "NGO/institutional partners deliver more consistent, scalable support than individual contractors. Formalize individual relationships into organizational agreements." },
-            { heading: "Critical Gaps Found", body: "Multiple safehouses lack Wellbeing partners — these show below-average health scores. Every house needs at least Education + Wellbeing coverage." },
-            { heading: "Partnership Score Variance", body: "High-scoring houses (score > 75) average 4+ active partners across 3+ program areas. Low-scoring houses average 1–2 partners in a single area." },
-            { heading: "Regional Imbalance", body: "Mindanao region shows the lowest average partnership scores — it is the priority area for new partner recruitment." },
-          ]}
-          actions={[
-            "Audit every safehouse for Education and Wellbeing partner coverage — fill gaps immediately.",
-            "Recruit 2 new Education partners in Mindanao region this quarter.",
-            "Convert active individual contractors to formal organizational agreements where possible.",
-            "Set a minimum standard: every active safehouse must have ≥ 3 active partners across ≥ 2 program areas.",
-            "Run the Partner Effectiveness notebook monthly and add partnership scores to the safehouse management page.",
-          ]}
-        />
-      )}
-      {activePipeline === "inkind" && (
-        <StaticInsightView
-          title="In-Kind Needs Forecasting"
-          dataNote="in_kind_donation_items table"
-          findings={[
-            { heading: "Medical Supplies Most Under-donated", body: "Donors naturally give food and school materials (visible impact) but Medical items are chronically under-supplied relative to Health program needs." },
-            { heading: "Hygiene Gap Is Significant", body: "Toiletries, hygiene kits, and feminine products are needed but rarely requested explicitly. This is the #2 supply-demand gap category." },
-            { heading: "Christmas Spike, Summer Gap", body: "Donations spike sharply Nov–Jan. A supply gap opens Mar–May every year. Proactive corporate drives in Q1 would smooth this curve." },
-            { heading: "Back-to-School is Reliable", body: "Aug–Sep shows a consistent peak in SchoolMaterials donations. Leverage this with a themed campaign to maximize inbound supply." },
-            { heading: "Condition Quality Varies", body: "~30% of in-kind items arrive in 'Fair' or worse condition. Setting clearer intake quality standards would reduce waste and storage overhead." },
-            { heading: "Forecast: ~X items/month", body: "Based on rolling 3-month patterns, the model forecasts next month's in-kind volume to within 15–20% MAPE. Use for warehouse/storage planning." },
-          ]}
-          actions={[
-            "Add Medical Supplies and Hygiene Kits to your public 'wish list' — make these the #1 priority in all in-kind donor communications.",
-            "Launch a 'March Medical Drive' corporate partnership campaign to fill the seasonal supply gap.",
-            "Create a 'Back to School Supply Drive' page for Aug–Sep to capitalize on the natural donation spike.",
-            "Add a clear quality standard to in-kind intake: 'New or Like-New condition only for Medical and Hygiene items'.",
-            "Run the In-Kind Needs Forecast notebook quarterly and update the safehouse wish list based on current gap analysis.",
-          ]}
-        />
-      )}
+      {activePipeline === "partners" && <PartnerEffectivenessView />}
+      {activePipeline === "inkind" && <InKindNeedsView />}
     </DashboardLayout>
   );
 }

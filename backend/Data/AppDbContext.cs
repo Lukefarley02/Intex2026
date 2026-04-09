@@ -19,6 +19,13 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ProcessRecording> ProcessRecordings => Set<ProcessRecording>();
     public DbSet<HomeVisitation> HomeVisitations => Set<HomeVisitation>();
 
+    // ----- Partners -----
+    public DbSet<Partner> Partners => Set<Partner>();
+    public DbSet<PartnerAssignment> PartnerAssignments => Set<PartnerAssignment>();
+
+    // ----- In-Kind Donations -----
+    public DbSet<InKindDonationItem> InKindDonationItems => Set<InKindDonationItem>();
+
     // ----- Analytics -----
     public DbSet<SocialMediaPost> SocialMediaPosts => Set<SocialMediaPost>();
 
@@ -39,6 +46,12 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Resident>().ToTable("residents");
         modelBuilder.Entity<ProcessRecording>().ToTable("process_recordings");
         modelBuilder.Entity<HomeVisitation>().ToTable("home_visitations");
+        modelBuilder.Entity<Partner>().ToTable("partners");
+        modelBuilder.Entity<PartnerAssignment>().ToTable("partner_assignments");
+        modelBuilder.Entity<InKindDonationItem>().ToTable("in_kind_donation_items");
+        modelBuilder.Entity<InKindDonationItem>()
+            .Property(i => i.EstimatedUnitValue)
+            .HasColumnType("decimal(10,2)");
         modelBuilder.Entity<SocialMediaPost>().ToTable("social_media_posts");
         modelBuilder.Entity<SocialMediaPost>()
             .Property(p => p.EstimatedDonationValuePhp)
