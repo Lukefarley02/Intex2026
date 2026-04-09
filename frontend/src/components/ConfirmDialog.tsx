@@ -55,6 +55,9 @@ export interface ConfirmDialogProps {
   // When true the confirm button is disabled and shows a spinner label.
   loading?: boolean;
   onConfirm: () => void;
+  // Optional content (e.g. a password confirmation input) rendered between
+  // the description and the footer.
+  children?: React.ReactNode;
 }
 
 export default function ConfirmDialog({
@@ -67,6 +70,7 @@ export default function ConfirmDialog({
   destructive = true,
   loading = false,
   onConfirm,
+  children,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -77,6 +81,7 @@ export default function ConfirmDialog({
             <AlertDialogDescription>{description}</AlertDialogDescription>
           )}
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction

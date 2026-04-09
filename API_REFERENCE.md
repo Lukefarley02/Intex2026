@@ -15,6 +15,9 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 | POST | `/api/auth/register` | None | Register a new user |
 | POST | `/api/auth/logout` | Any | Stateless — instructs client to discard token |
 | GET | `/api/auth/me` | Any | Current user profile with roles and admin scope |
+| POST | `/api/auth/change-email` | Any | Change the authenticated user's email (requires current password); returns a fresh JWT |
+| POST | `/api/auth/change-password` | Any | Change the authenticated user's password (requires current password) |
+| DELETE | `/api/auth/account` | Any | Permanently delete the authenticated user's account (requires current password) |
 
 **POST `/api/auth/login` request:**
 ```json
@@ -56,6 +59,24 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 }
 ```
 `adminScope` is `"founder"`, `"region"`, or `"location"` for Admin users; `null` for Staff and Donor.
+
+**POST `/api/auth/change-email` request:**
+```json
+{ "newEmail": "new@example.com", "currentPassword": "CurrentPass123!" }
+```
+Returns an `AuthResponse` with a new JWT keyed to the updated email. The frontend signs the user out after a successful change so `AuthContext` reloads cleanly.
+
+**POST `/api/auth/change-password` request:**
+```json
+{ "currentPassword": "CurrentPass123!", "newPassword": "NewPass456!@" }
+```
+Returns `{ "message": "Password changed successfully." }` on success. The server enforces the hardened ASP.NET Identity password policy and returns `400` with `{ code, description }[]` on failure.
+
+**DELETE `/api/auth/account` request:**
+```json
+{ "currentPassword": "CurrentPass123!" }
+```
+Permanently deletes the Identity user. Donation and supporter rows that reference the same email are left intact so historical giving and tax records remain valid.
 
 ### Access tiers
 

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings } from "lucide-react";
+import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings, UserCog } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/api/AuthContext";
 
@@ -242,13 +242,20 @@ const DashboardLayout = ({ children, title }: { children: React.ReactNode; title
           );
         })}
       </nav>
-      <button
-        type="button"
-        onClick={handleSignOut}
-        className="flex items-center gap-2 px-6 py-4 text-sidebar-foreground/50 hover:text-sidebar-foreground text-sm border-t border-sidebar-border text-left w-full"
+      {/* Account Settings replaced the old Sign out button here. Sign out
+          still lives in the top header bar; from this footer link users can
+          edit their email/password, delete their account, and pick a theme. */}
+      <Link
+        to="/account"
+        onClick={() => setSidebarOpen(false)}
+        className={`flex items-center gap-2 px-6 py-4 text-sm border-t border-sidebar-border text-left w-full ${
+          location.pathname === "/account"
+            ? "text-sidebar-foreground bg-sidebar-accent/50"
+            : "text-sidebar-foreground/60 hover:text-sidebar-foreground"
+        }`}
       >
-        <LogOut className="w-4 h-4" aria-hidden="true" /> Sign out
-      </button>
+        <UserCog className="w-4 h-4" aria-hidden="true" /> Account Settings
+      </Link>
     </>
   );
 
