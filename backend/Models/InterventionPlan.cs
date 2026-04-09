@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Intex2026.Api.Models;
@@ -14,15 +13,9 @@ public class InterventionPlan
     [Column("resident_id")]
     public int ResidentId { get; set; }
 
-    [Column("plan_category")]
-    public string PlanCategory { get; set; } = "Safety";
-    /// <summary>FK to case_conferences — null for legacy rows not tied to a conference.</summary>
-    [Column("conference_id")]
-    public int? ConferenceId { get; set; }
-
     /// <summary>Safety | Education | Physical Health | Mental Health</summary>
     [Column("plan_category")]
-    public string PlanCategory { get; set; } = "";
+    public string PlanCategory { get; set; } = "Safety";
 
     [Column("plan_description")]
     public string? PlanDescription { get; set; }
@@ -40,21 +33,6 @@ public class InterventionPlan
     [Column("status")]
     public string Status { get; set; } = "In Progress";
 
-    /// <summary>On Hold | In Progress | Completed</summary>
-    [Column("status")]
-    public string Status { get; set; } = "In Progress";
-
-    /// <summary>Low | Medium | High | Urgent</summary>
-    [Column("priority")]
-    public string? Priority { get; set; }
-
-    [Column("progress_notes")]
-    public string? ProgressNotes { get; set; }
-
-    [Column("assigned_to")]
-    public string? AssignedTo { get; set; }
-
-    /// <summary>Legacy column — date of the associated conference before FK was added.</summary>
     [Column("case_conference_date")]
     public DateTime? CaseConferenceDate { get; set; }
 
@@ -68,8 +46,4 @@ public class InterventionPlan
     // Nullable so historical rows from seed data (pre-migration) still load.
     [Column("created_by_user_id")]
     public string? CreatedByUserId { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
