@@ -149,14 +149,15 @@ const DonorPortal = () => {
   const totalContributions = impact?.total_donated ?? 0;
   const donationsMade = impact?.donation_count ?? 0;
 
-  // girls_helped is now the number of *full girl-years of care* the donor
-  // has funded (12 months of care = 1 girl). That keeps things honest
-  // when the same donor gives $25/mo for ten months — it's 10 months of
-  // care for one girl, not ten girls.
-  const girlsHelped = impact?.girls_helped ?? 0;
-  // Whole months of care funded — always floored so the number never
-  // overstates what the gift actually bought.
+  // Whole months of care funded — $25 = 1 month of support for 1 girl.
+  // Always floored so the number never overstates what was actually bought.
   const monthsOfCare = Math.floor(impact?.months_of_care ?? 0);
+  // Whether the donor has funded at least 1 full month of care. Used to
+  // decide whether to show the "1 girl supported" framing. Even a single
+  // month of $25 support goes toward one girl's care — we always credit
+  // "1 girl" rather than a derived "girl-years" count (which would show 0
+  // for anyone below the $300/year threshold and misrepresent reality).
+  const hasProvidedCare = monthsOfCare >= 1;
   const formatMonths = (m: number) => {
     if (m >= 24) return `${Math.floor(m / 12)} yrs`;
     return `${m} mo`;
@@ -178,21 +179,13 @@ const DonorPortal = () => {
                 Thank you, {donorName}! <span className="text-gold">💛</span>
               </h2>
               <p className="text-white/90 text-xs sm:text-sm mt-1">
-                {monthsOfCare >= 1 ? (
+                {hasProvidedCare ? (
                   <>
-                    Your giving has funded{" "}
+                    Your giving has provided{" "}
                     <strong>{formatMonths(monthsOfCare)}</strong> of shelter,
-                    meals, counseling, and schooling
-                    {girlsHelped > 0 && (
-                      <>
-                        {" "}— the equivalent of fully supporting{" "}
-                        <strong>
-                          {girlsHelped} {girlsHelped === 1 ? "girl" : "girls"}
-                        </strong>{" "}
-                        for a full year
-                      </>
-                    )}
-                    .
+                    meals, counseling, and schooling — supporting{" "}
+                    <strong>1 girl's journey</strong> toward healing and
+                    reintegration. Every month matters.
                   </>
                 ) : (
                   <>
@@ -272,16 +265,24 @@ const DonorPortal = () => {
                   <Users className="w-4 h-4 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-lg font-bold leading-none">{girlsHelped}</p>
+                  <p className="text-lg font-bold leading-none">
+                    {hasProvidedCare ? "1 girl" : "—"}
+                  </p>
                   <p
                     className="text-[11px] text-muted-foreground mt-1 truncate"
-                    title="One girl-year = twelve months of shelter, meals, counseling, and schooling fully funded."
+                    title={
+                      hasProvidedCare
+                        ? `Your donations fund ${formatMonths(monthsOfCare)} of care for one girl — $25 covers one month of shelter, meals, counseling, and schooling.`
+                        : "Your first gift will begin supporting a girl's journey."
+                    }
                   >
-                    Girl-Years Funded
-                </p>
+                    {hasProvidedCare
+                      ? `supported · ${formatMonths(monthsOfCare)} of care`
+                      : "Girl Supported"}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
+            </CardContent>
           </Card>
           <Card className="rounded-xl shadow-sm">
             <CardContent className="p-3">
