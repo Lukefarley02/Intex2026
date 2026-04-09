@@ -38,9 +38,12 @@ import {
   ShieldAlert,
   Camera,
 } from "lucide-react";
+import { Plus, MapPin, AlertTriangle, Calendar, Home as HomeIcon, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/api/AuthContext";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,6 +69,10 @@ interface HomeVisitationRow {
   followUpNotes: string | null;
   visitOutcome: string | null;
   socialWorker: string | null;
+  createdByUserId: string | null;
+  // Server-computed: true if the current user is allowed to edit/delete.
+  // Admins can always modify; Staff can only modify rows they created.
+  canModify: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -170,7 +177,25 @@ const cooperationColor: Record<string, string> = {
   none:   "bg-muted text-muted-foreground",
 };
 
-const emptyForm = {
+interface FormState {
+  visitationId: number; // 0 when creating
+  residentId: number;
+  visitDate: string;
+  visitType: string;
+  purpose: string;
+  locationVisited: string;
+  familyMembersPresent: string;
+  familyCooperationLevel: string;
+  observations: string;
+  safetyConcernsNoted: boolean;
+  followUpNeeded: boolean;
+  followUpNotes: string;
+  visitOutcome: string;
+  socialWorker: string;
+}
+
+const emptyForm: FormState = {
+  visitationId: 0,
   residentId: 0,
   visitDate: new Date().toISOString().slice(0, 10),
   visitType: "Routine follow-up",
@@ -203,6 +228,34 @@ const HomeVisitation = () => {
 
   const [detailOpen, setDetailOpen] = useState(false);
   const [selected, setSelected] = useState<HomeVisitationRow | null>(null);
+const toFormState = (v: HomeVisitationRow): FormState => ({
+  visitationId: v.visitationId,
+  residentId: v.residentId,
+  visitDate: v.visitDate ? v.visitDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  visitType: v.visitType ?? "Routine follow-up",
+  purpose: v.purpose ?? "",
+  locationVisited: v.locationVisited ?? "",
+  familyMembersPresent: v.familyMembersPresent ?? "",
+  familyCooperationLevel: v.familyCooperationLevel ?? "high",
+  observations: v.observations ?? "",
+  safetyConcernsNoted: !!v.safetyConcernsNoted,
+  followUpNeeded: !!v.followUpNeeded,
+  followUpNotes: v.followUpNotes ?? "",
+  visitOutcome: v.visitOutcome ?? "",
+  socialWorker: v.socialWorker ?? "",
+});
+
+const HomeVisitation = () => {
+  const qc = useQueryClient();
+  // `useAuth` is still imported so future changes can re-introduce a
+  // role derivation if needed. Per-row edit/delete visibility is now
+  // driven by the server's `canModify` flag on each row.
+  useAuth();
+  const [selectedResident, setSelectedResident] = useState<number | "all">("all");
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<HomeVisitationRow | null>(null);
 
   // ── Data ──
   const { data: residents } = useQuery<ResidentRow[]>({
@@ -248,6 +301,46 @@ const HomeVisitation = () => {
       qc.invalidateQueries({ queryKey: ["home-visitations"] });
       toast({ title: "Visit logged", description: "Home visitation saved successfully." });
       closeForm();
+  const buildPayload = (f: FormState) => ({
+    visitationId: f.visitationId,
+    residentId: f.residentId,
+    visitDate: new Date(f.visitDate).toISOString(),
+    visitType: f.visitType,
+    purpose: f.purpose,
+    locationVisited: f.locationVisited,
+    familyMembersPresent: f.familyMembersPresent,
+    familyCooperationLevel: f.familyCooperationLevel,
+    observations: f.observations,
+    safetyConcernsNoted: f.safetyConcernsNoted,
+    followUpNeeded: f.followUpNeeded,
+    followUpNotes: f.followUpNotes,
+    visitOutcome: f.visitOutcome,
+    socialWorker: f.socialWorker,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async (f: FormState) => {
+      if (f.visitationId === 0) {
+        return apiFetch<HomeVisitationRow>("/api/homevisitations", {
+          method: "POST",
+          body: JSON.stringify(buildPayload(f)),
+        });
+      }
+      await apiFetch<void>(`/api/homevisitations/${f.visitationId}`, {
+        method: "PUT",
+        body: JSON.stringify(buildPayload(f)),
+      });
+      return null;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home-visitations"] });
+      toast({
+        title: editingId ? "Visit updated" : "Visit logged",
+        description: "Home visitation saved successfully.",
+      });
+      setOpen(false);
+      setEditingId(null);
+      setForm(emptyForm);
     },
     onError: (e: Error) => {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
@@ -288,6 +381,31 @@ const HomeVisitation = () => {
   });
 
   // ── Derived state ──
+  const deleteMut = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/homevisitations/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home-visitations"] });
+      toast({ title: "Visit deleted" });
+      setDeleteTarget(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (v: HomeVisitationRow) => {
+    setEditingId(v.visitationId);
+    setForm(toFormState(v));
+    setOpen(true);
+  };
+
   const residentLookup = useMemo(() => {
     const m = new Map<number, ResidentRow>();
     (residents ?? []).forEach((r) => m.set(r.residentId, r));
@@ -697,6 +815,28 @@ const HomeVisitation = () => {
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">Visit Details</p>
               <div className="space-y-4">
+          <Dialog
+            open={open}
+            onOpenChange={(o) => {
+              setOpen(o);
+              if (!o) {
+                setEditingId(null);
+                setForm(emptyForm);
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button className="gap-2" onClick={openCreate}>
+                <Plus className="w-4 h-4" /> Log Visit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingId ? "Edit Home Visit" : "Log a Home Visit"}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
                 <div>
                   <Label>Resident *</Label>
                   <select
@@ -857,6 +997,48 @@ const HomeVisitation = () => {
                 </div>
               </div>
             </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => saveMut.mutate(form)}
+                  disabled={!form.residentId || saveMut.isPending}
+                >
+                  {saveMut.isPending
+                    ? "Saving…"
+                    : editingId
+                      ? "Save Changes"
+                      : "Save Visit"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filter */}
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Label className="text-sm">Filter by resident:</Label>
+            <select
+              className="border rounded-md h-9 px-3 bg-background text-sm"
+              value={selectedResident}
+              onChange={(e) =>
+                setSelectedResident(e.target.value === "all" ? "all" : Number(e.target.value))
+              }
+            >
+              <option value="all">All residents</option>
+              {(residents ?? []).map((r) => (
+                <option key={r.residentId} value={r.residentId}>
+                  {displayName(r)}
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-muted-foreground ml-auto">
+              {visits?.length ?? 0} visit{(visits?.length ?? 0) === 1 ? "" : "s"}
+            </span>
+          </CardContent>
+        </Card>
 
             <Separator />
 
@@ -870,6 +1052,23 @@ const HomeVisitation = () => {
               >
                 {OUTCOME_OPTIONS.map((o) => <option key={o}>{o}</option>)}
               </select>
+        {/* Upcoming */}
+        {upcoming.length > 0 && (
+          <div>
+            <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">
+              Upcoming case conferences & visits
+            </h3>
+            <div className="space-y-3">
+              {upcoming.map((v) => (
+                <VisitCard
+                  key={v.visitationId}
+                  v={v}
+                  res={residentLookup.get(v.residentId)}
+                  onEdit={() => openEdit(v)}
+                  onEditable={v.canModify}
+                  onDelete={v.canModify ? () => setDeleteTarget(v) : undefined}
+                />
+              ))}
             </div>
           </div>
 
@@ -890,6 +1089,46 @@ const HomeVisitation = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        {/* History */}
+        <div>
+          <h3 className="font-semibold mb-3 text-sm uppercase text-muted-foreground">
+            Visit history
+          </h3>
+          {history.length === 0 && !isLoading && (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                No visits logged yet. Click “Log Visit” to record a home visitation.
+              </CardContent>
+            </Card>
+          )}
+          <div className="space-y-3">
+            {history.map((v) => (
+              <VisitCard
+                key={v.visitationId}
+                v={v}
+                res={residentLookup.get(v.residentId)}
+                onEdit={() => openEdit(v)}
+                onEditable={v.canModify}
+                onDelete={v.canModify ? () => setDeleteTarget(v) : undefined}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
+        title="Delete this home visit?"
+        description="This will permanently remove the visit record. This action cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteMut.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMut.mutate(deleteTarget.visitationId);
+        }}
+      />
     </DashboardLayout>
   );
 };
@@ -911,6 +1150,18 @@ const VisitCard = ({
     className="hover:shadow-md transition-shadow cursor-pointer group"
     onClick={() => onOpen(v)}
   >
+interface VisitCardProps {
+  v: HomeVisitationRow;
+  res?: ResidentRow;
+  onEdit: () => void;
+  // Whether the Edit button should render (rows the caller didn't create
+  // are read-only for staff).
+  onEditable?: boolean;
+  onDelete?: () => void;
+}
+
+const VisitCard = ({ v, res, onEdit, onEditable = true, onDelete }: VisitCardProps) => (
+  <Card>
     <CardContent className="p-5 space-y-3">
 
       {/* Row 1: date · resident · safehouse · social worker · actions */}
@@ -975,6 +1226,36 @@ const VisitCard = ({
           <span className="text-xs text-muted-foreground flex items-center gap-1 ml-auto">
             <MapPin className="w-3 h-3" /> {v.locationVisited}
           </span>
+        <span className="ml-auto text-xs text-muted-foreground">{v.socialWorker ?? "—"}</span>
+        {/* Edit/Delete are gated by the backend's per-row `canModify` flag
+            (forwarded as `onEditable` + whether `onDelete` was passed).
+            Admins can modify anything in their scope; Staff can only
+            modify rows they personally created. */}
+        {(onEditable || onDelete) && (
+          <div className="flex items-center gap-1">
+            {onEditable && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onEdit}
+                aria-label="Edit visit"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-destructive hover:text-destructive"
+                onClick={onDelete}
+                aria-label="Delete visit"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

@@ -158,6 +158,50 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("Identity migrations applied successfully.");
         }
 
+        // Ensure the donor_messages table exists (added Apr 9 2026).
+        // Uses raw SQL with IF NOT EXISTS so it's idempotent and doesn't
+        // require a formal EF Core migration (which would need the CLI to
+        // generate the Designer file).
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='donor_messages' AND xtype='U')
+            BEGIN
+                CREATE TABLE donor_messages (
+                    message_id        INT             PRIMARY KEY,
+                    supporter_id      INT             NOT NULL,
+                    sender_user_id    NVARCHAR(450)   NOT NULL DEFAULT '',
+                    sender_name       NVARCHAR(256)   NOT NULL DEFAULT '',
+                    template_type     NVARCHAR(50)    NULL,
+                    subject           NVARCHAR(500)   NOT NULL DEFAULT '',
+                    body              NVARCHAR(MAX)   NOT NULL DEFAULT '',
+                    is_read           BIT             NOT NULL DEFAULT 0,
+                    created_at        DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+                    read_at           DATETIME2       NULL
+                );
+                CREATE INDEX IX_donor_messages_supporter ON donor_messages(supporter_id);
+                CREATE INDEX IX_donor_messages_created   ON donor_messages(created_at);
+            END
+        ");
+
+        // Add created_by_user_id column to process_recordings and home_visitations
+        // so the backend can track who created each record and enforce per-row
+        // ownership for Staff users (Staff can only edit/delete their own rows).
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('process_recordings')
+                  AND name = 'created_by_user_id'
+            )
+            ALTER TABLE process_recordings ADD created_by_user_id NVARCHAR(450) NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('home_visitations')
+                  AND name = 'created_by_user_id'
+            )
+            ALTER TABLE home_visitations ADD created_by_user_id NVARCHAR(450) NULL;
+        ");
+
         // Seed roles
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

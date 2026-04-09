@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 
 const API_BASE =
   import.meta.env.VITE_API_URL ??
-  "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net";
+  (import.meta.env.DEV
+    ? ""
+    : "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net");
 
 // ---- Types ----
 

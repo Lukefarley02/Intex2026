@@ -177,6 +177,106 @@ public class DonorPortalController : ControllerBase
         });
     }
 
+    // GET /api/donorportal/me/messages
+    // Returns the current donor's in-app messages, newest first.
+    [HttpGet("me/messages")]
+    public async Task<IActionResult> GetMyMessages()
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+            return Unauthorized();
+
+        var supporter = await _context.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Email == email);
+
+        if (supporter == null)
+            return Ok(Array.Empty<object>());
+
+        var messages = await _context.DonorMessages
+            .AsNoTracking()
+            .Where(m => m.SupporterId == supporter.SupporterId)
+            .OrderByDescending(m => m.CreatedAt)
+            .Select(m => new
+            {
+                m.MessageId,
+                m.TemplateType,
+                m.Subject,
+                m.Body,
+                m.SenderName,
+                m.IsRead,
+                m.CreatedAt,
+                m.ReadAt,
+            })
+            .ToListAsync();
+
+        return Ok(messages);
+    }
+
+    // PUT /api/donorportal/me/messages/{id}/read
+    // Mark a single message as read.
+    [HttpPut("me/messages/{id}/read")]
+    public async Task<IActionResult> MarkMessageRead(int id)
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+            return Unauthorized();
+
+        var supporter = await _context.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Email == email);
+
+        if (supporter == null)
+            return NotFound();
+
+        var msg = await _context.DonorMessages
+            .FirstOrDefaultAsync(m => m.MessageId == id && m.SupporterId == supporter.SupporterId);
+
+        if (msg == null)
+            return NotFound();
+
+        if (!msg.IsRead)
+        {
+            msg.IsRead = true;
+            msg.ReadAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        return NoContent();
+    }
+
+    // PUT /api/donorportal/me/messages/read-all
+    // Mark all messages as read for the current donor.
+    [HttpPut("me/messages/read-all")]
+    public async Task<IActionResult> MarkAllRead()
+    {
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrEmpty(email))
+            return Unauthorized();
+
+        var supporter = await _context.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Email == email);
+
+        if (supporter == null)
+            return NotFound();
+
+        var unread = await _context.DonorMessages
+            .Where(m => m.SupporterId == supporter.SupporterId && !m.IsRead)
+            .ToListAsync();
+
+        foreach (var msg in unread)
+        {
+            msg.IsRead = true;
+            msg.ReadAt = DateTime.UtcNow;
+        }
+
+        if (unread.Count > 0)
+            await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     // GET /api/donorportal/me/tax-receipt?year=YYYY
     //
     // Returns everything the front-end needs to render a printable

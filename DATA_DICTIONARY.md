@@ -208,6 +208,22 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 
 ## Domain 4: Outreach & Communication
 
+### donor_messages (app-created, no seed CSV)
+**Status: Complete** — Model + controller + frontend inbox. Not part of the canonical `lighthouse_schema.sql`; table is created on app startup via raw SQL in `Program.cs`.
+
+| SQL Column | C# Property | In Model? |
+|---|---|---|
+| message_id | MessageId | Yes (PK, non-identity, generated via MaxAsync+1) |
+| supporter_id | SupporterId | Yes (FK to supporters) |
+| sender_user_id | SenderUserId | Yes (Identity user ID of admin sender) |
+| sender_name | SenderName | Yes (denormalized display name at time of send) |
+| template_type | TemplateType | Yes (nullable: "ThankYou" or "Appeal") |
+| subject | Subject | Yes |
+| body | Body | Yes |
+| is_read | IsRead | Yes (default false) |
+| created_at | CreatedAt | Yes (default GETUTCDATE()) |
+| read_at | ReadAt | Yes (nullable, set on mark-read) |
+
 ### social_media_posts (812 rows)
 **Status: Missing**
 
@@ -227,7 +243,7 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 
 | Status | Count | Tables |
 |---|---|---|
-| Complete | 6 | safehouses, supporters, donations, residents, process_recordings, home_visitations |
+| Complete | 7 | safehouses, supporters, donations, residents, process_recordings, home_visitations, donor_messages |
 | Missing | 11 | partners, partner_assignments, donation_allocations, in_kind_donation_items, education_records, health_wellbeing_records, intervention_plans, incident_reports, social_media_posts, safehouse_monthly_metrics, public_impact_snapshots |
 
 **Next priority:** Build controllers for the 4 complete models that lack them (donations, safehouses, process_recordings, home_visitations), then build the 11 missing models starting with the "Must" priority tables from API_REFERENCE.md.

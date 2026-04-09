@@ -11,9 +11,6 @@ import {
   BarChart3,
   Globe,
   Award,
-  Heart,
-  FileText,
-  ArrowRight,
   AlertTriangle,
   ArrowUpCircle,
   CheckCircle2,
@@ -90,12 +87,6 @@ const formatSignedPct = (n: number | null) => {
   return `${sign}${Math.round(n * 100)}%`;
 };
 
-const quickLinks = [
-  { to: "/donors", label: "Manage Donors", icon: Users },
-  { to: "/residents", label: "Case Management", icon: Heart },
-  { to: "/reports", label: "View Reports", icon: FileText },
-];
-
 const Dashboard = () => {
   const { isFounder } = useAuth();
   const { data, isLoading, isError } = useQuery<DashboardStats>({
@@ -155,7 +146,7 @@ const Dashboard = () => {
       icon: AlertTriangle,
       iconBg: "bg-red-100",
       iconColor: "text-red-600",
-      pipeline: "Pipeline 01: Churn Prediction",
+      pipeline: "Donor Turnover",
       action: { to: "/ml-insights?tab=churn", label: "Review" },
     },
     {
@@ -165,7 +156,7 @@ const Dashboard = () => {
       icon: ArrowUpCircle,
       iconBg: "bg-gold/10",
       iconColor: "text-gold",
-      pipeline: "Pipeline 02: Donation Capacity",
+      pipeline: "Donor Improvement",
       action: { to: "/ml-insights?tab=capacity", label: "View list" },
     },
     {
@@ -175,7 +166,7 @@ const Dashboard = () => {
       icon: CheckCircle2,
       iconBg: "bg-emerald-100",
       iconColor: "text-emerald-600",
-      pipeline: "Pipeline 04: Resident Outcomes",
+      pipeline: "Resident Outcomes",
       action: { to: "/ml-insights?tab=outcomes", label: "Review cases" },
     },
     {
@@ -185,34 +176,35 @@ const Dashboard = () => {
       icon: Building2,
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
-      pipeline: "Pipeline 05: Geographic Performance",
+      pipeline: "Safehouse Performance & Growth",
       action: { to: "/ml-insights?tab=geographic", label: "View map" },
     },
   ];
 
   return (
-    <DashboardLayout title="Dashboard">
+    <DashboardLayout title="Dashboard" fitViewport>
+      <div className="flex flex-col h-full gap-3">
       {isError && (
-        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive flex-shrink-0">
           Could not load dashboard stats from the server. Showing placeholders.
         </div>
       )}
 
       {/* Metric cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
         {metrics.map((m) => (
           <Card key={m.label} className="rounded-xl shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between mb-3">
-                <span className="text-sm text-muted-foreground">{m.label}</span>
-                <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <m.icon className="w-5 h-5 text-primary" aria-hidden="true" />
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between mb-1.5">
+                <span className="text-xs text-muted-foreground">{m.label}</span>
+                <div className="w-7 h-7 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <m.icon className="w-4 h-4 text-primary" aria-hidden="true" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-primary">
+              <div className="text-2xl font-bold text-primary leading-tight">
                 {isLoading ? "…" : m.value}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">{m.change}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{m.change}</p>
             </CardContent>
           </Card>
         ))}
@@ -220,38 +212,31 @@ const Dashboard = () => {
 
       {/* ML Insights row — Founder-only */}
       {isFounder && (
-        <div className="mb-2">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-            ML Insights
-          </h2>
-        </div>
-      )}
-      {isFounder && (
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
         {mlCards.map((card) => (
           <Card key={card.label} className="rounded-xl shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between mb-3">
+            <CardContent className="p-3">
+              <div className="flex items-start justify-between mb-1.5">
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm text-muted-foreground">{card.label}</span>
-                  <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
+                  <span className="text-xs text-muted-foreground">{card.label}</span>
+                  <p className="text-[9px] text-muted-foreground/60 mt-0.5 truncate">
                     {card.pipeline}
                   </p>
                 </div>
                 <div
-                  className={`w-9 h-9 rounded-lg ${card.iconBg} flex items-center justify-center flex-shrink-0 ml-2`}
+                  className={`w-7 h-7 rounded-lg ${card.iconBg} flex items-center justify-center flex-shrink-0 ml-2`}
                 >
-                  <card.icon className={`w-5 h-5 ${card.iconColor}`} aria-hidden="true" />
+                  <card.icon className={`w-4 h-4 ${card.iconColor}`} aria-hidden="true" />
                 </div>
               </div>
-              <div className="text-3xl font-bold text-foreground">
+              <div className="text-2xl font-bold text-foreground leading-tight">
                 {card.value}
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-muted-foreground">{card.sub}</p>
+              <div className="flex items-center justify-between mt-0.5">
+                <p className="text-[10px] text-muted-foreground truncate">{card.sub}</p>
                 <Link
                   to={card.action.to}
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="text-[10px] font-medium text-primary hover:underline flex-shrink-0 ml-2"
                   aria-label={`${card.action.label} — ${card.label}`}
                 >
                   {card.action.label} →
@@ -263,19 +248,19 @@ const Dashboard = () => {
       </div>
       )}
 
-      {/* Social media + recent activity */}
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+      {/* Social media + recent activity — flex-1 so they absorb remaining space */}
+      <div className="grid lg:grid-cols-2 gap-3 flex-1 min-h-0">
         {/* Social Media Overview — live from /api/social/stats */}
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl flex items-center gap-2 text-secondary">
-              <Globe className="w-5 h-5" aria-hidden="true" /> Social Media Overview
+        <Card className="rounded-xl shadow-sm flex flex-col min-h-0">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="text-base flex items-center gap-2 text-secondary">
+              <Globe className="w-4 h-4" aria-hidden="true" /> Social Media Overview
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-3 gap-4 pb-6 mb-4 border-b text-center">
+          <CardContent className="flex-1 min-h-0 overflow-y-auto">
+            <div className="grid grid-cols-3 gap-3 pb-3 mb-3 border-b text-center">
               <div>
-                <p className="text-2xl font-bold text-secondary">
+                <p className="text-xl font-bold text-secondary">
                   {socialData
                     ? socialData.totalReach >= 1000
                       ? `${(socialData.totalReach / 1000).toFixed(1)}K`
@@ -285,7 +270,7 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-1">Total Reach</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-secondary">
+                <p className="text-xl font-bold text-secondary">
                   {socialData
                     ? `${(socialData.avgEngagementRate * 100).toFixed(1)}%`
                     : "—"}
@@ -295,7 +280,7 @@ const Dashboard = () => {
                 </p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-secondary">
+                <p className="text-xl font-bold text-secondary">
                   {socialData
                     ? socialData.totalClickThroughs.toLocaleString()
                     : "—"}
@@ -305,7 +290,7 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {socialData && socialData.platformBreakdown.length > 0
                 ? socialData.platformBreakdown.slice(0, 5).map((p) => (
                     <div
@@ -351,12 +336,12 @@ const Dashboard = () => {
         </Card>
 
         {/* Recent Activity — live donations from the database */}
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl">Recent Activity</CardTitle>
+        <Card className="rounded-xl shadow-sm flex flex-col min-h-0">
+          <CardHeader className="pb-2 flex-shrink-0">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
+          <CardContent className="flex-1 min-h-0 overflow-y-auto">
+            <div className="space-y-3">
               {isLoading && (
                 <p className="text-sm text-muted-foreground">
                   Loading activity…
@@ -372,9 +357,9 @@ const Dashboard = () => {
                   a.amount,
                 ).toLocaleString()}`;
                 return (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-primary-light text-primary">
-                      <DollarSign className="w-4 h-4" aria-hidden="true" />
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-primary-light text-primary">
+                      <DollarSign className="w-3.5 h-3.5" aria-hidden="true" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{text}</p>
@@ -387,9 +372,9 @@ const Dashboard = () => {
                 );
               })}
               {data?.recentActivity && data.recentActivity.length < 3 && (
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-gold/10 text-gold">
-                    <Award className="w-4 h-4" aria-hidden="true" />
+                <div className="flex items-start gap-2">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 bg-gold/10 text-gold">
+                    <Award className="w-3.5 h-3.5" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">
@@ -406,21 +391,6 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Quick action cards */}
-      <div className="grid sm:grid-cols-3 gap-4">
-        {quickLinks.map((link) => (
-          <Link key={link.to} to={link.to}>
-            <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <link.icon className="w-5 h-5 text-primary" aria-hidden="true" />
-                  <span className="font-semibold">{link.label}</span>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
       </div>
     </DashboardLayout>
   );

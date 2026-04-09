@@ -17,13 +17,13 @@ import {
   Search,
   Plus,
   Send,
-  Filter,
   Pencil,
   Trash2,
   AlertTriangle,
   ArrowUpCircle,
   TrendingUp,
   Brain,
+  ChevronRight,
   HandCoins,
   Lock,
 } from "lucide-react";
@@ -32,6 +32,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import LogDonationDialog from "@/components/LogDonationDialog";
+import SendMessageDialog from "@/components/SendMessageDialog";
 import { useAuth } from "@/api/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
@@ -225,9 +226,30 @@ const Donors = () => {
   const isStaffOnly = hasRole("Staff") && !hasRole("Admin");
   const [logDonationOpen, setLogDonationOpen] = useState(false);
 
+  // ---- Message dialog state ----
+  const [msgOpen, setMsgOpen] = useState(false);
+  const [msgDonor, setMsgDonor] = useState<SupporterRow | null>(null);
+  const [bulkMsgOpen, setBulkMsgOpen] = useState(false);
+
+  const openSingleMessage = (row: SupporterRow) => {
+    setMsgDonor(row);
+    setMsgOpen(true);
+  };
+
+  // Map a SupporterRow into the shape SendMessageDialog expects.
+  const toDonorTarget = (s: SupporterRow) => ({
+    supporterId: s.supporterId,
+    displayName: displayName(s),
+    firstName: s.firstName,
+    lastName: s.lastName,
+    totalDonated: s.totalDonated,
+    lastGiftDate: s.lastGiftDate,
+  });
+
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<DonorTypeFilter>("all");
-  const [onlyAtRisk, setOnlyAtRisk] = useState(false);
+  type RiskFilter = "all" | "Active" | "Watch" | "At risk";
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   // Always fetch both donor types server-side, then filter client-side
   // for snappy toggles between Monetary / In-Kind / All.
@@ -259,13 +281,12 @@ const Donors = () => {
         if (!haystack.includes(q)) return false;
       }
 
-      if (onlyAtRisk) {
-        const risk = computeRisk(s);
-        if (risk !== "At risk" && risk !== "Watch") return false;
+      if (riskFilter !== "all") {
+        if (computeRisk(s) !== riskFilter) return false;
       }
       return true;
     });
-  }, [supporters, typeFilter, search, onlyAtRisk]);
+  }, [supporters, typeFilter, search, riskFilter]);
 
   // Summary counts for the type pills
   const counts = useMemo(
@@ -454,16 +475,31 @@ const Donors = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button
-            variant={onlyAtRisk ? "default" : "outline"}
-            size="sm"
-            onClick={() => setOnlyAtRisk((v) => !v)}
-          >
-            <Filter className="w-4 h-4 mr-1" /> At-risk
-          </Button>
+          <div className="flex items-center gap-1">
+            {(["all", "Active", "Watch", "At risk"] as RiskFilter[]).map((r) => (
+              <Button
+                key={r}
+                variant={riskFilter === r ? "default" : "outline"}
+                size="sm"
+                onClick={() => setRiskFilter(r)}
+                className="h-8"
+              >
+                {r === "all" ? "All" : r}
+              </Button>
+            ))}
+          </div>
         </div>
         {canWrite && (
           <div className="flex items-center gap-2">
+            {filtered.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setBulkMsgOpen(true)}
+              >
+                <Send className="w-4 h-4 mr-1" /> Message {filtered.length === supporters.length ? "all" : `${filtered.length}`}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -503,68 +539,36 @@ const Donors = () => {
         </Button>
       </div>
 
-      {/* ML Pipeline quick-links — Founder only */}
+      {/* ML Insights quick-links — Founder only */}
       {isFounder && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Brain className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              ML Insights
-            </h2>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-3">
-            <Link to="/ml-insights?tab=churn" className="group block">
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Pipeline 01</p>
-                    <p className="text-sm font-semibold text-red-700">Donor Churn Prediction</p>
-                  </div>
-                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-red-600/80 mb-2">
-                  Which donors are at risk of lapsing? Identifies churn candidates by recency and giving history.
-                </p>
-                <span className="text-xs font-medium text-red-600 group-hover:underline">
-                  View churn analysis →
-                </span>
-              </div>
-            </Link>
-            <Link to="/ml-insights?tab=capacity" className="group block">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Pipeline 02</p>
-                    <p className="text-sm font-semibold text-amber-700">Donation Capacity</p>
-                  </div>
-                  <ArrowUpCircle className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-amber-600/80 mb-2">
-                  Which donors have untapped giving potential? Tiers donors and flags upgrade opportunities.
-                </p>
-                <span className="text-xs font-medium text-amber-600 group-hover:underline">
-                  View capacity analysis →
-                </span>
-              </div>
-            </Link>
-            <Link to="/ml-insights?tab=roi" className="group block">
-              <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Pipeline 06</p>
-                    <p className="text-sm font-semibold text-violet-700">Channel ROI</p>
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-violet-500 flex-shrink-0" />
-                </div>
-                <p className="text-xs text-violet-600/80 mb-2">
-                  Which acquisition channels deliver the highest lifetime-value donors?
-                </p>
-                <span className="text-xs font-medium text-violet-600 group-hover:underline">
-                  View ROI analysis →
-                </span>
-              </div>
-            </Link>
-          </div>
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
+            <Brain className="w-3.5 h-3.5" /> ML Insights:
+          </span>
+          <Link
+            to="/ml-insights?tab=churn"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+            Donor Turnover
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
+          <Link
+            to="/ml-insights?tab=capacity"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <ArrowUpCircle className="w-3.5 h-3.5 text-amber-500" />
+            Donor Improvement
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
+          <Link
+            to="/ml-insights?tab=roi"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
+            Channel ROI
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
         </div>
       )}
 
@@ -658,7 +662,8 @@ const Donors = () => {
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8"
-                      aria-label={`Contact ${displayName(s)}`}
+                      aria-label={`Message ${displayName(s)}`}
+                      onClick={() => openSingleMessage(s)}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
@@ -944,6 +949,23 @@ const Donors = () => {
       <LogDonationDialog
         open={logDonationOpen}
         onOpenChange={setLogDonationOpen}
+      />
+
+      {/* ---- Single message dialog ---- */}
+      <SendMessageDialog
+        open={msgOpen}
+        onOpenChange={(v) => {
+          setMsgOpen(v);
+          if (!v) setMsgDonor(null);
+        }}
+        donor={msgDonor ? toDonorTarget(msgDonor) : null}
+      />
+
+      {/* ---- Bulk message dialog ---- */}
+      <SendMessageDialog
+        open={bulkMsgOpen}
+        onOpenChange={setBulkMsgOpen}
+        donors={filtered.map(toDonorTarget)}
       />
     </DashboardLayout>
   );

@@ -573,4 +573,174 @@ public class MLInsightsController : ControllerBase
             topChannelByRetention = enrichedChannelStats.OrderByDescending(c => c.retentionRate).FirstOrDefault()?.channel
         });
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // GET /api/mlinsights/partner-effectiveness — Pipeline 07
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpGet("partner-effectiveness")]
+    public async Task<IActionResult> GetPartnerEffectiveness()
+    {
+        var activePartners = await _context.Partners
+            .AsNoTracking()
+            .Where(p => p.Status == "Active")
+            .ToListAsync();
+
+        var activeAssignments = await _context.PartnerAssignments
+            .AsNoTracking()
+            .Where(a => a.Status == "Active")
+            .ToListAsync();
+
+        var safehouses = await _context.Safehouses
+            .AsNoTracking()
+            .Select(s => new { s.SafehouseId, SafehouseName = s.Name })
+            .ToListAsync();
+
+        // Partners by role type
+        var byRoleType = activePartners
+            .GroupBy(p => p.RoleType)
+            .Select(g => new { role = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        // Partners by org type
+        var byType = activePartners
+            .GroupBy(p => p.PartnerType)
+            .Select(g => new { type = g.Key, count = g.Count() })
+            .ToList();
+
+        // Assignments by program area
+        var byProgramArea = activeAssignments
+            .GroupBy(a => a.ProgramArea)
+            .Select(g => new { area = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        // Partners by region
+        var byRegion = activePartners
+            .GroupBy(p => p.Region)
+            .Select(g => new { region = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        // Per-safehouse coverage
+        var allAreas = new[] { "Education", "Wellbeing", "Operations", "Logistics" };
+        var coveragePerSafehouse = safehouses.Select(sh =>
+        {
+            var areasCovered = activeAssignments
+                .Where(a => a.SafehouseId == sh.SafehouseId)
+                .Select(a => a.ProgramArea)
+                .Distinct()
+                .ToHashSet();
+            var partnerCount = activeAssignments.Count(a => a.SafehouseId == sh.SafehouseId);
+            return new
+            {
+                safehouseName = sh.SafehouseName,
+                partnerCount,
+                areasCovered = areasCovered.Count,
+                hasEducation = areasCovered.Contains("Education"),
+                hasWellbeing = areasCovered.Contains("Wellbeing"),
+                hasOperations = areasCovered.Contains("Operations"),
+                hasLogistics = areasCovered.Contains("Logistics"),
+                missingAreas = allAreas.Where(a => !areasCovered.Contains(a)).ToList()
+            };
+        }).OrderByDescending(x => x.areasCovered).ToList();
+
+        int safehousesWithFullCoverage = coveragePerSafehouse.Count(s => s.areasCovered >= 3);
+        double avgPartnersPerSafehouse = coveragePerSafehouse.Any()
+            ? Math.Round(coveragePerSafehouse.Average(s => s.partnerCount), 1) : 0;
+        double avgAreasPerSafehouse = coveragePerSafehouse.Any()
+            ? Math.Round(coveragePerSafehouse.Average(s => s.areasCovered), 1) : 0;
+
+        return Ok(new
+        {
+            totalActivePartners = activePartners.Count,
+            totalActiveAssignments = activeAssignments.Count,
+            avgPartnersPerSafehouse,
+            avgAreasPerSafehouse,
+            safehousesWithFullCoverage,
+            topRoleType = byRoleType.FirstOrDefault()?.role,
+            byRoleType,
+            byType,
+            byProgramArea,
+            byRegion,
+            coveragePerSafehouse
+        });
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // GET /api/mlinsights/inkind-needs — Pipeline 08
+    // ──────────────────────────────────────────────────────────────────────────
+    [HttpGet("inkind-needs")]
+    public async Task<IActionResult> GetInKindNeeds()
+    {
+        var items = await _context.InKindDonationItems
+            .AsNoTracking()
+            .Join(_context.Donations.AsNoTracking(),
+                  i => i.DonationId,
+                  d => d.DonationId,
+                  (i, d) => new
+                  {
+                      i.ItemCategory,
+                      i.Quantity,
+                      i.EstimatedUnitValue,
+                      i.ReceivedCondition,
+                      i.IntendedUse,
+                      d.DonationDate
+                  })
+            .ToListAsync();
+
+        // By category — quantity and estimated value
+        var byCategory = items
+            .GroupBy(i => i.ItemCategory)
+            .Select(g => new
+            {
+                category = g.Key,
+                quantity = g.Sum(i => i.Quantity),
+                estimatedValue = Math.Round((double)g.Sum(i => i.EstimatedUnitValue * i.Quantity), 0)
+            })
+            .OrderByDescending(x => x.quantity)
+            .ToList();
+
+        // By condition
+        var byCondition = items
+            .GroupBy(i => i.ReceivedCondition)
+            .Select(g => new { condition = g.Key, count = g.Count() })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        // By intended use
+        var byIntendedUse = items
+            .Where(i => i.IntendedUse != null)
+            .GroupBy(i => i.IntendedUse!)
+            .Select(g => new { use = g.Key, quantity = g.Sum(i => i.Quantity) })
+            .OrderByDescending(x => x.quantity)
+            .ToList();
+
+        // Monthly trend — last 12 months
+        var cutoff = DateTime.UtcNow.AddMonths(-12);
+        var byMonth = items
+            .Where(i => i.DonationDate.HasValue && i.DonationDate.Value >= cutoff)
+            .GroupBy(i => i.DonationDate!.Value.ToString("yyyy-MM"))
+            .Select(g => new { month = g.Key, quantity = g.Sum(i => i.Quantity) })
+            .OrderBy(x => x.month)
+            .ToList();
+
+        int totalQuantity = items.Sum(i => i.Quantity);
+        decimal totalEstimatedValue = items.Sum(i => i.EstimatedUnitValue * i.Quantity);
+        string topCategory = byCategory.FirstOrDefault()?.category ?? "—";
+        int goodOrBetterCount = items.Count(i => i.ReceivedCondition == "New" || i.ReceivedCondition == "Good");
+        double conditionRate = items.Any() ? Math.Round((double)goodOrBetterCount / items.Count, 3) : 0;
+
+        return Ok(new
+        {
+            totalQuantity,
+            totalEstimatedValue = Math.Round(totalEstimatedValue, 0),
+            topCategory,
+            conditionRate,
+            byCategory,
+            byCondition,
+            byIntendedUse,
+            byMonth
+        });
+    }
 }

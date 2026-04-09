@@ -7,6 +7,8 @@ import StatPill from "@/components/StatPill";
 import StatsCounter from "@/components/StatsCounter";
 import SafehouseMap from "@/components/SafehouseMap";
 import heroImage from "@/assets/hero-image.jpg";
+import handsImage from "@/assets/hands.jpg";
+
 import { UserCheck, Heart, ArrowRight, BookOpen, Home, TrendingUp, ShieldCheck, Smile, X, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
@@ -87,44 +89,49 @@ const Index = () => {
 
   return (
   <div className="min-h-screen bg-background">
-    {/* First-visit donate banner (unauthenticated, dismissible) */}
-    {showFirstVisitBanner && (
-      <div className="gradient-ember text-primary-foreground">
-        <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-            <span className="truncate">
-              First time here? A $25 gift can shelter a girl for 30 days.
-            </span>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Link to="/donate">
-              <Button
-                size="sm"
-                variant="secondary"
-                className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+    {/* Sticky header wrapper — keeps the first-visit banner and PublicNav
+        glued together so scrolling back up never leaves the nav floating
+        on top of the re-emerging banner. */}
+    <div className="sticky top-0 z-50">
+      {/* First-visit donate banner (unauthenticated, dismissible) */}
+      {showFirstVisitBanner && (
+        <div className="gradient-ember text-primary-foreground">
+          <div className="container flex items-center justify-between gap-4 py-2.5 text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <Sparkles className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+              <span className="truncate">
+                First time here? A $25 gift can shelter a girl for 30 days.
+              </span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link to="/donate">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-card text-primary hover:bg-card/90 h-7 text-xs font-semibold"
+                >
+                  Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
+                </Button>
+              </Link>
+              <button
+                type="button"
+                onClick={dismissBanner}
+                aria-label="Dismiss donate banner"
+                className="p-1 rounded hover:bg-card/10 transition-colors"
               >
-                Donate now <Heart className="w-3 h-3 ml-1" aria-hidden="true" />
-              </Button>
-            </Link>
-            <button
-              type="button"
-              onClick={dismissBanner}
-              aria-label="Dismiss donate banner"
-              className="p-1 rounded hover:bg-card/10 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    <PublicNav />
+      <PublicNav />
+    </div>
 
     <main>
-    {/* Hero */}
-    <section id="mission" className="relative overflow-hidden">
+    {/* Hero — fixed so it never moves; content sections scroll over it */}
+    <section id="mission" className="fixed inset-0 z-0 flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <img src={heroImage} alt="Girls supported by Ember" className="w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
@@ -138,6 +145,22 @@ const Index = () => {
             Ember empowers NGOs in the Philippines to manage donors, safehouses, and the girls in their care — all in one warm, secure platform.
           </p>
           <div className="flex flex-wrap gap-3">
+          <div className="animate-fade-in-up-1 flex items-baseline gap-3">
+            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[hsl(11_63%_38%)]">
+              Ember
+            </span>
+            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white dark:text-black">
+              Foundation
+            </span>
+          </div>
+          <h1 className="animate-fade-in-up-2 text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-card leading-tight">
+            Every girl deserves
+            <br />
+            <span className="text-primary">a safe place</span>
+            <br />
+            to heal & grow
+          </h1>
+          <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
             <Link to="/donate">
               <Button variant="hero" size="lg" className="text-base">
                 Support a girl's journey <Heart className="w-4 h-4 ml-1" aria-hidden="true" />
@@ -169,12 +192,15 @@ const Index = () => {
       </div>
     </section>
 
+    {/* Spacer — pushes content below the fixed full-screen hero */}
+    <div className="relative z-10" style={{ height: "100vh" }} />
+
     {/* Mission */}
-    <section id="mission-section" className="bg-card py-20 md:py-28">
+    <section id="mission-section" className="relative z-10 bg-card py-20 md:py-28">
       <div className="container">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <p className="text-sm font-semibold text-primary uppercase tracking-widest">Our mission</p>
-          <h2 className="text-3xl md:text-4xl font-bold leading-tight">
+          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             Restoring hope, one girl at a time
           </h2>
           <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
@@ -210,6 +236,36 @@ const Index = () => {
                 Equip girls with skills and family support to return confidently to their communities.
               </p>
             </div>
+            <FlipCard
+              icon={<Heart className="w-5 h-5 text-primary" />}
+              title="Protect"
+              description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
+              backContent={
+                <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
+                  We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
+                </p>
+              }
+            />
+            <FlipCard
+              icon={<BookOpen className="w-5 h-5 text-primary" />}
+              title="Rehabilitate"
+              description="Walk alongside each girl through counseling, education, and personalized care plans."
+              backContent={
+                <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
+                  Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
+                </p>
+              }
+            />
+            <FlipCard
+              icon={<UserCheck className="w-5 h-5 text-primary" />}
+              title="Reintegrate"
+              description="Equip girls with skills and family support to return confidently to their communities."
+              backContent={
+                <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
+                  We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
+                </p>
+              }
+            />
           </div>
         </div>
       </div>
@@ -230,12 +286,38 @@ const Index = () => {
         ]}
       />
     )}
+    {/* Image + Donation side-by-side */}
+    <section className="relative z-10 grid md:grid-cols-2" style={{ minHeight: "480px" }}>
+      {/* Left: photo */}
+      <div className="overflow-hidden" style={{ minHeight: "480px" }}>
+        <img
+          src={handsImage}
+          alt="Team joining hands in solidarity"
+          className="w-full h-full object-cover object-center"
+        />
+      </div>
+      {/* Right: donation CTA */}
+      <div className="gradient-ember flex flex-col items-center justify-center p-12 md:p-16 text-center space-y-6">
+        <Heart className="w-10 h-10 text-primary-foreground/80" aria-hidden="true" />
+        <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary-foreground leading-tight">
+          Be a part of her story
+        </h2>
+        <p className="text-primary-foreground/80 max-w-sm leading-relaxed">
+          Your support provides shelter, education, and healing for a girl who needs it most. Together, we can restore futures.
+        </p>
+        <Link to="/donate">
+          <Button size="lg" className="bg-card text-primary hover:bg-card/90 text-base">
+            Support a girl <ArrowRight className="w-4 h-4 ml-1" aria-hidden="true" />
+          </Button>
+        </Link>
+      </div>
+    </section>
 
     {/* Journey of Care */}
-    <section id="how-we-care" className="container py-20 md:py-28">
+    <section id="how-we-care" className="relative z-10 py-20 md:py-28 bg-[hsl(11_60%_88%)] dark:bg-[hsl(11_40%_14%)]"><div className="container">
       <div className="text-center mb-14">
         <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-2">How we care</p>
-        <h2 className="text-3xl md:text-4xl font-bold">Every girl receives consistent, personalized care</h2>
+        <h2 className="font-serif text-4xl md:text-5xl font-bold">Every girl receives consistent, personalized care</h2>
         <p className="text-muted-foreground mt-4 max-w-xl mx-auto text-sm leading-relaxed">
           From daily counseling sessions to family home visits, our team is present at every step of each girl's healing journey.
         </p>
@@ -252,8 +334,7 @@ const Index = () => {
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care?.totalCounselingSessions.toLocaleString())}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Counseling sessions held</p>
-              <p className="text-xs text-muted-foreground mt-1">One-on-one and group sessions with social workers</p>
+              <p className="text-base font-semibold text-foreground mt-1">Counseling sessions held</p>
             </div>
           </CardContent>
         </Card>
@@ -266,8 +347,7 @@ const Index = () => {
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care?.totalHomeVisits.toLocaleString())}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Home & family visits made</p>
-              <p className="text-xs text-muted-foreground mt-1">Checking on girls in their communities and homes</p>
+              <p className="text-base font-semibold text-foreground mt-1">Home & family visits made</p>
             </div>
           </CardContent>
         </Card>
@@ -279,9 +359,9 @@ const Index = () => {
             <div>
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.progressRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.progressRate * 100) : undefined} suffix="%" />}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Of sessions show measurable progress</p>
-              <p className="text-xs text-muted-foreground mt-1">Noted by social workers after each session</p>
+              <p className="text-base font-semibold text-foreground mt-1">Of sessions show measurable progress</p>
             </div>
           </CardContent>
         </Card>
@@ -289,7 +369,7 @@ const Index = () => {
 
       {/* Bottom row: transformation metrics */}
       <div className="grid md:grid-cols-3 gap-6">
-        <Card className="border-0 shadow-md rounded-xl bg-primary-light/30">
+        <Card className="border-0 shadow-md rounded-xl">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <Smile className="w-6 h-6 text-primary" />
@@ -297,13 +377,13 @@ const Index = () => {
             <div>
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.positiveEndRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.positiveEndRate * 100) : undefined} suffix="%" />}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Sessions end on a hopeful note</p>
-              <p className="text-xs text-muted-foreground mt-1">Girls leaving sessions feeling calm, hopeful, or motivated</p>
+              <p className="text-base font-semibold text-foreground mt-1">Sessions end on a hopeful note</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl bg-primary-light/30">
+        <Card className="border-0 shadow-md rounded-xl">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <ShieldCheck className="w-6 h-6 text-primary" />
@@ -312,12 +392,11 @@ const Index = () => {
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care?.girlsRiskImproved)}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Girls moved from high to low risk</p>
-              <p className="text-xs text-muted-foreground mt-1">Reduced from critical or high risk to medium or low</p>
+              <p className="text-base font-semibold text-foreground mt-1">Girls moved from high to low risk</p>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-md rounded-xl bg-primary-light/30">
+        <Card className="border-0 shadow-md rounded-xl">
           <CardContent className="p-8 flex items-start gap-5">
             <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center shrink-0">
               <UserCheck className="w-6 h-6 text-primary" />
@@ -325,17 +404,18 @@ const Index = () => {
             <div>
               <p className="text-3xl font-extrabold text-foreground">
                 {careStat(careStoryQuery.isLoading, care ? `${Math.round(care.favorableVisitRate * 100)}%` : undefined)}
+                {careStoryQuery.isLoading ? "…" : <AnimatedCounter value={care ? Math.round(care.favorableVisitRate * 100) : undefined} suffix="%" />}
               </p>
-              <p className="text-sm font-medium text-muted-foreground mt-1">Home visits end favorably</p>
-              <p className="text-xs text-muted-foreground mt-1">Family environments assessed as safe and supportive</p>
+              <p className="text-base font-semibold text-foreground mt-1">Home visits end favorably</p>
             </div>
           </CardContent>
         </Card>
       </div>
+      </div>
     </section>
 
     {/* Impact / Safehouses */}
-    <section id="impact" className="bg-card py-20 md:py-28">
+    <section id="impact" className="relative z-10 bg-card py-20 md:py-28">
       <div className="container">
         <div className="text-center mb-14">
           <p className="text-sm font-semibold text-secondary uppercase tracking-widest mb-2">Our reach</p>
@@ -352,25 +432,8 @@ const Index = () => {
 
     </main>
 
-    {/* Donation CTA */}
-    <section className="gradient-ember py-16 md:py-20">
-      <div className="container text-center space-y-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground">
-          Your generosity changes lives
-        </h2>
-        <p className="text-primary-foreground/80 max-w-xl mx-auto">
-          A monthly gift of $25 can support one girl for 30 days — providing shelter, education, and a path to healing.
-        </p>
-        <Link to="/donate">
-          <Button size="lg" className="bg-card text-primary hover:bg-card/90 text-base mt-2">
-            Start giving monthly <ArrowRight className="w-4 h-4 ml-1" aria-hidden="true" />
-          </Button>
-        </Link>
-      </div>
-    </section>
-
     {/* Footer */}
-    <footer className="bg-foreground text-card/70 py-12">
+    <footer className="relative z-10 bg-foreground text-card/70 py-12">
       <div className="container">
         <div className="grid md:grid-cols-3 gap-8">
           <div>
