@@ -45,6 +45,9 @@ interface DonationRow {
   campaignName: string | null;
   isRecurring: boolean;
   channelSource: string | null;
+  // Notes carries the item description for in-kind donations logged by
+  // staff (e.g. "5 boxes of school supplies"). Null for most cash gifts.
+  notes: string | null;
 }
 
 interface Campaign {
@@ -324,22 +327,50 @@ const DonorPortal = () => {
               </p>
             )}
             <div className="divide-y">
-              {donations.slice(0, 5).map((d) => (
-                <div
-                  key={d.donationId}
-                  className="grid grid-cols-[1fr_1.4fr_auto] gap-4 py-2.5 items-center text-sm"
-                >
-                  <span className="text-muted-foreground">
-                    {formatDate(d.donationDate)}
-                  </span>
-                  <span className="font-medium">
-                    {d.campaignName ?? "General Fund"}
-                  </span>
-                  <span className="text-right font-semibold">
-                    {formatCurrency(d.amount ?? d.estimatedValue ?? 0)}
-                  </span>
-                </div>
-              ))}
+              {donations.slice(0, 5).map((d) => {
+                // In-kind donations come in with donationType containing
+                // "InKind" / "In-Kind", a null `amount`, an `estimatedValue`
+                // set by staff, and an item description in `notes`. Show a
+                // gold badge + the item description so donors can tell
+                // cash and non-cash gifts apart on the history table.
+                const isInKind =
+                  !!d.donationType && /in[\s-]?kind/i.test(d.donationType);
+                return (
+                  <div
+                    key={d.donationId}
+                    className="grid grid-cols-[1fr_1.4fr_auto] gap-4 py-2.5 items-start text-sm"
+                  >
+                    <span className="text-muted-foreground">
+                      {formatDate(d.donationDate)}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium truncate">
+                          {d.campaignName ?? "General Fund"}
+                        </span>
+                        {isInKind && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
+                            In-Kind
+                          </span>
+                        )}
+                      </div>
+                      {isInKind && d.notes && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {d.notes}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-right font-semibold whitespace-nowrap">
+                      {formatCurrency(d.amount ?? d.estimatedValue ?? 0)}
+                      {isInKind && (
+                        <span className="block text-[10px] font-normal text-muted-foreground">
+                          est. value
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

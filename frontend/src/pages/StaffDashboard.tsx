@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import LogDonationDialog from "@/components/LogDonationDialog";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { useAuth } from "@/api/AuthContext";
@@ -18,6 +19,7 @@ import {
   Users,
   AlertTriangle,
   ArrowRight,
+  HandCoins,
 } from "lucide-react";
 
 // ---- Types (match existing API projections) ----
@@ -149,6 +151,7 @@ const kindMeta: Record<
 
 const StaffDashboard = () => {
   const { user } = useAuth();
+  const [logDonationOpen, setLogDonationOpen] = useState(false);
 
   // Profile block (region, city, admin scope).
   const { data: me } = useQuery<MeResponse>({
@@ -616,7 +619,7 @@ const StaffDashboard = () => {
       </div>
 
       {/* Quick actions */}
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { to: "/residents", label: "My residents", icon: UserCircle },
           { to: "/process-recording", label: "Process recording", icon: NotebookPen },
@@ -634,7 +637,30 @@ const StaffDashboard = () => {
             </Card>
           </Link>
         ))}
+        {/* Log-donation tile — Staff's only path into the donation flow.
+            Opens the shared LogDonationDialog, which walks through
+            type → donor match → details and posts to /api/donations. */}
+        <button
+          type="button"
+          onClick={() => setLogDonationOpen(true)}
+          className="text-left"
+        >
+          <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <HandCoins className="w-5 h-5 text-primary" />
+                <span className="font-semibold">Log donation</span>
+              </div>
+              <ArrowRight className="w-5 h-5 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </button>
       </div>
+
+      <LogDonationDialog
+        open={logDonationOpen}
+        onOpenChange={setLogDonationOpen}
+      />
 
       {/* Tiny footer nudge about the old weekly check-in form */}
       <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">

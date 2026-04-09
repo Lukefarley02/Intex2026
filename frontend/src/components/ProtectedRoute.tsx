@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/api/AuthContext";
 
 interface ProtectedRouteProps {
@@ -9,7 +9,9 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user, isFounder } = useAuth();
+  const { isAuthenticated, isLoading, user, isFounder, mustChangePassword } =
+    useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -21,6 +23,14 @@ function ProtectedRoute({ children, roles, founderOnly }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Hard stop for users whose account was provisioned with a temporary
+  // seed password (e.g. new donors created by staff via the Log Donation
+  // flow). Until they've reset it, the only page they're allowed on is
+  // Account Settings. The banner on that page handles the reset flow.
+  if (mustChangePassword && location.pathname !== "/account") {
+    return <Navigate to="/account" replace />;
   }
 
   if (roles && roles.length > 0) {

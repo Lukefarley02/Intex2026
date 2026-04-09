@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useAuth } from "@/api/AuthContext";
 import { useTheme, type ThemeMode } from "@/api/ThemeContext";
-import { Sun, Moon, Monitor, Mail, KeyRound, Trash2 } from "lucide-react";
+import { Sun, Moon, Monitor, Mail, KeyRound, Trash2, ShieldAlert } from "lucide-react";
 
 // The API base the AuthContext was built against. Duplicated here because
 // apiFetch swallows server error messages and we want to surface things like
@@ -72,7 +72,13 @@ const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof Sun; h
 ];
 
 const AccountSettings = () => {
-  const { user, logout } = useAuth();
+  const {
+    user,
+    logout,
+    mustChangePassword,
+    clearMustChangePassword,
+    setToken,
+  } = useAuth();
   const { mode, resolved, setMode } = useTheme();
   const navigate = useNavigate();
 
@@ -140,9 +146,9 @@ const AccountSettings = () => {
       setPwStatus({ kind: "error", message: "New passwords do not match." });
       return;
     }
-    // Mirror the hardened password policy: length ≥ 12, upper, lower, digit, symbol.
+    // Mirror the hardened password policy: length ≥ 14, upper, lower, digit, symbol.
     const policyOk =
-      newPw.length >= 12 &&
+      newPw.length >= 14 &&
       /[A-Z]/.test(newPw) &&
       /[a-z]/.test(newPw) &&
       /[0-9]/.test(newPw) &&
@@ -150,7 +156,7 @@ const AccountSettings = () => {
     if (!policyOk) {
       setPwStatus({
         kind: "error",
-        message: "Password must be at least 12 characters and include uppercase, lowercase, a digit, and a symbol.",
+        message: "Password must be at least 14 characters and include uppercase, lowercase, a digit, and a symbol.",
       });
       return;
     }
@@ -165,10 +171,26 @@ const AccountSettings = () => {
       setPwStatus({ kind: "error", message: extractErrorMessage(data, "Failed to update password.") });
       return;
     }
+    // The backend returns a fresh AuthResponse (with a rotated security
+    // stamp) so our current JWT stays valid. Swap it into sessionStorage +
+    // AuthContext, clear the forced-reset flag, and if this reset was the
+    // mandatory first-login kind, bounce the user into the right dashboard.
+    if (data && typeof data === "object" && "token" in data) {
+      setToken((data as { token: string }).token);
+    }
+    const wasForced = mustChangePassword;
+    clearMustChangePassword();
     setPwStatus({ kind: "success", message: "Password updated successfully." });
     setCurrentPw("");
     setNewPw("");
     setConfirmPw("");
+    if (wasForced) {
+      setTimeout(() => {
+        const roles = user?.roles ?? [];
+        if (roles.includes("Admin") || roles.includes("Staff")) navigate("/dashboard");
+        else navigate("/my-impact");
+      }, 900);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -196,6 +218,25 @@ const AccountSettings = () => {
   return (
     <DashboardLayout title="Account Settings">
       <div className="max-w-3xl mx-auto space-y-6">
+        {/* Forced-reset banner — shown when the user was provisioned with a
+            temporary seed password (e.g. new donor created by staff via the
+            Log Donation flow). Until they reset, ProtectedRoute pins them
+            to this page so the banner is the only thing they can act on. */}
+        {mustChangePassword && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 p-4 flex items-start gap-3 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800">
+            <ShieldAlert className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold">Set a new password to continue</p>
+              <p className="text-sm">
+                Your account was created for you with a temporary password.
+                Please choose a permanent password below before using the
+                rest of the site. Your temporary password is the "current
+                password" for this form.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Account overview */}
         <Card>
           <CardHeader>
@@ -317,7 +358,7 @@ const AccountSettings = () => {
               <KeyRound className="w-5 h-5" /> Change password
             </CardTitle>
             <CardDescription>
-              Passwords must be at least 12 characters and include upper, lower, digit, and a symbol.
+              Passwords must be at least 14 characters and include upper, lower, digit, and a symbol.
             </CardDescription>
           </CardHeader>
           <CardContent>
