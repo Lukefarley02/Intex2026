@@ -8,7 +8,7 @@ function CookieConsent() {
     const consent = document.cookie
       .split('; ')
       .find(row => row.startsWith('cookie_consent='));
-    
+
     // If no choice has been made yet, show the banner
     if (!consent) {
       setVisible(true);
@@ -50,7 +50,7 @@ function CookieConsent() {
       flexWrap: 'wrap',
     }}>
       <p style={{ margin: 0, fontSize: '0.9rem', color: '#ccc', flex: 1 }}>
-        We use cookies to keep you logged in and remember your preferences. 
+        We use cookies to keep you logged in and remember your preferences.
         See our{' '}
         <a href="/privacy" style={{ color: '#e94560' }}>
           Privacy Policy
