@@ -21,4 +21,6 @@ public class ApplicationUser : IdentityUser
     /// <summary>The city/location this user is scoped to (null = region-wide or company-wide).</summary>
     public string? City { get; set; }
 
- 
+    /// <summary>Forces the user to change their password on next login.</summary>
+    public bool MustChangePassword { get; set; }
+}
