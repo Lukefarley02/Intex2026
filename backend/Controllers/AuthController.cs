@@ -13,6 +13,9 @@ namespace Intex2026.Api.Controllers;
 public record RegisterRequest(string Email, string Password, string? Role = null, string? Region = null, string? City = null);
 public record LoginRequest(string Email, string Password);
 public record AuthResponse(string Token, string Email, IList<string> Roles, string? Region, string? City);
+public record ChangeEmailRequest(string NewEmail, string CurrentPassword);
+public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public record DeleteAccountRequest(string CurrentPassword);
 
 // ── Controller ────────────────────────────────────────────────────────────────
 [ApiController]
@@ -114,6 +117,76 @@ public class AuthController : ControllerBase
                 ? (user.Region == null ? "founder" : user.City == null ? "region" : "location")
                 : null
         });
+    }
+
+    // POST /api/auth/change-email
+    // Changes the authenticated user's email. Requires the current password
+    // to confirm identity. Returns a fresh JWT because the email (which is
+    // the UserName and the `ClaimTypes.Name` claim) has changed.
+    [Authorize]
+    [HttpPost("change-email")]
+    public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.NewEmail))
+            return BadRequest(new { message = "New email is required." });
+
+        var user = await _userManager.FindByEmailAsync(User.Identity!.Name!);
+        if (user == null) return Unauthorized();
+
+        var pwOk = await _userManager.CheckPasswordAsync(user, request.CurrentPassword);
+        if (!pwOk) return BadRequest(new { message = "Current password is incorrect." });
+
+        // Make sure no other user already owns that email
+        var existing = await _userManager.FindByEmailAsync(request.NewEmail);
+        if (existing != null && existing.Id != user.Id)
+            return BadRequest(new { message = "That email is already in use." });
+
+        var setEmail = await _userManager.SetEmailAsync(user, request.NewEmail);
+        if (!setEmail.Succeeded) return BadRequest(setEmail.Errors);
+        var setUserName = await _userManager.SetUserNameAsync(user, request.NewEmail);
+        if (!setUserName.Succeeded) return BadRequest(setUserName.Errors);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwt(user, roles);
+        return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City));
+    }
+
+    // POST /api/auth/change-password
+    // Changes the authenticated user's password using ASP.NET Identity's
+    // built-in ChangePasswordAsync which validates current password and
+    // enforces the configured password policy.
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(User.Identity!.Name!);
+        if (user == null) return Unauthorized();
+
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        return Ok(new { message = "Password changed successfully." });
+    }
+
+    // DELETE /api/auth/account
+    // Permanently deletes the authenticated user's account after confirming
+    // their current password. This only removes the Identity record — any
+    // donation / supporter rows that reference the email remain so historical
+    // giving data stays intact.
+    [Authorize]
+    [HttpDelete("account")]
+    public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(User.Identity!.Name!);
+        if (user == null) return Unauthorized();
+
+        var pwOk = await _userManager.CheckPasswordAsync(user, request.CurrentPassword);
+        if (!pwOk) return BadRequest(new { message = "Current password is incorrect." });
+
+        var result = await _userManager.DeleteAsync(user);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+
+        return Ok(new { message = "Account deleted." });
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

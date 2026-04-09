@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/api/AuthContext";
+import { ThemeProvider } from "@/api/ThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieConsent from "@/components/CookieConsent";
 
@@ -25,6 +26,7 @@ import Admin from "./pages/Admin";
 import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
 import MLInsights from "./pages/MLInsights";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ const DashboardRouter = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -130,6 +133,16 @@ const App = () => (
               }
             />
 
+            {/* Any authenticated user can manage their own account */}
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff", "Donor"]}>
+                  <AccountSettings />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/ml-insights"
               element={
@@ -154,6 +167,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
