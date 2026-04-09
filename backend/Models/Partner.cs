@@ -15,7 +15,7 @@ public class Partner
     [Column("phone")] public string? Phone { get; set; }
     [Column("region")] public string Region { get; set; } = "";
     [Column("status")] public string Status { get; set; } = "Active";
-    [Column("start_date")] public DateOnly StartDate { get; set; }
-    [Column("end_date")] public DateOnly? EndDate { get; set; }
+    [Column("start_date")] public DateTime? StartDate { get; set; }
+    [Column("end_date")] public DateTime? EndDate { get; set; }
     [Column("notes")] public string? Notes { get; set; }
 }
