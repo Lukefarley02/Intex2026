@@ -208,7 +208,6 @@ const Index = () => {
             <FlipCard
               icon={<Heart className="w-5 h-5 text-primary" />}
               title="Protect"
-              description="Provide safe shelter and immediate care for girls rescued from dangerous situations."
               backContent={
                 <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
                   We create sanctuaries where girls find immediate safety, medical care, and a team dedicated to their wellbeing.
@@ -218,7 +217,6 @@ const Index = () => {
             <FlipCard
               icon={<BookOpen className="w-5 h-5 text-primary" />}
               title="Rehabilitate"
-              description="Walk alongside each girl through counseling, education, and personalized care plans."
               backContent={
                 <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
                   Through counseling, education, skills training, and community support, we help each girl reclaim hope and possibility.
@@ -228,7 +226,6 @@ const Index = () => {
             <FlipCard
               icon={<UserCheck className="w-5 h-5 text-primary" />}
               title="Reintegrate"
-              description="Equip girls with skills and family support to return confidently to their communities."
               backContent={
                 <p className="text-sm font-medium leading-relaxed tracking-wide opacity-90">
                   We empower girls with economic skills, reconcile families, and ensure safe transitions back to their communities.
