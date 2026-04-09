@@ -29,35 +29,11 @@ public class DonorPortalController : ControllerBase
             return Unauthorized();
 
         var supporter = await _context.Supporters
+            .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Email == email);
 
-        // Lazy-create a Supporters row for donors who registered before this
-        // fix was deployed (or via a path that skipped supporter creation).
         if (supporter == null)
-        {
-            var nextId = await _context.Supporters.AnyAsync()
-                ? await _context.Supporters.MaxAsync(s => s.SupporterId) + 1
-                : 1;
-
-            var namePart = email.Split('@')[0];
-            supporter = new Models.Supporter
-            {
-                SupporterId        = nextId,
-                SupporterType      = "MonetaryDonor",
-                FirstName          = "",
-                LastName           = "",
-                DisplayName        = namePart,
-                Email              = email,
-                Country            = "United States",
-                Region             = "Online",
-                RelationshipType   = "Donor",
-                AcquisitionChannel = "Website",
-                Status             = "Active",
-                CreatedAt          = DateTime.UtcNow,
-            };
-            _context.Supporters.Add(supporter);
-            await _context.SaveChangesAsync();
-        }
+            return NotFound(new { message = "No supporter record found for this account." });
 
         return Ok(new
         {
@@ -142,7 +118,7 @@ public class DonorPortalController : ControllerBase
                 total_donated = 0m,
                 total_estimated_value = 0m,
                 donation_count = 0,
-                months_of_care = 0,
+                girls_helped = 0,
                 cost_per_girl = costPerGirl,
                 first_donation_date = (DateTime?)null,
                 most_recent_donation_date = (DateTime?)null,
@@ -162,7 +138,7 @@ public class DonorPortalController : ControllerBase
                 total_donated = 0m,
                 total_estimated_value = 0m,
                 donation_count = 0,
-                months_of_care = 0,
+                girls_helped = 0,
                 cost_per_girl = costPerGirl,
                 first_donation_date = (DateTime?)null,
                 most_recent_donation_date = (DateTime?)null,
@@ -182,20 +158,12 @@ public class DonorPortalController : ControllerBase
                                     .OrderBy(c => c)
                                     .ToArray();
 
-        // months_of_care: $25 = 30 days of shelter for one girl (the figure
-        // the site advertises). This is a direct, honest per-donor metric:
-        // a $25×10 month donor funded 10 months of care for one girl, not
-        // "10 girls helped". Floor to whole months; minimum 1 once ≥ $25.
-        var monthsOfCare = totalDonated >= 25m
-            ? Math.Max(1, (int)Math.Floor(totalDonated / 25m))
-            : 0;
-
         return Ok(new
         {
             total_donated          = totalDonated,
             total_estimated_value  = totalEstimated,
             donation_count         = donationCount,
-            months_of_care         = monthsOfCare,
+            girls_helped           = ImpactCalculator.GirlsHelped(totalDonated, costPerGirl),
             cost_per_girl          = costPerGirl,
             first_donation_date    = firstDate,
             most_recent_donation_date = mostRecentDate,

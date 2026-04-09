@@ -147,8 +147,8 @@ const Index = () => {
           </div>
           <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
             <StatPill
-              value={stats ? String(stats.girlsSupported) : "…"}
-              label="girls supported"
+              value={stats ? String(stats.girlsHelped) : "…"}
+              label="girls helped"
             />
             <StatPill
               value={stats ? String(stats.safehouseCount) : "…"}
