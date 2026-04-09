@@ -27,6 +27,7 @@ import TaxReceipt from "./pages/TaxReceipt";
 import Admin from "./pages/Admin";
 import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
+import CaseConferences from "./pages/CaseConferences";
 import MLInsights from "./pages/MLInsights";
 import AccountSettings from "./pages/AccountSettings";
 import MyReports from "./pages/MyReports";
@@ -119,6 +120,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
                   <HomeVisitation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/case-conferences"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <CaseConferences />
                 </ProtectedRoute>
               }
             />

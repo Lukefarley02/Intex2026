@@ -54,6 +54,9 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Resident>().ToTable("residents");
         modelBuilder.Entity<ProcessRecording>().ToTable("process_recordings");
         modelBuilder.Entity<HomeVisitation>().ToTable("home_visitations");
+        modelBuilder.Entity<InterventionPlan>().ToTable("intervention_plans");
+        modelBuilder.Entity<InterventionPlan>()
+            .Property(ip => ip.TargetValue)
         modelBuilder.Entity<CaseConference>().ToTable("case_conferences");
         modelBuilder.Entity<InterventionPlan>().ToTable("intervention_plans");
         modelBuilder.Entity<InterventionPlan>()

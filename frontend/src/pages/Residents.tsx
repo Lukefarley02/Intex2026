@@ -43,6 +43,7 @@ import {
   FileText,
   RefreshCw,
   AlertTriangle,
+  Gavel,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -695,6 +696,9 @@ const Residents = () => {
                   </Link>
                   <Link to={`/home-visitation?residentId=${d.residentId}`}>
                     <Button size="sm" variant="outline"><Home className="w-3.5 h-3.5 mr-1" /> Home visits</Button>
+                  </Link>
+                  <Link to={`/case-conferences?residentId=${d.residentId}`}>
+                    <Button size="sm" variant="outline"><Gavel className="w-3.5 h-3.5 mr-1" /> Case Conferences</Button>
                   </Link>
                 </div>
 

@@ -182,7 +182,18 @@ using (var patchScope = app.Services.CreateScope())
                 ADD created_by_user_id NVARCHAR(450) NULL;
             END
         ");
-        patchLogger.LogInformation("created_by_user_id columns verified.");
+        await patchDb.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE Name = N'created_by_user_id'
+                  AND Object_ID = Object_ID(N'dbo.intervention_plans')
+            )
+            BEGIN
+                ALTER TABLE intervention_plans
+                ADD created_by_user_id NVARCHAR(450) NULL;
+            END
+        ");
+        patchLogger.LogInformation("created_by_user_id columns verified (incl. intervention_plans).");
     }
     catch (Exception ex)
     {
@@ -276,6 +287,14 @@ using (var scope = app.Services.CreateScope())
                   AND name = 'created_by_user_id'
             )
             ALTER TABLE home_visitations ADD created_by_user_id NVARCHAR(450) NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('intervention_plans')
+                  AND name = 'created_by_user_id'
+            )
+            ALTER TABLE intervention_plans ADD created_by_user_id NVARCHAR(450) NULL;
         ");
 
         // ── Case Conferences (added Apr 9 2026) ─────────────────────────────

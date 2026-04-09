@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -6,12 +7,15 @@ namespace Intex2026.Api.Models;
 [Table("intervention_plans")]
 public class InterventionPlan
 {
+    [Key]
     [Column("plan_id")]
     public int PlanId { get; set; }
 
     [Column("resident_id")]
     public int ResidentId { get; set; }
 
+    [Column("plan_category")]
+    public string PlanCategory { get; set; } = "Safety";
     /// <summary>FK to case_conferences — null for legacy rows not tied to a conference.</summary>
     [Column("conference_id")]
     public int? ConferenceId { get; set; }
@@ -33,6 +37,9 @@ public class InterventionPlan
     [Column("target_date")]
     public DateTime? TargetDate { get; set; }
 
+    [Column("status")]
+    public string Status { get; set; } = "In Progress";
+
     /// <summary>On Hold | In Progress | Completed</summary>
     [Column("status")]
     public string Status { get; set; } = "In Progress";
@@ -52,6 +59,15 @@ public class InterventionPlan
     public DateTime? CaseConferenceDate { get; set; }
 
     [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
+
+    // Identity user id of the staff/admin who originally created this record.
+    // Nullable so historical rows from seed data (pre-migration) still load.
+    [Column("created_by_user_id")]
+    public string? CreatedByUserId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     [Column("updated_at")]

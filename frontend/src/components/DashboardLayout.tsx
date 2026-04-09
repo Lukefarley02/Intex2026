@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings, UserCog, ClipboardList, KeyRound } from "lucide-react";
+import { Flame, LayoutDashboard, Users, Home, UserCircle, FileText, NotebookPen, MapPin, HeartHandshake, Shield, LogOut, Menu, X, Brain, ChevronDown, Briefcase, BarChart3, Settings, UserCog, ClipboardList, KeyRound, Gavel } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/api/AuthContext";
 
@@ -69,6 +69,7 @@ const navGroups: NavGroup[] = [
       { to: "/residents",         icon: UserCircle,  label: "Residents",         roles: ["Admin", "Staff"] },
       { to: "/process-recording", icon: NotebookPen, label: "Process Recording", roles: ["Admin", "Staff"] },
       { to: "/home-visitation",   icon: MapPin,      label: "Home Visitation",   roles: ["Admin", "Staff"] },
+      { to: "/case-conferences", icon: Gavel,       label: "Case Conferences",  roles: ["Admin", "Staff"] },
       { to: "/my-reports",        icon: ClipboardList, label: "My Reports",      roles: ["Admin", "Staff"] },
     ],
   },
