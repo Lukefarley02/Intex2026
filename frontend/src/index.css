@@ -241,4 +241,89 @@
     animation: fade-in-up 0.7s ease-out both;
     animation-delay: 720ms;
   }
+
+  /* Counter animation */
+  @keyframes count-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-count-up {
+    animation: count-up 0.6s ease-out;
+  }
+
+  /* Text pop-up animation */
+  @keyframes pop-up {
+    0% {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.95);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-0.25rem) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .animate-pop-up {
+    animation: pop-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Card flip animation */
+  @keyframes flip {
+    from {
+      transform: rotateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: rotateY(180deg);
+      opacity: 1;
+    }
+  }
+  .animate-flip {
+    animation: flip 0.6s ease-in-out;
+    transform-style: preserve-3d;
+  }
+
+  /* Fade in from bottom */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out both;
+  }
+  .animate-fade-in-up-1 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 0ms;
+  }
+  .animate-fade-in-up-2 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 180ms;
+  }
+  .animate-fade-in-up-3 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 360ms;
+  }
+  .animate-fade-in-up-4 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 540ms;
+  }
+  .animate-fade-in-up-5 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 720ms;
+  }
 }

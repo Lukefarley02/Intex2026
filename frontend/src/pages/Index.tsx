@@ -148,13 +148,7 @@ const Index = () => {
             </a>
           </div>
           <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
-            {/* Primary hero stat: the actual count of residents ever
-                served by the program — an honest, non-derived number
-                that matches what a visitor would see if they walked
-                through every safehouse. Replaces the previous
-                `girlsHelped` pill which was derived from dollars raised
-                and could misleadingly inflate or deflate depending on
-                donation timing. */}
+            {/* Primary hero stat: the actual count of residents ever served. */}
             <StatPill
               value={stats ? String(stats.girlsSupported) : "…"}
               label="girls sheltered"
