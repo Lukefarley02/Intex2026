@@ -557,6 +557,39 @@ There is no dedicated campaigns table in the current schema, so this endpoint gr
 | PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation. Both old and new resident must be in scope. |
 | DELETE | `/api/homevisitations/{id}` | Founder | Delete a visitation record. |
 
+## Intervention Plans (Case Conferences)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/interventionplans?residentId=N` | Admin, Staff | List intervention plans whose resident is in scope. Optional resident filter. Ordered by `case_conference_date` descending. |
+| GET | `/api/interventionplans/{id}` | Admin, Staff | Get single plan. `403` if the resident is outside scope. |
+| POST | `/api/interventionplans` | Admin, Staff | Create a plan. Resident must be in scope. Non-identity PK generated via MaxAsync+1. |
+| PUT | `/api/interventionplans/{id}` | Admin, Staff | Update a plan. Staff can only update if they created the plan. |
+| DELETE | `/api/interventionplans/{id}` | Admin, Staff | Delete a plan. Staff can only delete if they created it; Admin can delete any in scope. |
+
+**GET `/api/interventionplans` response:**
+```json
+[
+  {
+    "planId": 1,
+    "residentId": 5,
+    "planCategory": "Mental Health Support",
+    "planDescription": "Twice-weekly trauma-informed counseling",
+    "servicesProvided": "Therapy; support groups",
+    "targetValue": 1500.00,
+    "targetDate": "2026-06-30",
+    "status": "In Progress",
+    "caseCconferenceDate": "2026-04-08T10:30:00Z",
+    "createdAt": "2026-04-08T00:00:00Z",
+    "updatedAt": "2026-04-08T00:00:00Z",
+    "createdByUserId": "user-guid",
+    "canModify": true
+  }
+]
+```
+
+---
+
 ## Password Reset Requests
 
 | Method | Endpoint | Auth | Description |

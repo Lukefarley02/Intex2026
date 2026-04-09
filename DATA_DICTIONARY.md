@@ -199,7 +199,22 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 **Status: Missing**
 
 ### intervention_plans (180 rows)
-**Status: Missing**
+**Status: Complete** — Model + controller exist, all columns mapped
+
+| SQL Column | C# Property | In Model? |
+|---|---|---|
+| plan_id | PlanId | Yes (PK, non-identity, generated via MaxAsync+1) |
+| resident_id | ResidentId | Yes (FK to residents) |
+| plan_category | PlanCategory | Yes |
+| plan_description | PlanDescription | Yes |
+| services_provided | ServicesProvided | Yes |
+| target_value | TargetValue | Yes |
+| target_date | TargetDate | Yes |
+| status | Status | Yes |
+| case_conference_date | CaseConferenceDate | Yes |
+| created_at | CreatedAt | Yes (default GETUTCDATE()) |
+| updated_at | UpdatedAt | Yes (auto-updated on PUT) |
+| created_by_user_id | CreatedByUserId | Yes (nullable, Identity user ID; added via startup SQL IF NOT EXISTS) |
 
 ### incident_reports (100 rows)
 **Status: Missing**
@@ -256,7 +271,7 @@ Seed data: `lighthouse_csv_v7/` (workspace root, 17 CSV files).
 
 | Status | Count | Tables |
 |---|---|---|
-| Complete | 8 | safehouses, supporters, donations, residents, process_recordings, home_visitations, donor_messages, password_reset_requests |
-| Missing | 11 | partners, partner_assignments, donation_allocations, in_kind_donation_items, education_records, health_wellbeing_records, intervention_plans, incident_reports, social_media_posts, safehouse_monthly_metrics, public_impact_snapshots |
+| Complete | 9 | safehouses, supporters, donations, residents, process_recordings, home_visitations, intervention_plans, donor_messages, password_reset_requests |
+| Missing | 10 | partners, partner_assignments, donation_allocations, in_kind_donation_items, education_records, health_wellbeing_records, incident_reports, social_media_posts, safehouse_monthly_metrics, public_impact_snapshots |
 
 **Next priority:** Build controllers for the 4 complete models that lack them (donations, safehouses, process_recordings, home_visitations), then build the 11 missing models starting with the "Must" priority tables from API_REFERENCE.md.
