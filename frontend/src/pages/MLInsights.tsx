@@ -1205,11 +1205,12 @@ function StaticInsightView({
 // ─── Pipeline 07: Partner Effectiveness ──────────────────────────────────────
 
 function PartnerEffectivenessView() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["ml-partner-effectiveness"],
     queryFn: () => apiFetch<any>("/api/mlinsights/partner-effectiveness"),
   });
   if (isLoading) return <LoadingSkeleton />;
+  if (isError) return <div className="p-6 text-destructive">Failed to load partner data. Check backend logs.</div>;
 
   const byProgramArea: { area: string; count: number }[] = data?.byProgramArea ?? [];
   const byRoleType: { role: string; count: number }[] = data?.byRoleType ?? [];

@@ -587,7 +587,7 @@ public class MLInsightsController : ControllerBase
 
         var activeAssignments = await _context.PartnerAssignments
             .AsNoTracking()
-            .Where(a => a.Status == "Active")
+            .Where(a => a.Status == "Active" && a.SafehouseId != null)
             .ToListAsync();
 
         var safehouses = await _context.Safehouses
