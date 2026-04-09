@@ -5,7 +5,9 @@
       "Bash(python3 -c ':*)",
       "Bash(python3 -c 'import json; json.load\\(open\\('\\\\''__TRACKED_VAR__'\\\\'', encoding='\\\\''utf-8'\\\\''\\)\\)')",
       "Bash(python3 _update_notebooks.py)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(dotnet build:*)",
+      "Bash(ls c:/Users/kajja/Intex2026/backend/appsettings*.json)"
     ]
   }
 }

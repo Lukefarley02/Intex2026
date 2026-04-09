@@ -9,8 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Heart, DollarSign, Users, ArrowRight, FileText, HandHeart, MapPin } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Heart, DollarSign, Users, ArrowRight, FileText, HandHeart, MapPin, Mail, CheckCheck, Clock, ChevronDown } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { apiFetch } from "@/api/client";
@@ -77,6 +77,17 @@ interface PublicSafehouse {
   activeResidents: number;
 }
 
+interface DonorMessageRow {
+  messageId: number;
+  templateType: string | null;
+  subject: string;
+  body: string;
+  senderName: string;
+  isRead: boolean;
+  createdAt: string;
+  readAt: string | null;
+}
+
 // ---- Helpers ----
 
 const formatCurrency = (n: number) =>
@@ -99,7 +110,9 @@ const extractDesignatedSafehouse = (notes: string | null): string | null => {
 
 const DonorPortal = () => {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [pickedSafehouse, setPickedSafehouse] = useState<string>("");
+  const [expandedMsg, setExpandedMsg] = useState<number | null>(null);
 
   const profileQ = useQuery<DonorProfile>({
     queryKey: ["donor-profile"],
@@ -134,6 +147,39 @@ const DonorPortal = () => {
     queryKey: ["public-safehouses"],
     queryFn: () => apiFetch<PublicSafehouse[]>("/api/public/safehouses"),
   });
+
+  const messagesQ = useQuery<DonorMessageRow[]>({
+    queryKey: ["donor-messages"],
+    queryFn: () => apiFetch<DonorMessageRow[]>("/api/donorportal/me/messages"),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  const markReadMut = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/donorportal/me/messages/${id}/read`, {
+        method: "PUT",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["donor-messages"] }),
+  });
+
+  const markAllReadMut = useMutation({
+    mutationFn: () =>
+      apiFetch<void>("/api/donorportal/me/messages/read-all", {
+        method: "PUT",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["donor-messages"] }),
+  });
+
+  const messages = messagesQ.data ?? [];
+  const unreadCount = messages.filter((m) => !m.isRead).length;
+
+  const handleExpandMessage = (msg: DonorMessageRow) => {
+    setExpandedMsg(expandedMsg === msg.messageId ? null : msg.messageId);
+    if (!msg.isRead) {
+      markReadMut.mutate(msg.messageId);
+    }
+  };
 
   const profile = profileQ.data;
   const impact = impactQ.data;
@@ -360,12 +406,143 @@ const DonorPortal = () => {
           </Button>
         </div>
 
-        {/* Two-column: Donation History + Active Campaigns. This row
-            takes whatever vertical space is left in the viewport, and
-            each card has its own internal scroll so neither overflows
-            the page. min-h-0 is mandatory on flex children that contain
-            an overflow-y-auto child — without it the child's intrinsic
-            content height wins and you get page-level scroll instead. */}
+        {/* Messages strip — collapsible, sits above the two main cards
+            so it doesn't steal a full grid column from them. */}
+        {messages.length > 0 && (
+          <div className="rounded-xl border bg-card shadow-sm flex-shrink-0">
+            {/* Header row — always visible */}
+            <button
+              type="button"
+              className="w-full flex items-center justify-between px-3 py-2 hover:bg-muted/30 transition-colors rounded-xl"
+              onClick={() => setExpandedMsg(expandedMsg === -1 ? null : -1)}
+            >
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Mail className="w-4 h-4 text-primary" />
+                Messages
+                {unreadCount > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground font-normal">
+                  {messages.length} message{messages.length === 1 ? "" : "s"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-6 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAllReadMut.mutate();
+                    }}
+                    disabled={markAllReadMut.isPending}
+                  >
+                    <CheckCheck className="w-3 h-3 mr-1" />
+                    Mark all read
+                  </Button>
+                )}
+                <ChevronDown
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${
+                    expandedMsg === -1 ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Expanded message list — max height capped so it never
+                dominates the page */}
+            {expandedMsg === -1 && (
+              <div className="border-t px-3 py-2 max-h-48 overflow-y-auto space-y-1">
+                {messages.map((msg) => {
+                  const isThankYou = msg.templateType === "ThankYou";
+                  const isOpen = expandedMsg === msg.messageId;
+                  const utc = msg.createdAt.endsWith("Z")
+                    ? msg.createdAt
+                    : msg.createdAt + "Z";
+                  const diff = Date.now() - new Date(utc).getTime();
+                  const mins = Math.max(0, Math.floor(diff / 60000));
+                  const timeAgo =
+                    mins < 1
+                      ? "just now"
+                      : mins < 60
+                        ? `${mins}m ago`
+                        : mins < 1440
+                          ? `${Math.floor(mins / 60)}h ago`
+                          : mins < 43200
+                            ? `${Math.floor(mins / 1440)}d ago`
+                            : new Date(utc).toLocaleDateString();
+                  return (
+                    <button
+                      key={msg.messageId}
+                      type="button"
+                      className={`w-full text-left rounded-md px-2 py-1.5 transition-colors text-sm ${
+                        !msg.isRead
+                          ? "bg-primary/5 hover:bg-primary/10"
+                          : "hover:bg-muted/50"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedMsg(
+                          expandedMsg === msg.messageId ? -1 : msg.messageId,
+                        );
+                        if (!msg.isRead) markReadMut.mutate(msg.messageId);
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        {isThankYou ? (
+                          <Heart className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                        ) : (
+                          <HandHeart className="w-3.5 h-3.5 text-gold flex-shrink-0" />
+                        )}
+                        {!msg.isRead && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                        )}
+                        <span className={`truncate flex-1 ${!msg.isRead ? "font-semibold" : ""}`}>
+                          {msg.subject}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                          {timeAgo}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Single expanded message body — shown below the list when
+                a specific message is selected */}
+            {expandedMsg !== null && expandedMsg !== -1 && (() => {
+              const msg = messages.find((m) => m.messageId === expandedMsg);
+              if (!msg) return null;
+              return (
+                <div className="border-t px-4 py-3 max-h-48 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-sm">{msg.subject}</p>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => setExpandedMsg(null)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <p className="text-sm text-foreground whitespace-pre-line leading-relaxed">
+                    {msg.body}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    From: {msg.senderName}
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Two-column: Donation History + Active Campaigns */}
         <div className="grid lg:grid-cols-2 gap-4 flex-1 min-h-0">
           {/* Donation history — flex column with internal overflow-y-auto
               so long histories scroll inside the card instead of

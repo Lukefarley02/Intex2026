@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Home, MapPin, Users, Plus, Pencil, Trash2, Building2, Brain } from "lucide-react";
+import { Home, MapPin, Users, Plus, Pencil, Trash2, Building2, Brain, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
@@ -268,33 +268,21 @@ const Safehouses = () => {
         )}
       </div>
 
-      {/* ML Pipeline quick-link — Founder only */}
+      {/* ML Insights quick-link — Founder only */}
       {isFounder && (
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            ML Insights
-          </h2>
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-xs font-medium text-muted-foreground mr-1">
+            <Brain className="w-3.5 h-3.5" /> ML Insights:
+          </span>
+          <Link
+            to="/ml-insights?tab=geographic"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Building2 className="w-3.5 h-3.5 text-indigo-500" />
+            Safehouse Performance & Growth
+            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+          </Link>
         </div>
-        <Link to="/ml-insights?tab=geographic" className="group block max-w-sm">
-          <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Pipeline 05</p>
-                <p className="text-sm font-semibold text-indigo-700">Geographic Performance</p>
-              </div>
-              <Building2 className="w-5 h-5 text-indigo-500 flex-shrink-0" />
-            </div>
-            <p className="text-xs text-indigo-600/80 mb-2">
-              Which safehouses are performing best? Benchmarks efficiency, flags capacity issues, and provides regional roll-ups.
-            </p>
-            <span className="text-xs font-medium text-indigo-600 group-hover:underline">
-              View geographic analysis →
-            </span>
-          </div>
-        </Link>
-      </div>
       )}
 
       {isError && (

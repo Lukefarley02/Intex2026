@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/api/AuthContext";
 import { ThemeProvider } from "@/api/ThemeContext";
+import { RootkitProvider, useRootkit } from "@/api/RootkitContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieConsent from "@/components/CookieConsent";
+import RootkitOverlay from "@/components/RootkitOverlay";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -27,6 +29,7 @@ import ProcessRecording from "./pages/ProcessRecording";
 import HomeVisitation from "./pages/HomeVisitation";
 import MLInsights from "./pages/MLInsights";
 import AccountSettings from "./pages/AccountSettings";
+import MyReports from "./pages/MyReports";
 
 const queryClient = new QueryClient();
 
@@ -40,12 +43,21 @@ const DashboardRouter = () => {
   return <StaffDashboard />;
 };
 
+/** Renders the rootbeer rain when rootkit mode is active */
+const RootkitLayer = () => {
+  const { active } = useRootkit();
+  if (!active) return null;
+  return <RootkitOverlay />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+    <RootkitProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <RootkitLayer />
       <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <AuthProvider>
           <CookieConsent />
@@ -104,6 +116,14 @@ const App = () => (
               element={
                 <ProtectedRoute roles={["Admin", "Staff"]}>
                   <HomeVisitation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-reports"
+              element={
+                <ProtectedRoute roles={["Admin", "Staff"]}>
+                  <MyReports />
                 </ProtectedRoute>
               }
             />
@@ -167,6 +187,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </RootkitProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
