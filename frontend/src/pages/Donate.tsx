@@ -106,6 +106,34 @@ const Donate = () => {
   const [phase, setPhase] = useState<Phase>("idle");
   const [lastDonation, setLastDonation] = useState<DonateResponse | null>(null);
 
+  // Play a warm two-tone chime when the donation is confirmed. Synthesized
+  // via Web Audio API — no audio file needed.
+  useEffect(() => {
+    if (phase !== "done-anon" && phase !== "done-linked") return;
+    try {
+      const ctx = new AudioContext();
+      const playTone = (freq: number, startAt: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + startAt);
+        gain.gain.setValueAtTime(0, ctx.currentTime + startAt);
+        gain.gain.linearRampToValueAtTime(0.25, ctx.currentTime + startAt + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startAt + duration);
+        osc.start(ctx.currentTime + startAt);
+        osc.stop(ctx.currentTime + startAt + duration);
+      };
+      // C5 → E5: a short, warm "success" chime
+      playTone(523.25, 0,    0.5);
+      playTone(659.25, 0.18, 0.6);
+      setTimeout(() => ctx.close(), 1200);
+    } catch {
+      // AudioContext blocked (e.g. no user gesture yet) — silently skip
+    }
+  }, [phase]);
+
   // Inline registration state
   const [password, setPassword] = useState("");
   const [confirmPw, setConfirmPw] = useState("");

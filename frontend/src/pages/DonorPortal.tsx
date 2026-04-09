@@ -29,7 +29,7 @@ interface DonorImpact {
   total_donated: number;
   total_estimated_value: number;
   donation_count: number;
-  girls_helped: number;
+  months_of_care: number;
   cost_per_girl: number;
   first_donation_date: string | null;
   most_recent_donation_date: string | null;
@@ -126,10 +126,10 @@ const DonorPortal = () => {
   const totalContributions = impact?.total_donated ?? 0;
   const donationsMade = impact?.donation_count ?? 0;
 
-  // girls_helped is computed server-side from the live cost-per-girl ratio
-  // (total program funding ÷ total girls ever served), so it updates
-  // automatically whenever a new donation or resident is recorded.
-  const girlsHelped = impact?.girls_helped ?? 0;
+  // months_of_care: $25 = 30 days of shelter, so total_donated / 25 gives
+  // the number of girl-months this donor has funded. Honest and directly
+  // tied to the "$25 = 30 days" figure the site advertises.
+  const monthsOfCare = impact?.months_of_care ?? 0;
 
   return (
     <DashboardLayout title="My Impact">
@@ -141,9 +141,8 @@ const DonorPortal = () => {
               Thank you, {donorName}! <span className="text-gold">💛</span>
             </h2>
             <p className="text-white/90 text-sm sm:text-base">
-              Your generous donations have helped{" "}
-              <strong>{girlsHelped} girls</strong> access safety, counseling,
-              and education this year.
+              Your generosity has funded{" "}
+              <strong>{monthsOfCare} month{monthsOfCare !== 1 ? "s" : ""} of care</strong> — providing safety, counseling, and education for girls in our safehouses.
             </p>
           </div>
           <div className="text-left sm:text-right sm:pl-6 sm:border-l sm:border-white/20">
@@ -195,9 +194,9 @@ const DonorPortal = () => {
                 <Heart className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-xl font-bold leading-none">{girlsHelped}</p>
+                <p className="text-xl font-bold leading-none">{monthsOfCare}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Girls Helped
+                  Months of Care Funded
                 </p>
               </div>
             </div>

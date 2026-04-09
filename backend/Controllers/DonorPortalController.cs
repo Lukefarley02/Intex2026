@@ -154,12 +154,20 @@ public class DonorPortalController : ControllerBase
                                     .OrderBy(c => c)
                                     .ToArray();
 
+        // months_of_care: $25 = 30 days of shelter for one girl (the figure
+        // the site advertises). This is a direct, honest per-donor metric:
+        // a $25×10 month donor funded 10 months of care for one girl, not
+        // "10 girls helped". Floor to whole months; minimum 1 once ≥ $25.
+        var monthsOfCare = totalDonated >= 25m
+            ? Math.Max(1, (int)Math.Floor(totalDonated / 25m))
+            : 0;
+
         return Ok(new
         {
             total_donated          = totalDonated,
             total_estimated_value  = totalEstimated,
             donation_count         = donationCount,
-            girls_helped           = ImpactCalculator.GirlsHelped(totalDonated, costPerGirl),
+            months_of_care         = monthsOfCare,
             cost_per_girl          = costPerGirl,
             first_donation_date    = firstDate,
             most_recent_donation_date = mostRecentDate,
