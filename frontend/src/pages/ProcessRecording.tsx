@@ -14,10 +14,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, ClipboardList, Heart, AlertTriangle, Calendar } from "lucide-react";
+import { Plus, ClipboardList, Heart, AlertTriangle, Calendar, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/api/AuthContext";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ---- Types ----
 interface ResidentRow {
@@ -50,8 +52,27 @@ const displayName = (r: ResidentRow) =>
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—";
 
-const emptyForm = {
+interface FormState {
+  recordingId: number; // 0 when creating
+  residentId: number;
+  sessionDate: string; // yyyy-mm-dd
+  sessionType: string;
+  sessionDurationMinutes: number;
+  emotionalStateObserved: string;
+  emotionalStateEnd: string;
+  sessionNarrative: string;
+  interventionsApplied: string;
+  followUpActions: string;
+  socialWorker: string;
+  progressNoted: boolean;
+  concernsFlagged: boolean;
+  referralMade: boolean;
+}
+
+const emptyForm: FormState = {
+  recordingId: 0,
   residentId: 0,
+  sessionDate: new Date().toISOString().slice(0, 10),
   sessionType: "Individual",
   sessionDurationMinutes: 60,
   emotionalStateObserved: "",
@@ -65,11 +86,32 @@ const emptyForm = {
   referralMade: false,
 };
 
+const toFormState = (p: ProcessRecordingRow): FormState => ({
+  recordingId: p.recordingId,
+  residentId: p.residentId,
+  sessionDate: p.sessionDate ? p.sessionDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  sessionType: p.sessionType ?? "Individual",
+  sessionDurationMinutes: p.sessionDurationMinutes ?? 60,
+  emotionalStateObserved: p.emotionalStateObserved ?? "",
+  emotionalStateEnd: p.emotionalStateEnd ?? "",
+  sessionNarrative: p.sessionNarrative ?? "",
+  interventionsApplied: p.interventionsApplied ?? "",
+  followUpActions: p.followUpActions ?? "",
+  socialWorker: p.socialWorker ?? "",
+  progressNoted: !!p.progressNoted,
+  concernsFlagged: !!p.concernsFlagged,
+  referralMade: !!p.referralMade,
+});
+
 const ProcessRecording = () => {
   const qc = useQueryClient();
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("Admin");
   const [selectedResident, setSelectedResident] = useState<number | "all">("all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof emptyForm>(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<ProcessRecordingRow | null>(null);
 
   const { data: residents } = useQuery<ResidentRow[]>({
     queryKey: ["residents"],
@@ -86,38 +128,78 @@ const ProcessRecording = () => {
       ),
   });
 
-  const createMut = useMutation({
-    mutationFn: (payload: typeof emptyForm) =>
-      apiFetch<ProcessRecordingRow>("/api/processrecordings", {
-        method: "POST",
-        body: JSON.stringify({
-          recordingId: 0,
-          residentId: payload.residentId,
-          sessionDate: new Date().toISOString(),
-          sessionType: payload.sessionType,
-          sessionDurationMinutes: payload.sessionDurationMinutes,
-          emotionalStateObserved: payload.emotionalStateObserved,
-          emotionalStateEnd: payload.emotionalStateEnd,
-          sessionNarrative: payload.sessionNarrative,
-          interventionsApplied: payload.interventionsApplied,
-          progressNoted: payload.progressNoted,
-          concernsFlagged: payload.concernsFlagged,
-          referralMade: payload.referralMade,
-          followUpActions: payload.followUpActions,
-          socialWorker: payload.socialWorker,
-          notesRestricted: null,
-        }),
-      }),
+  const buildPayload = (f: FormState) => ({
+    recordingId: f.recordingId,
+    residentId: f.residentId,
+    sessionDate: new Date(f.sessionDate).toISOString(),
+    sessionType: f.sessionType,
+    sessionDurationMinutes: f.sessionDurationMinutes,
+    emotionalStateObserved: f.emotionalStateObserved,
+    emotionalStateEnd: f.emotionalStateEnd,
+    sessionNarrative: f.sessionNarrative,
+    interventionsApplied: f.interventionsApplied,
+    progressNoted: f.progressNoted,
+    concernsFlagged: f.concernsFlagged,
+    referralMade: f.referralMade,
+    followUpActions: f.followUpActions,
+    socialWorker: f.socialWorker,
+    notesRestricted: null,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async (f: FormState) => {
+      if (f.recordingId === 0) {
+        return apiFetch<ProcessRecordingRow>("/api/processrecordings", {
+          method: "POST",
+          body: JSON.stringify(buildPayload(f)),
+        });
+      }
+      // PUT returns 204 No Content — apiFetch handles an empty body.
+      await apiFetch<void>(`/api/processrecordings/${f.recordingId}`, {
+        method: "PUT",
+        body: JSON.stringify(buildPayload(f)),
+      });
+      return null;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["process-recordings"] });
-      toast({ title: "Session recorded", description: "Process recording saved successfully." });
+      toast({
+        title: editingId ? "Recording updated" : "Session recorded",
+        description: "Process recording saved successfully.",
+      });
       setOpen(false);
+      setEditingId(null);
       setForm(emptyForm);
     },
     onError: (e: Error) => {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
     },
   });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/processrecordings/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["process-recordings"] });
+      toast({ title: "Recording deleted" });
+      setDeleteTarget(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (p: ProcessRecordingRow) => {
+    setEditingId(p.recordingId);
+    setForm(toFormState(p));
+    setOpen(true);
+  };
 
   const residentLookup = useMemo(() => {
     const m = new Map<number, ResidentRow>();
@@ -139,15 +221,26 @@ const ProcessRecording = () => {
               date, emotional state, narrative, interventions, and follow-up actions.
             </p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(o) => {
+              setOpen(o);
+              if (!o) {
+                setEditingId(null);
+                setForm(emptyForm);
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={openCreate}>
                 <Plus className="w-4 h-4" /> New Recording
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>New Process Recording</DialogTitle>
+                <DialogTitle>
+                  {editingId ? "Edit Process Recording" : "New Process Recording"}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div>
@@ -165,7 +258,15 @@ const ProcessRecording = () => {
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Session Date</Label>
+                    <Input
+                      type="date"
+                      value={form.sessionDate}
+                      onChange={(e) => setForm({ ...form, sessionDate: e.target.value })}
+                    />
+                  </div>
                   <div>
                     <Label>Session Type</Label>
                     <select
@@ -179,7 +280,7 @@ const ProcessRecording = () => {
                     </select>
                   </div>
                   <div>
-                    <Label>Duration (minutes)</Label>
+                    <Label>Duration (min)</Label>
                     <Input
                       type="number"
                       min={1}
@@ -274,10 +375,14 @@ const ProcessRecording = () => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => createMut.mutate(form)}
-                  disabled={!form.residentId || createMut.isPending}
+                  onClick={() => saveMut.mutate(form)}
+                  disabled={!form.residentId || saveMut.isPending}
                 >
-                  {createMut.isPending ? "Saving…" : "Save Recording"}
+                  {saveMut.isPending
+                    ? "Saving…"
+                    : editingId
+                      ? "Save Changes"
+                      : "Save Recording"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -347,6 +452,28 @@ const ProcessRecording = () => {
                     <span className="ml-auto text-xs text-muted-foreground">
                       {p.socialWorker ?? "—"}
                     </span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => openEdit(p)}
+                        aria-label="Edit recording"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(p)}
+                          aria-label="Delete recording"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   {(p.emotionalStateObserved || p.emotionalStateEnd) && (
                     <p className="text-sm text-muted-foreground">
@@ -374,6 +501,20 @@ const ProcessRecording = () => {
           })}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
+        title="Delete this process recording?"
+        description="This will permanently remove the counseling session note. This action cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteMut.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMut.mutate(deleteTarget.recordingId);
+        }}
+      />
     </DashboardLayout>
   );
 };

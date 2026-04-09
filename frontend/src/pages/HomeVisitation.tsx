@@ -14,10 +14,12 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, MapPin, AlertTriangle, Calendar, Home as HomeIcon } from "lucide-react";
+import { Plus, MapPin, AlertTriangle, Calendar, Home as HomeIcon, Pencil, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/api/AuthContext";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ---- Types ----
 interface ResidentRow {
@@ -62,7 +64,25 @@ const cooperationColor: Record<string, string> = {
   none: "bg-muted text-muted-foreground",
 };
 
-const emptyForm = {
+interface FormState {
+  visitationId: number; // 0 when creating
+  residentId: number;
+  visitDate: string;
+  visitType: string;
+  purpose: string;
+  locationVisited: string;
+  familyMembersPresent: string;
+  familyCooperationLevel: string;
+  observations: string;
+  safetyConcernsNoted: boolean;
+  followUpNeeded: boolean;
+  followUpNotes: string;
+  visitOutcome: string;
+  socialWorker: string;
+}
+
+const emptyForm: FormState = {
+  visitationId: 0,
   residentId: 0,
   visitDate: new Date().toISOString().slice(0, 10),
   visitType: "Routine follow-up",
@@ -78,11 +98,32 @@ const emptyForm = {
   socialWorker: "",
 };
 
+const toFormState = (v: HomeVisitationRow): FormState => ({
+  visitationId: v.visitationId,
+  residentId: v.residentId,
+  visitDate: v.visitDate ? v.visitDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+  visitType: v.visitType ?? "Routine follow-up",
+  purpose: v.purpose ?? "",
+  locationVisited: v.locationVisited ?? "",
+  familyMembersPresent: v.familyMembersPresent ?? "",
+  familyCooperationLevel: v.familyCooperationLevel ?? "high",
+  observations: v.observations ?? "",
+  safetyConcernsNoted: !!v.safetyConcernsNoted,
+  followUpNeeded: !!v.followUpNeeded,
+  followUpNotes: v.followUpNotes ?? "",
+  visitOutcome: v.visitOutcome ?? "",
+  socialWorker: v.socialWorker ?? "",
+});
+
 const HomeVisitation = () => {
   const qc = useQueryClient();
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole("Admin");
   const [selectedResident, setSelectedResident] = useState<number | "all">("all");
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<typeof emptyForm>(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [deleteTarget, setDeleteTarget] = useState<HomeVisitationRow | null>(null);
 
   const { data: residents } = useQuery<ResidentRow[]>({
     queryKey: ["residents"],
@@ -99,37 +140,76 @@ const HomeVisitation = () => {
       ),
   });
 
-  const createMut = useMutation({
-    mutationFn: (payload: typeof emptyForm) =>
-      apiFetch<HomeVisitationRow>("/api/homevisitations", {
-        method: "POST",
-        body: JSON.stringify({
-          visitationId: 0,
-          residentId: payload.residentId,
-          visitDate: new Date(payload.visitDate).toISOString(),
-          visitType: payload.visitType,
-          purpose: payload.purpose,
-          locationVisited: payload.locationVisited,
-          familyMembersPresent: payload.familyMembersPresent,
-          familyCooperationLevel: payload.familyCooperationLevel,
-          observations: payload.observations,
-          safetyConcernsNoted: payload.safetyConcernsNoted,
-          followUpNeeded: payload.followUpNeeded,
-          followUpNotes: payload.followUpNotes,
-          visitOutcome: payload.visitOutcome,
-          socialWorker: payload.socialWorker,
-        }),
-      }),
+  const buildPayload = (f: FormState) => ({
+    visitationId: f.visitationId,
+    residentId: f.residentId,
+    visitDate: new Date(f.visitDate).toISOString(),
+    visitType: f.visitType,
+    purpose: f.purpose,
+    locationVisited: f.locationVisited,
+    familyMembersPresent: f.familyMembersPresent,
+    familyCooperationLevel: f.familyCooperationLevel,
+    observations: f.observations,
+    safetyConcernsNoted: f.safetyConcernsNoted,
+    followUpNeeded: f.followUpNeeded,
+    followUpNotes: f.followUpNotes,
+    visitOutcome: f.visitOutcome,
+    socialWorker: f.socialWorker,
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async (f: FormState) => {
+      if (f.visitationId === 0) {
+        return apiFetch<HomeVisitationRow>("/api/homevisitations", {
+          method: "POST",
+          body: JSON.stringify(buildPayload(f)),
+        });
+      }
+      await apiFetch<void>(`/api/homevisitations/${f.visitationId}`, {
+        method: "PUT",
+        body: JSON.stringify(buildPayload(f)),
+      });
+      return null;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["home-visitations"] });
-      toast({ title: "Visit logged", description: "Home visitation saved successfully." });
+      toast({
+        title: editingId ? "Visit updated" : "Visit logged",
+        description: "Home visitation saved successfully.",
+      });
       setOpen(false);
+      setEditingId(null);
       setForm(emptyForm);
     },
     onError: (e: Error) => {
       toast({ title: "Save failed", description: e.message, variant: "destructive" });
     },
   });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch<void>(`/api/homevisitations/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home-visitations"] });
+      toast({ title: "Visit deleted" });
+      setDeleteTarget(null);
+    },
+    onError: (e: Error) => {
+      toast({ title: "Delete failed", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setOpen(true);
+  };
+
+  const openEdit = (v: HomeVisitationRow) => {
+    setEditingId(v.visitationId);
+    setForm(toFormState(v));
+    setOpen(true);
+  };
 
   const residentLookup = useMemo(() => {
     const m = new Map<number, ResidentRow>();
@@ -160,15 +240,26 @@ const HomeVisitation = () => {
               cooperation, safety concerns, and follow-up actions.
             </p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(o) => {
+              setOpen(o);
+              if (!o) {
+                setEditingId(null);
+                setForm(emptyForm);
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" onClick={openCreate}>
                 <Plus className="w-4 h-4" /> Log Visit
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Log a Home Visit</DialogTitle>
+                <DialogTitle>
+                  {editingId ? "Edit Home Visit" : "Log a Home Visit"}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-2">
                 <div>
@@ -308,10 +399,14 @@ const HomeVisitation = () => {
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => createMut.mutate(form)}
-                  disabled={!form.residentId || createMut.isPending}
+                  onClick={() => saveMut.mutate(form)}
+                  disabled={!form.residentId || saveMut.isPending}
                 >
-                  {createMut.isPending ? "Saving…" : "Save Visit"}
+                  {saveMut.isPending
+                    ? "Saving…"
+                    : editingId
+                      ? "Save Changes"
+                      : "Save Visit"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -352,7 +447,13 @@ const HomeVisitation = () => {
             </h3>
             <div className="space-y-3">
               {upcoming.map((v) => (
-                <VisitCard key={v.visitationId} v={v} res={residentLookup.get(v.residentId)} />
+                <VisitCard
+                  key={v.visitationId}
+                  v={v}
+                  res={residentLookup.get(v.residentId)}
+                  onEdit={() => openEdit(v)}
+                  onDelete={isAdmin ? () => setDeleteTarget(v) : undefined}
+                />
               ))}
             </div>
           </div>
@@ -372,16 +473,43 @@ const HomeVisitation = () => {
           )}
           <div className="space-y-3">
             {history.map((v) => (
-              <VisitCard key={v.visitationId} v={v} res={residentLookup.get(v.residentId)} />
+              <VisitCard
+                key={v.visitationId}
+                v={v}
+                res={residentLookup.get(v.residentId)}
+                onEdit={() => openEdit(v)}
+                onDelete={isAdmin ? () => setDeleteTarget(v) : undefined}
+              />
             ))}
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
+        title="Delete this home visit?"
+        description="This will permanently remove the visit record. This action cannot be undone."
+        confirmLabel="Delete"
+        loading={deleteMut.isPending}
+        onConfirm={() => {
+          if (deleteTarget) deleteMut.mutate(deleteTarget.visitationId);
+        }}
+      />
     </DashboardLayout>
   );
 };
 
-const VisitCard = ({ v, res }: { v: HomeVisitationRow; res?: ResidentRow }) => (
+interface VisitCardProps {
+  v: HomeVisitationRow;
+  res?: ResidentRow;
+  onEdit: () => void;
+  onDelete?: () => void;
+}
+
+const VisitCard = ({ v, res, onEdit, onDelete }: VisitCardProps) => (
   <Card>
     <CardContent className="p-5 space-y-3">
       <div className="flex flex-wrap items-center gap-3">
@@ -407,6 +535,28 @@ const VisitCard = ({ v, res }: { v: HomeVisitationRow; res?: ResidentRow }) => (
           </Badge>
         )}
         <span className="ml-auto text-xs text-muted-foreground">{v.socialWorker ?? "—"}</span>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onEdit}
+            aria-label="Edit visit"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={onDelete}
+              aria-label="Delete visit"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
       </div>
       {v.locationVisited && (
         <p className="text-sm text-muted-foreground flex items-center gap-1">
