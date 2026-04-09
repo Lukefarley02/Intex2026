@@ -278,6 +278,61 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE home_visitations ADD created_by_user_id NVARCHAR(450) NULL;
         ");
 
+        // ── Case Conferences (added Apr 9 2026) ─────────────────────────────
+        // Create the case_conferences table if it doesn't exist.
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='case_conferences' AND xtype='U')
+            BEGIN
+                CREATE TABLE case_conferences (
+                    conference_id       INT             PRIMARY KEY,
+                    resident_id         INT             NOT NULL,
+                    conference_date     DATE            NULL,
+                    attendees           NVARCHAR(MAX)   NULL,
+                    conference_notes    NVARCHAR(MAX)   NULL,
+                    next_review_date    DATE            NULL,
+                    assigned_to         NVARCHAR(100)   NULL,
+                    status              NVARCHAR(30)    NOT NULL DEFAULT 'Open',
+                    created_by_user_id  NVARCHAR(450)   NULL,
+                    created_at          DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+                    updated_at          DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
+                    CONSTRAINT FK_case_conferences_resident
+                        FOREIGN KEY (resident_id) REFERENCES residents(resident_id)
+                );
+                CREATE INDEX IX_case_conferences_resident ON case_conferences(resident_id);
+                CREATE INDEX IX_case_conferences_date     ON case_conferences(conference_date);
+            END
+        ");
+
+        // Add new columns to intervention_plans (idempotent — each wrapped in IF NOT EXISTS).
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('intervention_plans') AND name = 'conference_id'
+            )
+            ALTER TABLE intervention_plans ADD conference_id INT NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('intervention_plans') AND name = 'priority'
+            )
+            ALTER TABLE intervention_plans ADD priority NVARCHAR(20) NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('intervention_plans') AND name = 'progress_notes'
+            )
+            ALTER TABLE intervention_plans ADD progress_notes NVARCHAR(MAX) NULL;
+        ");
+        await db.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE object_id = OBJECT_ID('intervention_plans') AND name = 'assigned_to'
+            )
+            ALTER TABLE intervention_plans ADD assigned_to NVARCHAR(100) NULL;
+        ");
+
         // Seed roles
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
