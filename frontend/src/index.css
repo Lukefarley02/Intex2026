@@ -54,6 +54,59 @@
     --success: 95 72% 24%;
     --success-foreground: 0 0% 100%;
   }
+
+  /* Dark mode palette — activated by adding the `dark` class to <html>.
+     ThemeProvider is responsible for toggling that class based on the
+     user's stored preference (light / dark / system). Colour values are
+     chosen to preserve the Ember palette identity while meeting WCAG AA
+     contrast on dark backgrounds. */
+  .dark {
+    --background: 20 14% 8%;
+    --foreground: 30 15% 92%;
+
+    --card: 20 14% 11%;
+    --card-foreground: 30 15% 92%;
+
+    --popover: 20 14% 11%;
+    --popover-foreground: 30 15% 92%;
+
+    --primary: 11 75% 58%;
+    --primary-foreground: 20 14% 8%;
+    --primary-light: 11 40% 18%;
+
+    --secondary: 160 55% 40%;
+    --secondary-foreground: 20 14% 8%;
+
+    --muted: 20 10% 16%;
+    --muted-foreground: 30 8% 68%;
+
+    --accent: 95 45% 45%;
+    --accent-foreground: 20 14% 8%;
+
+    --gold: 36 75% 55%;
+    --gold-foreground: 20 14% 8%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 11 75% 58%;
+
+    --sidebar-background: 160 40% 10%;
+    --sidebar-foreground: 160 15% 88%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 160 40% 10%;
+    --sidebar-accent: 160 35% 16%;
+    --sidebar-accent-foreground: 160 15% 95%;
+    --sidebar-border: 160 25% 22%;
+    --sidebar-ring: 11 75% 58%;
+
+    --warning: 36 75% 55%;
+    --warning-foreground: 20 14% 8%;
+    --success: 95 45% 45%;
+    --success-foreground: 20 14% 8%;
+  }
 }
 
 @layer base {
@@ -74,7 +127,7 @@
     background: linear-gradient(135deg, hsl(160 76% 24%), hsl(160 76% 18%));
   }
   .gradient-warm {
-    background: linear-gradient(135deg, hsl(11 85% 95%), hsl(30 10% 95%));
+    background: linear-gradient(135deg, hsl(var(--primary-light)), hsl(var(--background)));
   }
 
   /* Counter animation */
