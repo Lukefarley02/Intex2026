@@ -79,8 +79,13 @@ const AccountSettings = () => {
     clearMustChangePassword,
     setToken,
   } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const { mode, resolved, setMode } = useTheme();
   const navigate = useNavigate();
+
+  // Donors who are not also Admin or Staff skip the current-password field —
+  // they may have the password saved but not remember it.
+  const isDonorOnly = hasRole("Donor") && !hasRole("Admin") && !hasRole("Staff");
 
   // --- Email change form ---
   const [newEmail, setNewEmail] = useState(user?.email ?? "");
@@ -138,7 +143,7 @@ const AccountSettings = () => {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentPw || !newPw || !confirmPw) {
+    if ((!isDonorOnly && !currentPw) || !newPw || !confirmPw) {
       setPwStatus({ kind: "error", message: "All fields are required." });
       return;
     }
@@ -162,10 +167,17 @@ const AccountSettings = () => {
     }
     setPwLoading(true);
     setPwStatus({ kind: "idle" });
-    const { ok, data } = await authFetch("/api/auth/change-password", {
-      method: "POST",
-      body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
-    });
+    // Donors use /set-password (no current password needed).
+    // Admins and Staff use /change-password (current password required).
+    const { ok, data } = isDonorOnly
+      ? await authFetch("/api/auth/set-password", {
+          method: "POST",
+          body: JSON.stringify({ newPassword: newPw }),
+        })
+      : await authFetch("/api/auth/change-password", {
+          method: "POST",
+          body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+        });
     setPwLoading(false);
     if (!ok) {
       setPwStatus({ kind: "error", message: extractErrorMessage(data, "Failed to update password.") });
@@ -180,6 +192,11 @@ const AccountSettings = () => {
     }
     const wasForced = mustChangePassword;
     clearMustChangePassword();
+    // Both endpoints return a fresh JWT with the updated security stamp.
+    // Swap it into sessionStorage so subsequent requests don't get 401'd.
+    if (data && typeof data === "object" && "token" in data) {
+      sessionStorage.setItem("jwt", (data as { token: string }).token);
+    }
     setPwStatus({ kind: "success", message: "Password updated successfully." });
     setCurrentPw("");
     setNewPw("");
@@ -363,16 +380,18 @@ const AccountSettings = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <Label htmlFor="current-pw">Current password</Label>
-                <Input
-                  id="current-pw"
-                  type="password"
-                  value={currentPw}
-                  onChange={(e) => setCurrentPw(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
+              {!isDonorOnly && (
+                <div>
+                  <Label htmlFor="current-pw">Current password</Label>
+                  <Input
+                    id="current-pw"
+                    type="password"
+                    value={currentPw}
+                    onChange={(e) => setCurrentPw(e.target.value)}
+                    autoComplete="current-password"
+                  />
+                </div>
+              )}
               <div>
                 <Label htmlFor="new-pw">New password</Label>
                 <Input
