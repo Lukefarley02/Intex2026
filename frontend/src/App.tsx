@@ -5,8 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/api/AuthContext";
 import { ThemeProvider } from "@/api/ThemeContext";
+import { RootkitProvider, useRootkit } from "@/api/RootkitContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import CookieConsent from "@/components/CookieConsent";
+import RootkitOverlay from "@/components/RootkitOverlay";
 
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -40,12 +42,21 @@ const DashboardRouter = () => {
   return <StaffDashboard />;
 };
 
+/** Renders the rootbeer rain when rootkit mode is active */
+const RootkitLayer = () => {
+  const { active } = useRootkit();
+  if (!active) return null;
+  return <RootkitOverlay />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+    <RootkitProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <RootkitLayer />
       <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <AuthProvider>
           <CookieConsent />
@@ -167,6 +178,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </RootkitProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
