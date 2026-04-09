@@ -79,7 +79,6 @@ const AccountSettings = () => {
     clearMustChangePassword,
     setToken,
   } = useAuth();
->>>>>>>>> Temporary merge branch 2
   const { mode, resolved, setMode } = useTheme();
   const navigate = useNavigate();
 
@@ -181,7 +180,6 @@ const AccountSettings = () => {
     }
     const wasForced = mustChangePassword;
     clearMustChangePassword();
->>>>>>>>> Temporary merge branch 2
     setPwStatus({ kind: "success", message: "Password updated successfully." });
     setCurrentPw("");
     setNewPw("");

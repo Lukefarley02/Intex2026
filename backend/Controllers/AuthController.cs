@@ -22,6 +22,7 @@ public record AuthResponse(
 public record ChangeEmailRequest(string NewEmail, string CurrentPassword);
 public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 public record DeleteAccountRequest(string CurrentPassword);
+public record SetPasswordRequest(string NewPassword);
 
 // ── Controller ────────────────────────────────────────────────────────────────
 [ApiController]
@@ -187,16 +188,6 @@ public class AuthController : ControllerBase
         var roles = await _userManager.GetRolesAsync(user);
         var token = GenerateJwt(user, roles);
         return Ok(new AuthResponse(token, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
-<<<<<<< HEAD
-=======
-        // ChangePasswordAsync regenerates the user's SecurityStamp, which
-        // immediately invalidates the caller's existing JWT (the OnTokenValidated
-        // hook rejects tokens whose stamp no longer matches the DB). Return a
-        // fresh token here so the client can swap it in without losing their
-        // session — identical to the change-email flow.
-        var roles = await _userManager.GetRolesAsync(user);
-        var freshToken = GenerateJwt(user, roles);
-        return Ok(new { message = "Password changed successfully.", token = freshToken });
     }
 
     // POST /api/auth/set-password
@@ -204,8 +195,9 @@ public class AuthController : ControllerBase
     // current password. Donors often have passwords saved by the browser and
     // may not remember them when they want to change to something memorable.
     // Uses a server-generated reset token internally so Identity's password
-    // policy is still enforced. Returns a fresh JWT (same reason as above —
-    // ResetPasswordAsync regenerates the SecurityStamp).
+    // policy is still enforced. Returns a fresh JWT because ResetPasswordAsync
+    // regenerates the SecurityStamp, which would otherwise invalidate the
+    // caller's existing token on the next request.
     [Authorize(Roles = "Donor")]
     [HttpPost("set-password")]
     public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
@@ -217,10 +209,17 @@ public class AuthController : ControllerBase
         var result = await _userManager.ResetPasswordAsync(user, resetToken, request.NewPassword);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
+        // Also clear MustChangePassword if the donor was on a forced-reset
+        // path — set-password is another valid way to complete it.
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
         var roles = await _userManager.GetRolesAsync(user);
         var freshToken = GenerateJwt(user, roles);
-        return Ok(new { message = "Password updated successfully.", token = freshToken });
->>>>>>> 4a74819067b96ceba32398b8491e810fb8de10f0
+        return Ok(new AuthResponse(freshToken, user.Email!, roles, user.Region, user.City, user.MustChangePassword));
     }
 
     // DELETE /api/auth/account
