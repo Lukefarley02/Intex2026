@@ -17,8 +17,6 @@ import {
   NotebookPen,
   ClipboardList,
   Users,
-  AlertTriangle,
-  ArrowRight,
   HandCoins,
 } from "lucide-react";
 
@@ -326,27 +324,38 @@ const StaffDashboard = () => {
   const primarySafehouse = derivedSafehouses[0] ?? null;
 
   return (
-    <DashboardLayout title="Staff Dashboard">
+    <DashboardLayout title="Staff Dashboard" fitViewport>
+      <div className="flex flex-col h-full gap-3">
       {/* Greeting */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold">
-          Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}.
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Your assigned safehouse, upcoming visits, and recent case notes in one place.
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-shrink-0">
+        <div>
+          <h2 className="text-xl font-bold">
+            Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}.
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Your assigned safehouse, upcoming visits, and recent case notes in one place.
+          </p>
+        </div>
+        <Button
+          onClick={() => setLogDonationOpen(true)}
+          className="flex-shrink-0"
+          size="sm"
+        >
+          <HandCoins className="w-4 h-4 mr-2" />
+          Log donation
+        </Button>
       </div>
 
       {/* Top row: profile + safehouse */}
-      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid lg:grid-cols-3 gap-3 flex-shrink-0">
         {/* Profile card */}
         <Card className="rounded-xl shadow-sm lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
               <UserCircle className="w-4 h-4 text-primary" /> My account
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-1.5 text-xs pb-3">
             <div className="flex items-start justify-between gap-2">
               <span className="text-muted-foreground">Email</span>
               <span className="font-medium text-right break-all">
@@ -372,11 +381,11 @@ const StaffDashboard = () => {
               <span className="font-medium text-right">{me?.city ?? "—"}</span>
             </div>
 
-            <div className="pt-3 border-t space-y-2">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <div className="pt-2 border-t space-y-1.5">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 This month
               </p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 <Badge variant="outline" className={kindMeta["home-visit"].badgeClass}>
                   {thisMonthCount("home-visit")} visits
                 </Badge>
@@ -396,12 +405,20 @@ const StaffDashboard = () => {
 
         {/* Safehouse card (replaces the old /safehouses page for Staff) */}
         <Card className="rounded-xl shadow-sm lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
               <Home className="w-4 h-4 text-primary" /> My safehouse
             </CardTitle>
+            {primarySafehouse && (
+              <Link to="/residents">
+                <Button size="sm" variant="outline" className="h-7 text-xs">
+                  <Users className="w-3.5 h-3.5 mr-1.5" />
+                  View residents
+                </Button>
+              </Link>
+            )}
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-3">
             {shLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
             ) : !primarySafehouse ? (
@@ -417,13 +434,13 @@ const StaffDashboard = () => {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
-                    <h3 className="font-semibold text-lg">
+                    <h3 className="font-semibold text-base">
                       {primarySafehouse.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                       <MapPin className="w-3.5 h-3.5" />
                       {[
                         primarySafehouse.city,
@@ -449,7 +466,7 @@ const StaffDashboard = () => {
 
                 {/* Occupancy */}
                 <div>
-                  <div className="flex items-center justify-between text-sm mb-1.5">
+                  <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-muted-foreground">Occupancy</span>
                     <span className="font-medium">
                       {primarySafehouse.activeResidents} /{" "}
@@ -470,22 +487,22 @@ const StaffDashboard = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 pt-3 border-t">
+                <div className="grid grid-cols-3 gap-3 pt-2 border-t">
                   <div>
-                    <p className="text-xs text-muted-foreground">Code</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-[10px] text-muted-foreground">Code</p>
+                    <p className="text-xs font-medium">
                       {primarySafehouse.safehouseCode ?? "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Staff capacity</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-[10px] text-muted-foreground">Staff capacity</p>
+                    <p className="text-xs font-medium">
                       {primarySafehouse.capacityStaff ?? "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Opened</p>
-                    <p className="text-sm font-medium">
+                    <p className="text-[10px] text-muted-foreground">Opened</p>
+                    <p className="text-xs font-medium">
                       {primarySafehouse.openDate
                         ? new Date(primarySafehouse.openDate).toLocaleDateString()
                         : "—"}
@@ -519,11 +536,11 @@ const StaffDashboard = () => {
         </Card>
       </div>
 
-      {/* Events: upcoming + history */}
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
+      {/* Events: upcoming + history — flex-1 so they absorb remaining space */}
+      <div className="grid lg:grid-cols-2 gap-3 flex-1 min-h-0">
+        <Card className="rounded-xl shadow-sm flex flex-col min-h-0">
+          <CardHeader className="pb-2 flex-shrink-0 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary" /> Upcoming
             </CardTitle>
             <Link
@@ -533,7 +550,7 @@ const StaffDashboard = () => {
               Schedule visit →
             </Link>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 flex-1 min-h-0 overflow-y-auto">
             {upcoming.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nothing scheduled. Use Home Visitation or Process Recording to add
@@ -546,10 +563,10 @@ const StaffDashboard = () => {
                 return (
                   <div
                     key={e.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border"
+                    className="flex items-start gap-2 p-2 rounded-lg border"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-primary" />
+                    <div className="w-7 h-7 rounded-lg bg-primary-light flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -570,9 +587,9 @@ const StaffDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
+        <Card className="rounded-xl shadow-sm flex flex-col min-h-0">
+          <CardHeader className="pb-2 flex-shrink-0 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
               <NotebookPen className="w-4 h-4 text-primary" /> Recent history
             </CardTitle>
             <Link
@@ -582,7 +599,7 @@ const StaffDashboard = () => {
               All notes →
             </Link>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 flex-1 min-h-0 overflow-y-auto">
             {history.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No past visits or counseling sessions on record yet.
@@ -594,10 +611,10 @@ const StaffDashboard = () => {
                 return (
                   <div
                     key={e.id}
-                    className="flex items-start gap-3 p-3 rounded-lg border"
+                    className="flex items-start gap-2 p-2 rounded-lg border"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-4 h-4 text-muted-foreground" />
+                    <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -618,56 +635,11 @@ const StaffDashboard = () => {
         </Card>
       </div>
 
-      {/* Quick actions */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { to: "/residents", label: "My residents", icon: UserCircle },
-          { to: "/process-recording", label: "Process recording", icon: NotebookPen },
-          { to: "/home-visitation", label: "Home visitation", icon: MapPin },
-        ].map((q) => (
-          <Link key={q.to} to={q.to}>
-            <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <q.icon className="w-5 h-5 text-primary" />
-                  <span className="font-semibold">{q.label}</span>
-                </div>
-                <ArrowRight className="w-5 h-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-        {/* Log-donation tile — Staff's only path into the donation flow.
-            Opens the shared LogDonationDialog, which walks through
-            type → donor match → details and posts to /api/donations. */}
-        <button
-          type="button"
-          onClick={() => setLogDonationOpen(true)}
-          className="text-left"
-        >
-          <Card className="rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-            <CardContent className="p-5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <HandCoins className="w-5 h-5 text-primary" />
-                <span className="font-semibold">Log donation</span>
-              </div>
-              <ArrowRight className="w-5 h-5 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </button>
-      </div>
-
       <LogDonationDialog
         open={logDonationOpen}
         onOpenChange={setLogDonationOpen}
       />
-
-      {/* Tiny footer nudge about the old weekly check-in form */}
-      <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1.5">
-        <AlertTriangle className="w-3 h-3" />
-        Weekly check-ins are now logged as a <strong>Process Recording</strong>{" "}
-        with session type &ldquo;Weekly check-in&rdquo;.
-      </p>
+      </div>
     </DashboardLayout>
   );
 };
