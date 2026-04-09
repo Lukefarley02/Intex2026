@@ -101,6 +101,10 @@ namespace Intex2026.Api.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("family_members_present");
 
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("created_by_user_id");
+
                     b.Property<bool?>("FollowUpNeeded")
                         .HasColumnType("bit")
                         .HasColumnName("follow_up_needed");
@@ -162,6 +166,10 @@ namespace Intex2026.Api.Migrations
                     b.Property<bool?>("ConcernsFlagged")
                         .HasColumnType("bit")
                         .HasColumnName("concerns_flagged");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("created_by_user_id");
 
                     b.Property<string>("EmotionalStateEnd")
                         .HasColumnType("nvarchar(max)")

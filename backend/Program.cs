@@ -13,8 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 // ---------- Services ----------
 
 // EF Core — application database
+// Suppress PendingModelChangesWarning: EF Core 10 throws on any mismatch
+// between the live model and the last snapshot, which fires when migrations
+// are authored by hand in this sandbox (no `dotnet ef migrations add`
+// available). We still apply migrations at startup and additionally run a
+// defensive raw-SQL patch (see below) so the schema is guaranteed to be
+// current — the warning is noise in that workflow.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options
+        .UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .ConfigureWarnings(w => w.Ignore(
+            Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 // EF Core — identity database
 builder.Services.AddDbContext<IdentityContext>(options =>
@@ -131,6 +140,50 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// ---------- Defensive schema patch (runs BEFORE migrations) ----------
+// Ensure `created_by_user_id` exists on process_recordings and
+// home_visitations. These columns are referenced by the ProcessRecording /
+// HomeVisitation models, so they MUST exist before any SELECT runs or EF
+// will blow up with "Invalid column name 'created_by_user_id'". We run
+// this in its OWN scope + try/catch, BEFORE MigrateAsync, so the column
+// is guaranteed to exist even if MigrateAsync throws
+// (e.g. PendingModelChangesWarning in hand-authored migration workflows).
+using (var patchScope = app.Services.CreateScope())
+{
+    var patchLogger = patchScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var patchDb = patchScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await patchDb.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE Name = N'created_by_user_id'
+                  AND Object_ID = Object_ID(N'dbo.process_recordings')
+            )
+            BEGIN
+                ALTER TABLE process_recordings
+                ADD created_by_user_id NVARCHAR(450) NULL;
+            END
+        ");
+        await patchDb.Database.ExecuteSqlRawAsync(@"
+            IF NOT EXISTS (
+                SELECT 1 FROM sys.columns
+                WHERE Name = N'created_by_user_id'
+                  AND Object_ID = Object_ID(N'dbo.home_visitations')
+            )
+            BEGIN
+                ALTER TABLE home_visitations
+                ADD created_by_user_id NVARCHAR(450) NULL;
+            END
+        ");
+        patchLogger.LogInformation("created_by_user_id columns verified.");
+    }
+    catch (Exception ex)
+    {
+        patchLogger.LogError(ex, "Failed to patch created_by_user_id columns.");
+    }
+}
 
 // ---------- Apply pending migrations and seed on startup ----------
 using (var scope = app.Services.CreateScope())

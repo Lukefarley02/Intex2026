@@ -56,7 +56,7 @@ public class ProcessRecordingsController : ControllerBase
             .ToListAsync();
 
         var canSeeNotes = scope.IsAdmin;
-        var userId = scope.UserId;
+        var callerId = _users.GetUserId(User);
         return list.Select(p => (object)new
         {
             p.RecordingId,
@@ -74,13 +74,12 @@ public class ProcessRecordingsController : ControllerBase
             p.FollowUpActions,
             p.SocialWorker,
             p.CreatedByUserId,
+            // `canModify` lets the frontend gate Edit/Delete buttons per-row
+            // without having to re-derive the rule. Admins (any tier) can
+            // always modify; Staff can only modify rows they created.
+            CanModify = scope.IsAdmin || p.CreatedByUserId == callerId,
             // notes_restricted is sensitive — admin (any tier) only.
-            NotesRestricted = canSeeNotes ? p.NotesRestricted : null,
-            // Admins can modify any row in scope; Staff can only modify
-            // rows they personally created. Legacy rows (null creator)
-            // are admin-only.
-            CanModify = scope.IsAdmin
-                || (scope.IsStaff && p.CreatedByUserId != null && p.CreatedByUserId == userId)
+            NotesRestricted = canSeeNotes ? p.NotesRestricted : null
         }).ToList();
     }
 
@@ -98,7 +97,7 @@ public class ProcessRecordingsController : ControllerBase
         if (!await CanAccessResidentAsync(p.ResidentId, scope)) return Forbid();
 
         var canSeeNotes = scope.IsAdmin;
-        var userId = scope.UserId;
+        var callerId = _users.GetUserId(User);
         return new
         {
             p.RecordingId,
@@ -116,9 +115,8 @@ public class ProcessRecordingsController : ControllerBase
             p.FollowUpActions,
             p.SocialWorker,
             p.CreatedByUserId,
-            NotesRestricted = canSeeNotes ? p.NotesRestricted : null,
-            CanModify = scope.IsAdmin
-                || (scope.IsStaff && p.CreatedByUserId != null && p.CreatedByUserId == userId)
+            CanModify = scope.IsAdmin || p.CreatedByUserId == callerId,
+            NotesRestricted = canSeeNotes ? p.NotesRestricted : null
         };
     }
 
@@ -135,9 +133,12 @@ public class ProcessRecordingsController : ControllerBase
             ? await _context.ProcessRecordings.MaxAsync(p => p.RecordingId) + 1
             : 1;
         dto.RecordingId = nextId;
-        dto.CreatedByUserId = scope.UserId;
 
         if (dto.SessionDate == null) dto.SessionDate = DateTime.UtcNow;
+
+        // Stamp the caller as the owner. Trusted server-side — the client
+        // cannot spoof another user's id because we overwrite whatever it sent.
+        dto.CreatedByUserId = _users.GetUserId(User);
 
         _context.ProcessRecordings.Add(dto);
         await _context.SaveChangesAsync();
@@ -146,6 +147,11 @@ public class ProcessRecordingsController : ControllerBase
     }
 
     // PUT /api/processrecordings/5
+    //
+    // Ownership rules:
+    //   Admin (any tier) — may edit any record inside their scope.
+    //   Staff            — may ONLY edit records they personally created
+    //                      (CreatedByUserId == current user id).
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateProcessRecording(int id,
         [FromBody] ProcessRecording dto)
@@ -161,11 +167,13 @@ public class ProcessRecordingsController : ControllerBase
             && !await CanAccessResidentAsync(dto.ResidentId, scope))
             return Forbid();
 
-        // Staff can only edit recordings they personally created.
-        if (scope.IsStaff && existing.CreatedByUserId != scope.UserId)
+        // Ownership check — Staff can only modify records they created.
+        // Admins bypass this. Legacy rows with a NULL owner are admin-only.
+        var callerId = _users.GetUserId(User);
+        if (!scope.IsAdmin && existing.CreatedByUserId != callerId)
             return Forbid();
 
-        // Preserve the original creator — don't let the PUT body overwrite it.
+        // Preserve the original owner regardless of what the client sent.
         dto.CreatedByUserId = existing.CreatedByUserId;
 
         _context.Entry(dto).State = EntityState.Modified;
@@ -179,16 +187,27 @@ public class ProcessRecordingsController : ControllerBase
         return NoContent();
     }
 
-    // DELETE /api/processrecordings/5  — Founders only.
+    // DELETE /api/processrecordings/5
+    //
+    // Ownership rules:
+    //   Admin (any tier) — may delete any record inside their scope.
+    //   Staff            — may ONLY delete records they personally created.
+    //
+    // (Previously Founder-only. Relaxed so Staff can retract their own
+    // recent entries without waiting on an admin.)
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteProcessRecording(int id)
     {
         var scope = await UserScope.FromPrincipalAsync(User, _users);
-        if (!scope.IsFounder) return Forbid();
 
         var p = await _context.ProcessRecordings.FindAsync(id);
         if (p == null) return NotFound();
+        if (!await CanAccessResidentAsync(p.ResidentId, scope)) return Forbid();
+
+        var callerId = _users.GetUserId(User);
+        if (!scope.IsAdmin && p.CreatedByUserId != callerId)
+            return Forbid();
+
         _context.ProcessRecordings.Remove(p);
         await _context.SaveChangesAsync();
         return NoContent();
