@@ -262,6 +262,7 @@ public class ReportsController : ControllerBase
                     d.DonationId,
                     d.DonationDate,
                     d.DonationType,
+                    d.ImpactUnit,
                     d.CampaignName,
                     Value = d.Amount ?? d.EstimatedValue ?? 0m
                 })
@@ -285,11 +286,16 @@ public class ReportsController : ControllerBase
 
             donationByType = donationRows
                 .GroupBy(d => string.IsNullOrWhiteSpace(d.DonationType) ? "Unspecified" : d.DonationType!)
-                .Select(g => new
+                .Select(g =>
                 {
-                    type = g.Key,
-                    total = g.Sum(x => x.Value),
-                    count = g.Count()
+                    var isTime = string.Equals(g.Key, "Time", StringComparison.OrdinalIgnoreCase);
+                    return new
+                    {
+                        type = g.Key,
+                        total = isTime ? 0m : g.Sum(x => x.Value),
+                        hours = isTime ? g.Sum(x => x.Value) : (decimal?)null,
+                        count = g.Count()
+                    };
                 })
                 .OrderByDescending(x => x.total)
                 .Cast<object>()

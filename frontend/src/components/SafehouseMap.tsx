@@ -2,28 +2,25 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix leaflet's broken default marker icons when bundled with Vite
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import SAFEHOUSES from "@/data/safehouses";
 
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-});
+// Custom SVG pin in Ember primary — hsl(11, 63%, 46%) = #c0481c
+const EMBER_PRIMARY = "#c0481c";
+const EMBER_DARK = "#8b3414";
 
-const emberIcon = new L.Icon({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-  className: "ember-marker",
+const pinSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+  <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24S24 21 24 12C24 5.373 18.627 0 12 0z"
+    fill="${EMBER_PRIMARY}" stroke="${EMBER_DARK}" stroke-width="1"/>
+  <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+</svg>`.trim();
+
+const emberIcon = L.divIcon({
+  html: pinSvg,
+  className: "",
+  iconSize: [24, 36],
+  iconAnchor: [12, 36],
+  popupAnchor: [0, -38],
 });
 
 // PublicSafehouse is kept for API compatibility — SafehouseMap no longer uses it
@@ -101,7 +98,6 @@ export default function SafehouseMap({ safehouses }: SafehouseMapProps) {
   return (
     <div className="w-full">
       <style>{`
-        .ember-marker { filter: hue-rotate(320deg) saturate(2); }
         .leaflet-popup-content-wrapper { border-radius: 10px; }
       `}</style>
       <div

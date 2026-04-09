@@ -85,7 +85,7 @@ interface ReportsSummary {
     total: number;
     count: number;
     trend: Array<{ month: string; total: number; count: number }>;
-    byType: Array<{ type: string; total: number; count: number }>;
+    byType: Array<{ type: string; total: number; hours?: number | null; count: number }>;
     byCampaign: Array<{ campaign: string; total: number; count: number }>;
     bySafehouse: Array<{
       safehouseId: number;
@@ -316,7 +316,10 @@ const Reports = () => {
                         <div key={r.type} className="flex justify-between">
                           <span>{r.type}</span>
                           <span className="tabular-nums text-muted-foreground">
-                            {fmtMoney(r.total)} · {r.count}
+                            {r.hours != null
+                              ? `${r.hours % 1 === 0 ? r.hours : r.hours.toFixed(1)} hrs`
+                              : fmtMoney(r.total)}{" "}
+                            · {r.count}
                           </span>
                         </div>
                       ))}
