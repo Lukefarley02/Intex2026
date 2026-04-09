@@ -3,7 +3,7 @@ import { ReactNode, useState } from "react";
 interface FlipCardProps {
   icon: ReactNode;
   title: string;
-  description: string;
+  description?: string;
   backContent?: ReactNode;
 }
 
@@ -44,11 +44,6 @@ const FlipCard = ({ icon, title, description, backContent }: FlipCardProps) => {
               {icon}
             </div>
             <h3 className="font-semibold text-foreground text-center text-base">{title}</h3>
-            <p className="text-sm text-muted-foreground text-center">{description}</p>
-            {/* Flip hint */}
-            <span className="absolute bottom-4 left-0 right-0 text-center text-sm font-semibold text-primary">
-              Learn more →
-            </span>
           </div>
 
           {/* Back */}
