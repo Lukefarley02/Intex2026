@@ -306,51 +306,6 @@ const AccountSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Change email */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" /> Change email
-            </CardTitle>
-            <CardDescription>
-              We'll ask you to confirm your current password. You'll be signed out after the change.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleChangeEmail} className="space-y-4">
-              <div>
-                <Label htmlFor="new-email">New email address</Label>
-                <Input
-                  id="new-email"
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  autoComplete="email"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email-current-pw">Current password</Label>
-                <Input
-                  id="email-current-pw"
-                  type="password"
-                  value={emailPassword}
-                  onChange={(e) => setEmailPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
-              {emailStatus.kind === "error" && (
-                <p className="text-sm text-destructive">{emailStatus.message}</p>
-              )}
-              {emailStatus.kind === "success" && (
-                <p className="text-sm text-success">{emailStatus.message}</p>
-              )}
-              <Button type="submit" disabled={emailLoading}>
-                {emailLoading ? "Updating…" : "Update email"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
         {/* Change password */}
         <Card>
           <CardHeader>
@@ -401,6 +356,51 @@ const AccountSettings = () => {
               )}
               <Button type="submit" disabled={pwLoading}>
                 {pwLoading ? "Updating…" : "Update password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Change email */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="w-5 h-5" /> Change email
+            </CardTitle>
+            <CardDescription>
+              We'll ask you to confirm your current password. You'll be signed out after the change.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleChangeEmail} className="space-y-4">
+              <div>
+                <Label htmlFor="new-email">New email address</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email-current-pw">Current password</Label>
+                <Input
+                  id="email-current-pw"
+                  type="password"
+                  value={emailPassword}
+                  onChange={(e) => setEmailPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              {emailStatus.kind === "error" && (
+                <p className="text-sm text-destructive">{emailStatus.message}</p>
+              )}
+              {emailStatus.kind === "success" && (
+                <p className="text-sm text-success">{emailStatus.message}</p>
+              )}
+              <Button type="submit" disabled={emailLoading}>
+                {emailLoading ? "Updating…" : "Update email"}
               </Button>
             </form>
           </CardContent>
