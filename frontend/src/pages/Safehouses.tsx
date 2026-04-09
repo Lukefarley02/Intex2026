@@ -279,7 +279,7 @@ const Safehouses = () => {
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             <Building2 className="w-3.5 h-3.5 text-indigo-500" />
-            Safehouse Performance
+            Safehouse Performance & Growth
             <ChevronRight className="w-3 h-3 text-muted-foreground" />
           </Link>
         </div>

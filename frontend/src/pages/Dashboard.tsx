@@ -146,7 +146,7 @@ const Dashboard = () => {
       icon: AlertTriangle,
       iconBg: "bg-red-100",
       iconColor: "text-red-600",
-      pipeline: "Pipeline 01: Churn Prediction",
+      pipeline: "Donor Turnover",
       action: { to: "/ml-insights?tab=churn", label: "Review" },
     },
     {
@@ -156,7 +156,7 @@ const Dashboard = () => {
       icon: ArrowUpCircle,
       iconBg: "bg-gold/10",
       iconColor: "text-gold",
-      pipeline: "Pipeline 02: Donation Capacity",
+      pipeline: "Donor Improvement",
       action: { to: "/ml-insights?tab=capacity", label: "View list" },
     },
     {
@@ -166,7 +166,7 @@ const Dashboard = () => {
       icon: CheckCircle2,
       iconBg: "bg-emerald-100",
       iconColor: "text-emerald-600",
-      pipeline: "Pipeline 04: Resident Outcomes",
+      pipeline: "Resident Outcomes",
       action: { to: "/ml-insights?tab=outcomes", label: "Review cases" },
     },
     {
@@ -176,7 +176,7 @@ const Dashboard = () => {
       icon: Building2,
       iconBg: "bg-orange-100",
       iconColor: "text-orange-600",
-      pipeline: "Pipeline 05: Geographic Performance",
+      pipeline: "Safehouse Performance & Growth",
       action: { to: "/ml-insights?tab=geographic", label: "View map" },
     },
   ];

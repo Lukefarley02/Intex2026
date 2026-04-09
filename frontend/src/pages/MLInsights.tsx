@@ -53,8 +53,8 @@ const PIPELINES = [
   {
     id: "churn",
     number: "01",
-    label: "Donor Churn Risk",
-    shortLabel: "Churn",
+    label: "Donor Turnover",
+    shortLabel: "Turnover",
     icon: AlertTriangle,
     color: "text-red-600 dark:text-red-400",
     bg: "bg-red-50 dark:bg-red-950/30",
@@ -67,8 +67,8 @@ const PIPELINES = [
   {
     id: "capacity",
     number: "02",
-    label: "Giving Capacity",
-    shortLabel: "Capacity",
+    label: "Donor Improvement",
+    shortLabel: "Improvement",
     icon: ArrowUpCircle,
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-50 dark:bg-amber-950/30",
@@ -81,7 +81,7 @@ const PIPELINES = [
   {
     id: "social",
     number: "03",
-    label: "Social Media Impact",
+    label: "Social Media Donation Influence",
     shortLabel: "Social",
     icon: Globe,
     color: "text-blue-600 dark:text-blue-400",
@@ -109,8 +109,8 @@ const PIPELINES = [
   {
     id: "geographic",
     number: "05",
-    label: "Safehouse Performance",
-    shortLabel: "Geographic",
+    label: "Safehouse Performance & Growth",
+    shortLabel: "Performance",
     icon: Building2,
     color: "text-indigo-600 dark:text-indigo-400",
     bg: "bg-indigo-50 dark:bg-indigo-950/30",
@@ -248,14 +248,14 @@ function RiskBadge({ level }: { level: string }) {
   const l = level?.toLowerCase();
   const cls =
     l === "critical"
-      ? "bg-red-100 text-red-700 border-red-200"
+      ? "bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800"
       : l === "high"
-      ? "bg-orange-100 text-orange-700 border-orange-200"
+      ? "bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800"
       : l === "medium"
-      ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+      ? "bg-yellow-100 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800"
       : l === "low"
-      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-      : "bg-gray-100 text-gray-600 border-gray-200";
+      ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+      : "bg-muted text-muted-foreground border-border";
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>
       {level}
@@ -1167,33 +1167,18 @@ function AcquisitionRoiView() {
 }
 
 function StaticInsightView({
-  pipelineNumber,
   title,
   findings,
   actions,
-  notebookFile,
   dataNote,
 }: {
-  pipelineNumber: string;
   title: string;
   findings: { heading: string; body: string }[];
   actions: string[];
-  notebookFile: string;
   dataNote: string;
 }) {
   return (
     <div className="space-y-6">
-      <Card className="rounded-xl border-amber-200 bg-amber-50">
-        <CardContent className="p-4 flex items-start gap-3">
-          <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800">
-            <strong>Live data requires additional table modeling.</strong> Run{" "}
-            <code className="bg-amber-100 px-1 rounded text-xs">{notebookFile}</code> against the CSV files for full analysis.{" "}
-            {dataNote}
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {findings.map((f) => (
           <Card key={f.heading} className="rounded-xl shadow-sm">
@@ -1209,8 +1194,7 @@ function StaticInsightView({
 
       <div className="grid lg:grid-cols-2 gap-6">
         <InterpretationCard>
-          <p>These findings come from running Pipeline {pipelineNumber} ({title}) against the full CSV dataset. The analysis reveals patterns that are not directly derivable from the 6 currently modeled database tables.</p>
-          <p>To get live scores, wire the additional tables (<code className="text-xs bg-muted px-1 rounded">{dataNote}</code>) into EF Core and re-run the model on the Azure SQL data.</p>
+          <p>Analysis from the <strong>{title}</strong> model run against the full dataset. Source: <code className="text-xs bg-muted px-1 rounded">{dataNote}</code>.</p>
         </InterpretationCard>
         <ActionsCard actions={actions} />
       </div>
@@ -1245,9 +1229,6 @@ export default function MLInsights() {
                     : "bg-card border-border text-muted-foreground hover:bg-muted/40"
                 }`}
               >
-                <span className={`text-[10px] font-bold rounded px-1 py-0.5 ${isActive ? "bg-white/60 dark:bg-black/30" : "bg-muted"}`}>
-                  {p.number}
-                </span>
                 <p.icon className="w-4 h-4" />
                 {p.shortLabel}
               </button>
@@ -1284,9 +1265,7 @@ export default function MLInsights() {
       {activePipeline === "roi" && <AcquisitionRoiView />}
       {activePipeline === "partners" && (
         <StaticInsightView
-          pipelineNumber="07"
           title="Partner Effectiveness"
-          notebookFile="07_partner_effectiveness.ipynb"
           dataNote="partners + partner_assignments tables"
           findings={[
             { heading: "Program Area Diversity Drives Outcomes", body: "Safehouses with coverage across Education, Wellbeing, AND Operations outperform single-area houses by 15–25 points on education progress metrics." },
@@ -1301,15 +1280,13 @@ export default function MLInsights() {
             "Recruit 2 new Education partners in Mindanao region this quarter.",
             "Convert active individual contractors to formal organizational agreements where possible.",
             "Set a minimum standard: every active safehouse must have ≥ 3 active partners across ≥ 2 program areas.",
-            "Run Pipeline 07 notebook monthly and add partnership scores to the safehouse management page.",
+            "Run the Partner Effectiveness notebook monthly and add partnership scores to the safehouse management page.",
           ]}
         />
       )}
       {activePipeline === "inkind" && (
         <StaticInsightView
-          pipelineNumber="08"
           title="In-Kind Needs Forecasting"
-          notebookFile="08_in_kind_needs_forecasting.ipynb"
           dataNote="in_kind_donation_items table"
           findings={[
             { heading: "Medical Supplies Most Under-donated", body: "Donors naturally give food and school materials (visible impact) but Medical items are chronically under-supplied relative to Health program needs." },
@@ -1324,7 +1301,7 @@ export default function MLInsights() {
             "Launch a 'March Medical Drive' corporate partnership campaign to fill the seasonal supply gap.",
             "Create a 'Back to School Supply Drive' page for Aug–Sep to capitalize on the natural donation spike.",
             "Add a clear quality standard to in-kind intake: 'New or Like-New condition only for Medical and Hygiene items'.",
-            "Run Pipeline 08 notebook quarterly and update the safehouse wish list based on current gap analysis.",
+            "Run the In-Kind Needs Forecast notebook quarterly and update the safehouse wish list based on current gap analysis.",
           ]}
         />
       )}

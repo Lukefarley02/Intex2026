@@ -515,7 +515,7 @@ const Donors = () => {
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-            Donor Churn Risk
+            Donor Turnover
             <ChevronRight className="w-3 h-3 text-muted-foreground" />
           </Link>
           <Link
@@ -523,7 +523,7 @@ const Donors = () => {
             className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             <ArrowUpCircle className="w-3.5 h-3.5 text-amber-500" />
-            Giving Capacity
+            Donor Improvement
             <ChevronRight className="w-3 h-3 text-muted-foreground" />
           </Link>
           <Link
