@@ -8,7 +8,7 @@ public class PartnerAssignment
 {
     [Key][Column("assignment_id")] public int AssignmentId { get; set; }
     [Column("partner_id")] public int PartnerId { get; set; }
-    [Column("safehouse_id")] public int SafehouseId { get; set; }
+    [Column("safehouse_id")] public int? SafehouseId { get; set; }
     [Column("program_area")] public string ProgramArea { get; set; } = ""; // Operations, Wellbeing, Education, Logistics
     [Column("assignment_start")] public DateTime? AssignmentStart { get; set; }
     [Column("assignment_end")] public DateTime? AssignmentEnd { get; set; }

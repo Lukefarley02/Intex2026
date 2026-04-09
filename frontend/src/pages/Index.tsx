@@ -137,19 +137,19 @@ const Index = () => {
       <div className="relative container py-24 md:py-36 lg:py-44">
         <div className="max-w-2xl space-y-6">
           <div className="animate-fade-in-up-1 flex items-baseline gap-3">
-            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-[hsl(11_63%_38%)]">
-              Ember
-            </span>
+            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-primary">
+          Ember
+        </span>
             <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white dark:text-black">
               Foundation
             </span>
+            <br /><br /><br />
           </div>
-          <h1 className="animate-fade-in-up-2 text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight text-card leading-tight">
+          <h1 className="animate-fade-in-up-2 mt-16 md:mt-24 text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-card leading-tight">
             Every girl deserves
             <br />
-            <span className="text-primary text-4xl md:text-5xl lg:text-6xl block leading-none my-1">a safe place</span>
-            <br />
-            to heal & grow
+            <span className="text-primary text-3xl md:text-4xl lg:text-5xl  leading-none mt-1">a safe place </span> to heal & grow
+            
           </h1>
           <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
             <Link to="/donate">
@@ -195,8 +195,8 @@ const Index = () => {
       <div className="container">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <p className="text-sm font-semibold text-primary uppercase tracking-widest">Our mission</p>
-          <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-            Restoring hope, one girl at a time
+          <h2 className="font-serif text-4xl md:text-5xl font-bold leading-tight">
+            Restoring hope,<br />one girl at a time
           </h2>
           <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
             Ember Foundation exists to support NGOs in the Philippines who shelter, rehabilitate, and reintegrate

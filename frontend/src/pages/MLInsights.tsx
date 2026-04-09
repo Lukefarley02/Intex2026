@@ -134,20 +134,21 @@ const PIPELINES = [
     modelType: "Regression · Gradient Boosting",
     dataSource: "supporters + donations tables",
   },
-  {
-    id: "partners",
-    number: "07",
-    label: "Partner Effectiveness",
-    shortLabel: "Partners",
-    icon: Handshake,
-    color: "text-teal-600 dark:text-teal-400",
-    bg: "bg-teal-50 dark:bg-teal-950/30",
-    border: "border-teal-200 dark:border-teal-800",
-    badgeBg: "bg-teal-100/80 dark:bg-teal-900/40",
-    description: "Which partner types and program areas drive the best safehouse outcomes?",
-    modelType: "Correlation + Random Forest",
-    dataSource: "partners + assignments + metrics (run notebook for live data)",
-  },
+  // TODO Pipeline 07 (Partner Effectiveness) — commented out until CORS + data issues are resolved
+  // {
+  //   id: "partners",
+  //   number: "07",
+  //   label: "Partner Effectiveness",
+  //   shortLabel: "Partners",
+  //   icon: Handshake,
+  //   color: "text-teal-600 dark:text-teal-400",
+  //   bg: "bg-teal-50 dark:bg-teal-950/30",
+  //   border: "border-teal-200 dark:border-teal-800",
+  //   badgeBg: "bg-teal-100/80 dark:bg-teal-900/40",
+  //   description: "Which partner types and program areas drive the best safehouse outcomes?",
+  //   modelType: "Correlation + Random Forest",
+  //   dataSource: "partners + assignments + metrics (run notebook for live data)",
+  // },
   {
     id: "inkind",
     number: "08",
@@ -1020,7 +1021,7 @@ function GeographicView() {
             ? `Plan capacity expansion in ${highestRegion.region} (${fmtPct(highestRegion.utilization)} utilization) for the next fiscal year — this region is approaching its ceiling.`
             : "Monitor regional utilization monthly — act when any region exceeds 85% for two consecutive months.",
           "Share this efficiency ranking with regional coordinators and use it in monthly ops review meetings.",
-          "Run Pipeline 07 (Partner Effectiveness) to identify which safehouses have critical partnership gaps affecting outcomes.",
+          // "Run Pipeline 07 (Partner Effectiveness) to identify which safehouses have critical partnership gaps affecting outcomes.",
         ];
 
         return (
@@ -1205,11 +1206,12 @@ function StaticInsightView({
 // ─── Pipeline 07: Partner Effectiveness ──────────────────────────────────────
 
 function PartnerEffectivenessView() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["ml-partner-effectiveness"],
     queryFn: () => apiFetch<any>("/api/mlinsights/partner-effectiveness"),
   });
   if (isLoading) return <LoadingSkeleton />;
+  if (isError) return <div className="p-6 text-destructive">Failed to load partner data. Check backend logs.</div>;
 
   const byProgramArea: { area: string; count: number }[] = data?.byProgramArea ?? [];
   const byRoleType: { role: string; count: number }[] = data?.byRoleType ?? [];
@@ -1582,7 +1584,7 @@ export default function MLInsights() {
       {activePipeline === "outcomes" && <ResidentOutcomesView />}
       {activePipeline === "geographic" && <GeographicView />}
       {activePipeline === "roi" && <AcquisitionRoiView />}
-      {activePipeline === "partners" && <PartnerEffectivenessView />}
+      {/* {activePipeline === "partners" && <PartnerEffectivenessView />} */}
       {activePipeline === "inkind" && <InKindNeedsView />}
     </DashboardLayout>
   );

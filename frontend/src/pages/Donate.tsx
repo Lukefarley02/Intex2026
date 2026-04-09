@@ -27,6 +27,126 @@ import { useAuth } from "@/api/AuthContext";
 
 const presets = [10, 25, 50, 100];
 
+// Launches a full-screen ember/fire particle burst via Canvas.
+// Particles spawn from the bottom-centre and arc upward like embers rising
+// from a fire — warm orange/red/gold palette to match the Ember brand.
+// The canvas is appended to body, animates for ~2.5 s, then removes itself.
+const launchEmberBurst = () => {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText =
+      "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;";
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) { canvas.remove(); return; }
+
+    // Ember colour palette — fire oranges, reds, and gold highlights
+    const COLORS = [
+      "#FF6B1A", "#FF8C42", "#FF4500", "#FFA500", "#FFD700",
+      "#FF3300", "#FF6600", "#FFAA00", "#FF2200", "#FFCC44",
+    ];
+
+    interface Particle {
+      x: number; y: number;
+      vx: number; vy: number;
+      radius: number;
+      color: string;
+      alpha: number;
+      decay: number;   // alpha fade per frame
+      gravity: number; // downward pull
+      spin: number;    // slight rotation wobble
+      age: number;
+    }
+
+    const particles: Particle[] = [];
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Spawn 220 particles from two anchor points:
+    //   • centre-bottom (main fire column)
+    //   • 20% inset on each side (side sparks)
+    const origins = [
+      { x: W * 0.5, y: H },
+      { x: W * 0.25, y: H },
+      { x: W * 0.75, y: H },
+    ];
+
+    for (let i = 0; i < 220; i++) {
+      const o = origins[i % origins.length];
+      const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.85;
+      const speed = 4 + Math.random() * 11;
+      particles.push({
+        x: o.x + (Math.random() - 0.5) * 60,
+        y: o.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        radius: 2.5 + Math.random() * 5,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        alpha: 0.9 + Math.random() * 0.1,
+        decay: 0.012 + Math.random() * 0.018,
+        gravity: 0.18 + Math.random() * 0.12,
+        spin: (Math.random() - 0.5) * 0.3,
+        age: 0,
+      });
+    }
+
+    let raf: number;
+    const animate = () => {
+      ctx.clearRect(0, 0, W, H);
+      let alive = 0;
+      for (const p of particles) {
+        if (p.alpha <= 0) continue;
+        alive++;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;       // gravity pulls embers down
+        p.vx += p.spin;          // gentle sideways drift
+        p.vx *= 0.985;           // air resistance
+        p.alpha -= p.decay;
+        p.age++;
+
+        // Draw a glowing ember: outer soft glow + bright core
+        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2.5);
+        grd.addColorStop(0, p.color + "FF");
+        grd.addColorStop(0.4, p.color + "CC");
+        grd.addColorStop(1, p.color + "00");
+
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        // Bright white-hot centre for the hottest embers
+        if (p.age < 18) {
+          ctx.globalAlpha = Math.max(0, p.alpha * 0.7);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius * 0.45, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+      if (alive > 0) {
+        raf = requestAnimationFrame(animate);
+      } else {
+        canvas.remove();
+      }
+    };
+    raf = requestAnimationFrame(animate);
+
+    // Hard cap: remove canvas after 3 s even if a stray particle lingers
+    setTimeout(() => {
+      cancelAnimationFrame(raf);
+      canvas.remove();
+    }, 3000);
+  } catch {
+    // Visual effect — never block the donation flow on it.
+  }
+};
+
 // Plays a short two-note "ding" chime using the Web Audio API so we don't
 // have to ship an audio asset. Safari/iOS require the AudioContext to be
 // created inside a user-gesture handler, which is why we instantiate it
@@ -234,6 +354,7 @@ const Donate = () => {
       });
       setLastDonation(res);
       playDonationDing();
+      launchEmberBurst();
 
       if (anonymous) {
         // Anonymous donors are not offered account creation — their row is

@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Resident> Residents => Set<Resident>();
     public DbSet<ProcessRecording> ProcessRecordings => Set<ProcessRecording>();
     public DbSet<HomeVisitation> HomeVisitations => Set<HomeVisitation>();
+    public DbSet<CaseConference> CaseConferences => Set<CaseConference>();
     public DbSet<InterventionPlan> InterventionPlans => Set<InterventionPlan>();
 
     // ----- Partners -----
@@ -56,6 +57,10 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<InterventionPlan>().ToTable("intervention_plans");
         modelBuilder.Entity<InterventionPlan>()
             .Property(ip => ip.TargetValue)
+        modelBuilder.Entity<CaseConference>().ToTable("case_conferences");
+        modelBuilder.Entity<InterventionPlan>().ToTable("intervention_plans");
+        modelBuilder.Entity<InterventionPlan>()
+            .Property(p => p.TargetValue)
             .HasColumnType("decimal(10,2)");
         modelBuilder.Entity<Partner>().ToTable("partners");
         modelBuilder.Entity<PartnerAssignment>().ToTable("partner_assignments");

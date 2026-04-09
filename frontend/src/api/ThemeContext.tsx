@@ -25,13 +25,13 @@ const getSystemTheme = (): "light" | "dark" =>
 
 // Read theme preference from a browser-accessible cookie (not httpOnly).
 const readThemeCookie = (): ThemeMode => {
-  if (typeof document === "undefined") return "system";
+  if (typeof document === "undefined") return "light";
   const match = document.cookie.match(
     new RegExp("(?:^|; )" + COOKIE_NAME + "=([^;]*)")
   );
   const val = match ? decodeURIComponent(match[1]) : null;
   if (val === "light" || val === "dark" || val === "system") return val;
-  return "system";
+  return "light"; // default to light; users can change in account settings
 };
 
 // Write theme preference as a browser-accessible cookie (SameSite=Lax, no HttpOnly).
