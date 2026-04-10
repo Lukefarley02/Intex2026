@@ -357,7 +357,7 @@ const HomeVisitation = () => {
   return (
     <DashboardLayout title="Home Visitation">
       <PrintReportHeader title="Home Visitation Report" filters={printFilters} count={filteredVisits.length} />
-      <div className="max-w-6xl space-y-6">
+      <div className="space-y-6">
 
         {/* Header */}
         <div>
@@ -390,7 +390,7 @@ const HomeVisitation = () => {
             />
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="gap-2" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
               <Printer className="w-4 h-4" /> Print Report
             </Button>
             <Dialog

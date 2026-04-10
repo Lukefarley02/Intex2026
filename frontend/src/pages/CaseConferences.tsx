@@ -498,14 +498,13 @@ const CaseConferences = () => {
   const printFilters = [
     ...(categoryFilter !== "__any__" ? [{ label: "Category", value: categoryFilter }] : []),
     ...(statusFilter !== "__any__" ? [{ label: "Status", value: statusFilter }] : []),
-    ...(residentFilter !== "__any__" ? [{ label: "Resident", value: residentLookup.get(Number(residentFilter))?.internalCode || residentLookup.get(Number(residentFilter))?.caseControlNo || residentFilter }] : []),
     ...(search.trim() ? [{ label: "Search", value: search.trim() }] : []),
   ];
 
   return (
     <DashboardLayout title="Case Conferences">
       <PrintReportHeader title="Case Conference Report" filters={printFilters} count={filteredPlans.length} />
-      <div className="max-w-6xl space-y-6">
+      <div className="space-y-6">
         {/* Header */}
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -567,6 +566,15 @@ const CaseConferences = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-4 h-4" /> Print Report
+          </Button>
           <Dialog
             open={open}
             onOpenChange={(o) => {
@@ -742,14 +750,7 @@ const CaseConferences = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-2"
-            onClick={() => window.print()}
-          >
-            <Printer className="w-4 h-4" /> Print Report
-          </Button>
+          </div>
         </div>
 
         {/* Filter row */}
