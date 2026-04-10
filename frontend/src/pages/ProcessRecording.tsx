@@ -141,7 +141,7 @@ const toFormState = (p: ProcessRecordingRow): FormState => ({
 // ---- Detail row helper ----
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[160px_1fr] gap-2 py-2">
+    <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-2 py-2">
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
       <span className="text-sm">
         {value ?? <span className="text-muted-foreground/40">—</span>}

@@ -135,36 +135,34 @@ const Index = () => {
         <img src={heroImage} alt="Girls supported by Ember Foundation" className="w-full h-full object-cover" width={1920} height={1080} />
         <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
       </div>
-      <div className="relative container py-24 md:py-36 lg:py-44">
-        <div className="max-w-2xl space-y-6">
-          <div className="animate-fade-in-up-1 flex items-baseline gap-3">
-            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-primary">
-          Ember
-        </span>
-            <span className="font-serif text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white dark:text-black">
+      <div className="relative container py-16 sm:py-24 md:py-36 lg:py-44">
+        <div className="max-w-2xl space-y-4 sm:space-y-6">
+          <div className="animate-fade-in-up-1 flex flex-wrap items-baseline gap-x-3 gap-y-0">
+            <span className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-primary">
+              Ember
+            </span>
+            <span className="font-serif text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white dark:text-black">
               Foundation
             </span>
-            <br /><br /><br />
           </div>
-          <h1 className="animate-fade-in-up-2 mt-16 md:mt-24 text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-card leading-tight">
+          <h1 className="animate-fade-in-up-2 mt-3 sm:mt-8 md:mt-16 text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold tracking-tight text-card leading-tight">
             Every girl deserves
             <br />
-            <span className="text-primary text-3xl md:text-4xl lg:text-5xl  leading-none mt-1">a safe place </span> to heal & grow
-            
+            <span className="text-primary text-xl sm:text-3xl md:text-4xl lg:text-5xl leading-none mt-1">a safe place </span> to heal &amp; grow
           </h1>
-          <div className="animate-fade-in-up-3 flex flex-wrap gap-3">
+          <div className="animate-fade-in-up-3 flex flex-wrap gap-2 sm:gap-3">
             <Link to="/donate">
-              <Button variant="hero" size="lg" className="text-base">
+              <Button variant="hero" size="lg" className="text-sm sm:text-base">
                 Support a girl's journey <Heart className="w-4 h-4 ml-1" aria-hidden="true" />
               </Button>
             </Link>
             <a href="#impact">
-              <Button variant="hero-outline" size="lg" className="text-base border-card/40 text-card hover:bg-card/10">
+              <Button variant="hero-outline" size="lg" className="text-sm sm:text-base border-card/40 text-card hover:bg-card/10">
                 See our locations
               </Button>
             </a>
           </div>
-          <div className="animate-fade-in-up-4 flex flex-wrap gap-3 pt-4">
+          <div className="animate-fade-in-up-4 flex flex-wrap gap-2 sm:gap-3 pt-3 sm:pt-4">
             {/* Primary hero stat: the actual count of residents ever served. */}
             <StatPill
               value={stats ? String(stats.girlsSupported) : "…"}
@@ -248,7 +246,7 @@ const Index = () => {
         />
       </div>
       {/* Right: donation CTA */}
-      <div className="gradient-ember flex flex-col items-center justify-center p-12 md:p-16 text-center space-y-6">
+      <div className="gradient-ember flex flex-col items-center justify-center p-6 sm:p-12 md:p-16 text-center space-y-6">
         <Heart className="w-10 h-10 text-primary-foreground/80" aria-hidden="true" />
         <h2 className="font-serif text-3xl md:text-4xl font-bold text-primary-foreground leading-tight">
           Be a part of her story

@@ -506,7 +506,7 @@ const Reports = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground">Closed</p>
                     <p className="text-2xl font-bold">

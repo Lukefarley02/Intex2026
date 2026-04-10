@@ -465,7 +465,7 @@ const LogDonationDialog = ({ open, onOpenChange, initialType = "Monetary" }: Pro
         {/* ---------------- Step 3: create donor ---------------- */}
         {step === "create" && (
           <div className="space-y-3 py-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="nd-first">First name</Label>
                 <Input
@@ -492,7 +492,7 @@ const LogDonationDialog = ({ open, onOpenChange, initialType = "Monetary" }: Pro
                 placeholder="e.g. Acme Foundation"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="nd-email">Email (optional)</Label>
                 <Input
@@ -602,7 +602,7 @@ const LogDonationDialog = ({ open, onOpenChange, initialType = "Monetary" }: Pro
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="d-date">Donation date *</Label>
                 <Input
