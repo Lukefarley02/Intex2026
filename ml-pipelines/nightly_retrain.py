@@ -72,7 +72,8 @@ def _get_conn():
 
 def clear_pipeline(pipeline_id: str) -> None:
     with _get_conn() as conn:
-        conn.execute("DELETE FROM ml_predictions WHERE pipeline_id = ?", pipeline_id)
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM ml_predictions WHERE pipeline_id = ?", pipeline_id)
         conn.commit()
     print(f"  [db] Cleared '{pipeline_id}'")
 
@@ -87,7 +88,8 @@ def write_predictions(rows: list[dict]) -> None:
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """
     with _get_conn() as conn:
-        conn.executemany(sql, [
+        cursor = conn.cursor()
+        cursor.executemany(sql, [
             (r["pipeline_id"], r["entity_type"], r["entity_id"],
              float(r["score"]) if r.get("score") is not None else None,
              r.get("label"), r.get("model_name"),
