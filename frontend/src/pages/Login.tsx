@@ -1,23 +1,25 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Flame } from "lucide-react";
-import { useAuth } from "@/api/AuthContext";
+import { Flame, ArrowLeft } from "lucide-react";
+import { useAuth, landingFor } from "@/api/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // If the user is already signed in, render a <Navigate> element instead
+  // of calling navigate() during render. The old code called navigate() at
+  // render time and returned null, which just showed a blank white page.
   if (isAuthenticated) {
-    navigate("/dashboard", { replace: true });
-    return null;
+    return <Navigate to={landingFor(user?.roles)} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,8 +27,8 @@ const Login = () => {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
-      navigate("/dashboard");
+      const loggedInUser = await login(email, password);
+      navigate(landingFor(loggedInUser.roles), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -37,9 +39,9 @@ const Login = () => {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left: brand panel */}
-      <div className="hidden lg:flex gradient-teal flex-col justify-center items-center p-12 text-secondary-foreground">
+      <div className="hidden lg:flex gradient-ember flex-col justify-center items-center p-12 text-primary-foreground">
         <div className="max-w-md space-y-8 text-center">
-          <Flame className="w-16 h-16 mx-auto opacity-90" />
+          <Flame className="w-16 h-16 mx-auto opacity-90" aria-hidden="true" />
           <h1 className="text-4xl font-extrabold leading-tight">
             Welcome back to Ember
           </h1>
@@ -54,10 +56,18 @@ const Login = () => {
       <div className="flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
-            <Flame className="w-8 h-8" /> Ember
+            <Flame className="w-8 h-8" aria-hidden="true" /> Ember
           </div>
 
           <div>
+            <div className="flex flex-col gap-3 mb-6">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to home
+              </Link>
+            </div>
             <h2 className="text-2xl font-bold">Sign in</h2>
             <p className="text-muted-foreground text-sm mt-1">
               Enter your credentials to access your dashboard
@@ -87,9 +97,9 @@ const Login = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <a href="#" className="text-xs text-primary hover:underline">
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                   Forgot password?
-                </a>
+                </Link>
               </div>
               <Input
                 id="password"
@@ -100,6 +110,9 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Password must be at least 14 characters.
+              </p>
             </div>
 
             <Button
@@ -115,8 +128,8 @@ const Login = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Create one
+            <Link to="/donate" className="text-primary hover:underline font-medium">
+              Make a donation to create one
             </Link>
           </p>
         </div>

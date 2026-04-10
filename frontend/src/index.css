@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -54,6 +54,86 @@
     --success: 95 72% 24%;
     --success-foreground: 0 0% 100%;
   }
+
+  /* Dark mode palette — activated by adding the `dark` class to <html>.
+     ThemeProvider is responsible for toggling that class based on the
+     user's stored preference (light / dark / system). Colour values are
+     chosen to preserve the Ember palette identity while meeting WCAG AA
+     contrast on dark backgrounds. */
+  .dark {
+    --background: 20 14% 8%;
+    --foreground: 30 15% 92%;
+
+    --card: 20 14% 11%;
+    --card-foreground: 30 15% 92%;
+
+    --popover: 20 14% 11%;
+    --popover-foreground: 30 15% 92%;
+
+    --primary: 11 75% 58%;
+    --primary-foreground: 20 14% 8%;
+    --primary-light: 11 40% 18%;
+
+    --secondary: 160 55% 40%;
+    --secondary-foreground: 20 14% 8%;
+
+    --muted: 20 10% 16%;
+    --muted-foreground: 30 8% 68%;
+
+    --accent: 95 45% 45%;
+    --accent-foreground: 20 14% 8%;
+
+    --gold: 36 75% 55%;
+    --gold-foreground: 20 14% 8%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 20 10% 20%;
+    --input: 20 10% 20%;
+    --ring: 11 75% 58%;
+
+    --sidebar-background: 160 40% 10%;
+    --sidebar-foreground: 160 15% 88%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 160 40% 10%;
+    --sidebar-accent: 160 35% 16%;
+    --sidebar-accent-foreground: 160 15% 95%;
+    --sidebar-border: 160 25% 22%;
+    --sidebar-ring: 11 75% 58%;
+
+    --warning: 36 75% 55%;
+    --warning-foreground: 20 14% 8%;
+    --success: 95 45% 45%;
+    --success-foreground: 20 14% 8%;
+  }
+
+  /* Donor-only sidebar theme — a warm brick red that complements the
+     Ember orange primary without clashing with the teal used for
+     Admin/Staff sidebars. Applied via the `.donor-theme` class on the
+     sidebar <aside> so it only affects donor sessions and leaves the
+     rest of the app's palette untouched. */
+  .donor-theme {
+    --sidebar-background: 0 62% 34%;
+    --sidebar-foreground: 0 10% 96%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 62% 34%;
+    --sidebar-accent: 0 58% 28%;
+    --sidebar-accent-foreground: 0 10% 96%;
+    --sidebar-border: 0 45% 42%;
+    --sidebar-ring: 11 63% 46%;
+  }
+
+  .dark .donor-theme {
+    --sidebar-background: 0 45% 14%;
+    --sidebar-foreground: 0 15% 90%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 45% 14%;
+    --sidebar-accent: 0 40% 20%;
+    --sidebar-accent-foreground: 0 15% 95%;
+    --sidebar-border: 0 30% 26%;
+    --sidebar-ring: 11 75% 58%;
+  }
 }
 
 @layer base {
@@ -74,6 +154,223 @@
     background: linear-gradient(135deg, hsl(160 76% 24%), hsl(160 76% 18%));
   }
   .gradient-warm {
-    background: linear-gradient(135deg, hsl(11 85% 95%), hsl(30 10% 95%));
+    background: linear-gradient(135deg, hsl(var(--primary-light)), hsl(var(--background)));
+  }
+
+  /* Counter animation */
+  @keyframes count-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-count-up {
+    animation: count-up 0.6s ease-out;
+  }
+
+  /* Text pop-up animation */
+  @keyframes pop-up {
+    0% {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.95);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-0.25rem) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .animate-pop-up {
+    animation: pop-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Card flip animation */
+  @keyframes flip {
+    from {
+      transform: rotateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: rotateY(180deg);
+      opacity: 1;
+    }
+  }
+  .animate-flip {
+    animation: flip 0.6s ease-in-out;
+    transform-style: preserve-3d;
+  }
+
+  /* Fade in from bottom */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out both;
+  }
+  .animate-fade-in-up-1 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 0ms;
+  }
+  .animate-fade-in-up-2 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 180ms;
+  }
+  .animate-fade-in-up-3 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 360ms;
+  }
+  .animate-fade-in-up-4 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 540ms;
+  }
+  .animate-fade-in-up-5 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 720ms;
+  }
+
+  /* Counter animation */
+  @keyframes count-up {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-count-up {
+    animation: count-up 0.6s ease-out;
+  }
+
+  /* Text pop-up animation */
+  @keyframes pop-up {
+    0% {
+      opacity: 0;
+      transform: translateY(1rem) scale(0.95);
+    }
+    50% {
+      opacity: 1;
+      transform: translateY(-0.25rem) scale(1.05);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .animate-pop-up {
+    animation: pop-up 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Card flip animation */
+  @keyframes flip {
+    from {
+      transform: rotateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: rotateY(180deg);
+      opacity: 1;
+    }
+  }
+  .animate-flip {
+    animation: flip 0.6s ease-in-out;
+    transform-style: preserve-3d;
+  }
+
+  /* Fade in from bottom */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(1rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out both;
+  }
+  .animate-fade-in-up-1 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 0ms;
+  }
+  .animate-fade-in-up-2 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 180ms;
+  }
+  .animate-fade-in-up-3 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 360ms;
+  }
+  .animate-fade-in-up-4 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 540ms;
+  }
+  .animate-fade-in-up-5 {
+    animation: fade-in-up 0.7s ease-out both;
+    animation-delay: 720ms;
+  }
+}
+
+/* ─── Print styles ─────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide sidebar, header bar, scrollbars */
+  aside,
+  nav,
+  header,
+  [data-sidebar],
+  [role="navigation"] {
+    display: none !important;
+  }
+
+  /* Let the main content area fill the page with no constraints */
+  main,
+  [data-main-content] {
+    margin: 0 !important;
+    padding: 0.5in !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Reset body/html for print */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Force white background on cards for print legibility */
+  .print\:bg-white {
+    background: white !important;
+  }
+
+  /* Prevent page breaks inside table rows and cards */
+  tr, .print-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Hide all dark-mode classes in print */
+  .dark {
+    color-scheme: light !important;
   }
 }

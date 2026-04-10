@@ -101,6 +101,10 @@ namespace Intex2026.Api.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("family_members_present");
 
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("created_by_user_id");
+
                     b.Property<bool?>("FollowUpNeeded")
                         .HasColumnType("bit")
                         .HasColumnName("follow_up_needed");
@@ -162,6 +166,10 @@ namespace Intex2026.Api.Migrations
                     b.Property<bool?>("ConcernsFlagged")
                         .HasColumnType("bit")
                         .HasColumnName("concerns_flagged");
+
+                    b.Property<string>("CreatedByUserId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("created_by_user_id");
 
                     b.Property<string>("EmotionalStateEnd")
                         .HasColumnType("nvarchar(max)")
@@ -567,6 +575,100 @@ namespace Intex2026.Api.Migrations
                     b.HasKey("SupporterId");
 
                     b.ToTable("supporters", (string)null);
+                });
+
+            modelBuilder.Entity("Intex2026.Api.Models.SocialMediaPost", b =>
+                {
+                    b.Property<int>("PostId")
+                        .HasColumnType("int")
+                        .HasColumnName("post_id");
+
+                    b.Property<string>("CampaignName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("campaign_name");
+
+                    b.Property<int>("ClickThroughs")
+                        .HasColumnType("int")
+                        .HasColumnName("click_throughs");
+
+                    b.Property<int>("Comments")
+                        .HasColumnType("int")
+                        .HasColumnName("comments");
+
+                    b.Property<string>("ContentTopic")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("content_topic");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DonationReferrals")
+                        .HasColumnType("int")
+                        .HasColumnName("donation_referrals");
+
+                    b.Property<decimal?>("EngagementRate")
+                        .HasColumnType("decimal(8,6)")
+                        .HasColumnName("engagement_rate");
+
+                    b.Property<decimal?>("EstimatedDonationValuePhp")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("estimated_donation_value_php");
+
+                    b.Property<bool>("FeaturesResidentStory")
+                        .HasColumnType("bit")
+                        .HasColumnName("features_resident_story");
+
+                    b.Property<int?>("FollowerCountAtPost")
+                        .HasColumnType("int")
+                        .HasColumnName("follower_count_at_post");
+
+                    b.Property<bool>("HasCallToAction")
+                        .HasColumnType("bit")
+                        .HasColumnName("has_call_to_action");
+
+                    b.Property<bool>("IsBoosted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_boosted");
+
+                    b.Property<int>("Impressions")
+                        .HasColumnType("int")
+                        .HasColumnName("impressions");
+
+                    b.Property<int>("Likes")
+                        .HasColumnType("int")
+                        .HasColumnName("likes");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("media_type");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("platform");
+
+                    b.Property<string>("PostType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("post_type");
+
+                    b.Property<int>("Reach")
+                        .HasColumnType("int")
+                        .HasColumnName("reach");
+
+                    b.Property<string>("SentimentTone")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("sentiment_tone");
+
+                    b.Property<int>("Shares")
+                        .HasColumnType("int")
+                        .HasColumnName("shares");
+
+                    b.HasKey("PostId");
+
+                    b.ToTable("social_media_posts", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

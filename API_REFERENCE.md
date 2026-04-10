@@ -7,6 +7,124 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 ---
 
+## Auth
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/login` | None | Login and receive a JWT |
+| POST | `/api/auth/register` | None | Register a new user |
+| POST | `/api/auth/logout` | Any | Stateless — instructs client to discard token |
+| GET | `/api/auth/me` | Any | Current user profile with roles and admin scope |
+| POST | `/api/auth/change-email` | Any | Change the authenticated user's email (requires current password); returns a fresh JWT |
+| POST | `/api/auth/change-password` | Any | Change the authenticated user's password (requires current password) |
+| DELETE | `/api/auth/account` | Any | Permanently delete the authenticated user's account (requires current password) |
+
+**POST `/api/auth/login` request:**
+```json
+{ "email": "admin@ember.org", "password": "AdminEmber2026!" }
+```
+
+**POST `/api/auth/login` response:**
+```json
+{
+  "token": "eyJhbG...",
+  "email": "admin@ember.org",
+  "roles": ["Admin", "Donor"],
+  "region": null,
+  "city": null
+}
+```
+`region` and `city` are `null` for company-level admins and donors. They are populated for regional/location managers and staff.
+
+**POST `/api/auth/register` request:**
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123!",
+  "role": "Staff",
+  "region": "West",
+  "city": "Salem"
+}
+```
+`role` and `region`/`city` are optional. All users get `Donor` by default; `Staff` or `Admin` can also be assigned.
+
+**GET `/api/auth/me` response:**
+```json
+{
+  "email": "admin@ember.org",
+  "roles": ["Admin", "Donor"],
+  "region": null,
+  "city": null,
+  "adminScope": "company"
+}
+```
+`adminScope` is `"founder"`, `"region"`, or `"location"` for Admin users; `null` for Staff and Donor.
+
+**POST `/api/auth/change-email` request:**
+```json
+{ "newEmail": "new@example.com", "currentPassword": "CurrentPass123!" }
+```
+Returns an `AuthResponse` with a new JWT keyed to the updated email. The frontend signs the user out after a successful change so `AuthContext` reloads cleanly.
+
+**POST `/api/auth/change-password` request:**
+```json
+{ "currentPassword": "CurrentPass123!", "newPassword": "NewPass456!@" }
+```
+Returns `{ "message": "Password changed successfully." }` on success. The server enforces the hardened ASP.NET Identity password policy and returns `400` with `{ code, description }[]` on failure.
+
+**DELETE `/api/auth/account` request:**
+```json
+{ "currentPassword": "CurrentPass123!" }
+```
+Permanently deletes the Identity user. Donation and supporter rows that reference the same email are left intact so historical giving and tax records remain valid.
+
+### Access tiers
+
+The four-tier access model is derived from the user's role + Region/City columns:
+
+| Tier | Role | Region | City | Sees |
+|---|---|---|---|---|
+| Founder | Admin | null | null | Every safehouse, resident, supporter, and donation in the system |
+| Regional Manager | Admin | set | null | Everything in safehouses whose `region` matches their Region |
+| Location Manager | Admin | set | set | Everything in the single safehouse whose `city` matches their City |
+| Staff | Staff | set | set | Their city's safehouse + residents + visitations + process recordings, plus non-monetary supporters in their region. Cannot see monetary or in-kind donors. Cannot see resident `notesRestricted`. |
+| Donor | Donor | n/a | n/a | Only their own giving history via `/api/donorportal/me*` |
+
+All `Admin,Staff` endpoints in this document silently filter their results by these rules. A request that would touch a row outside the caller's scope returns `403 Forbidden`. Founder-only writes (creating safehouses, deleting any record, changing another user's scope) return `403` for region/location managers.
+
+---
+
+## Admin Users
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/adminusers` | Admin | List Identity users with roles and scope. Regional/Location managers only see users inside their own scope; founders see everyone. |
+| PUT | `/api/adminusers/{id}/scope` | Founder | Update a user's region and city. Returns `403` for any admin who is not a founder. |
+
+**GET `/api/adminusers` response:**
+```json
+[
+  {
+    "id": "guid",
+    "email": "admin@ember.org",
+    "emailConfirmed": true,
+    "lockedOut": false,
+    "roles": ["Admin", "Donor"],
+    "region": null,
+    "city": null,
+    "adminScope": "company"
+  }
+]
+```
+
+**PUT `/api/adminusers/{id}/scope` request:**
+```json
+{ "region": "West", "city": "Salem" }
+```
+Pass `null` or empty string to clear a value. Setting `region` only → Regional Manager. Setting both → Location Manager. Clearing both → Founder. Founder-only endpoint.
+
+---
+
 ## Health Check
 
 | Method | Endpoint | Auth | Description |
@@ -24,11 +142,11 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/supporters?types=MonetaryDonor,InKindDonor` | Admin, Staff | List supporters with aggregated donation totals |
-| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID |
-| POST | `/api/supporters` | Admin, Staff | Create a new supporter |
-| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter |
-| DELETE | `/api/supporters/{id}` | Admin | Delete a supporter |
+| GET | `/api/supporters?types=MonetaryDonor,InKindDonor` | Admin, Staff | List supporters with aggregated donation totals. Region-scoped. Staff is silently restricted to the four non-monetary `supporter_type` values. |
+| GET | `/api/supporters/{id}` | Admin, Staff | Get supporter by ID. `403` if outside scope; `403` for Staff requesting a monetary/in-kind donor. |
+| POST | `/api/supporters` | Admin, Staff | Create a new supporter. Must be in caller's region; Staff cannot create monetary/in-kind donors. |
+| PUT | `/api/supporters/{id}` | Admin, Staff | Update a supporter. Same scope rules as POST; cannot move a supporter out of the caller's region. |
+| DELETE | `/api/supporters/{id}` | Founder | Delete a supporter. |
 
 **Query parameter:** `types` is an optional comma-separated list of `supporter_type` values. Per Appendix A of the case doc the allowed values are `MonetaryDonor`, `InKindDonor`, `Volunteer`, `SkillsContributor`, `SocialMediaAdvocate`, `PartnerOrganization`. When omitted, all supporters are returned.
 
@@ -65,11 +183,11 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/residents` | TBD | List all residents (includes safehouse) |
-| GET | `/api/residents/{id}` | TBD | Get resident by ID (includes safehouse) |
-| POST | `/api/residents` | TBD | Create a new resident |
-| PUT | `/api/residents/{id}` | TBD | Update a resident |
-| DELETE | `/api/residents/{id}` | Admin | Delete a resident |
+| GET | `/api/residents` | Admin, Staff | List residents whose safehouse is in the caller's scope. |
+| GET | `/api/residents/{id}` | Admin, Staff | Get resident by ID. Returns the **full `Resident` entity** (all 40+ columns) so the frontend edit form can round-trip every categorical flag on PUT without losing data. `notesRestricted` is stripped for non-Admin callers. The `safehouse` navigation property is nulled out so the payload is flat and can be sent straight back on PUT without EF Core complaining about an attached graph. `403` if the resident's safehouse is outside the caller's scope. |
+| POST | `/api/residents` | Admin, Staff | Create a new resident. The target safehouse must be in scope. |
+| PUT | `/api/residents/{id}` | Admin, Staff | Update a resident. Both the existing and the target safehouse must be in scope. |
+| DELETE | `/api/residents/{id}` | Admin | Delete a resident. Admin tier (any of founder/regional/location) and the resident must be in scope. |
 
 **GET response shape:**
 ```json
@@ -87,19 +205,25 @@ Swagger UI (dev): `https://localhost:5001/swagger`
 }
 ```
 
-**Security note:** `notesRestricted` must be excluded from responses for non-Admin roles. This is not yet implemented — requires auth + DTO or projection.
+**Security note:** `notesRestricted` is now stripped from every response for Staff callers. Only Admin tiers (founder, regional, location) ever see it.
+
+**Occupancy side effect:** `POST`, `PUT`, and `DELETE` on `/api/residents` all trigger a recalculation of `safehouses.current_occupancy` for the affected safehouse (and both safehouses when a `PUT` moves a resident between houses). The new value equals the live count of residents with `case_status = 'Active'` — `Closed` and `Transferred` residents are not counted. See the note on `GET /api/safehouses` below.
 
 ---
 
 ## Donor Portal
 
-All three endpoints require a valid JWT token with the `Donor` role. The current user's identity is read from JWT claims — no user ID is accepted as a URL parameter.
+All endpoints require a valid JWT token with the `Donor` role. The current user's identity is read from JWT claims — no user ID is accepted as a URL parameter.
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | GET | `/api/donorportal/me` | Donor | Current donor's supporter profile |
 | GET | `/api/donorportal/me/donations` | Donor | Current donor's full donation history |
 | GET | `/api/donorportal/me/impact` | Donor | Aggregated giving stats for current donor |
+| GET | `/api/donorportal/me/tax-receipt?year=YYYY` | Donor | IRS Publication 1771 written acknowledgment payload for the given tax year (defaults to current year) |
+| GET | `/api/donorportal/me/messages` | Donor | In-app messages from the organization, newest first |
+| PUT | `/api/donorportal/me/messages/{id}/read` | Donor | Mark a single message as read (returns 204) |
+| PUT | `/api/donorportal/me/messages/read-all` | Donor | Mark all messages as read (returns 204) |
 
 **GET `/api/donorportal/me` response:**
 ```json
@@ -153,13 +277,139 @@ Returns empty array `[]` if no donations found. Ordered by `donationDate` descen
 ```
 Returns zeros and empty array if no donations found. Never throws 404.
 
+**GET `/api/donorportal/me/tax-receipt?year=YYYY` response:**
+```json
+{
+  "organization": {
+    "name": "Ember (Lighthouse Project)",
+    "legalName": "Ember Nonprofit, Inc.",
+    "ein": "XX-XXXXXXX",
+    "address1": "[Org street address]",
+    "address2": "",
+    "city": "[City]",
+    "state": "[State]",
+    "postalCode": "[ZIP]",
+    "country": "United States",
+    "email": "donations@ember.org",
+    "phone": "+1 (555) 555-0100",
+    "website": "https://ember.org"
+  },
+  "donor": {
+    "supporterId": 1,
+    "displayName": "Sarah Chen",
+    "firstName": "Sarah",
+    "lastName": "Chen",
+    "email": "sarah@example.com",
+    "country": "United States",
+    "region": "Online"
+  },
+  "taxYear": 2025,
+  "availableYears": [2025, 2024, 2023],
+  "issueDate": "2026-04-08T00:00:00Z",
+  "currencyCode": "USD",
+  "totalAmount": 750.00,
+  "donationCount": 4,
+  "donations": [
+    {
+      "donationId": 12,
+      "donationDate": "2025-02-14T00:00:00Z",
+      "donationType": "Monetary",
+      "amount": 150.00,
+      "estimatedValue": 150.00,
+      "campaignName": "Safehouse Expansion",
+      "isRecurring": false,
+      "currencyCode": "USD"
+    }
+  ],
+  "disclosure": "No goods or services were provided…",
+  "formReference": "Use this acknowledgment with IRS Schedule A (Form 1040) when itemizing charitable contributions."
+}
+```
+This is **not** a specific numbered IRS form. It is the standard 501(c)(3) written acknowledgment letter described in IRS Publication 1771, which US donors keep to support the charitable-contribution totals they enter on **Schedule A of Form 1040**. Form 8283 only applies to non-cash gifts over $500, which this flow does not collect. The frontend renders the response as a print-friendly letter at `/tax-receipt`; the browser's native print dialog offers "Save as PDF".
+
+---
+
+## Donor Messages (Admin)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/donor-messages` | Admin | Send a templated in-app message to a single donor |
+| POST | `/api/donor-messages/bulk` | Admin | Send the same message to multiple donors at once |
+
+**POST `/api/donor-messages` request:**
+```json
+{
+  "supporterId": 123,
+  "templateType": "ThankYou",
+  "subject": "Thank you for your generous support!",
+  "body": "Dear Sarah, ..."
+}
+```
+
+**POST `/api/donor-messages/bulk` request:**
+```json
+{
+  "supporterIds": [123, 456, 789],
+  "templateType": "Appeal",
+  "subject": "Your continued support can change a girl's life",
+  "body": "Dear supporter, ..."
+}
+```
+`templateType` is one of `"ThankYou"` or `"Appeal"`. Subject and body are fully editable by the admin before sending — the templates are just starting points auto-generated on the frontend.
+
+**POST `/api/donor-messages/bulk` response:**
+```json
+{ "sent": 3, "skipped": 0 }
+```
+`skipped` counts any IDs that didn't match a real supporter row.
+
+---
+
+## Public (Unauthenticated)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/public/stats` | None | Aggregated landing-page pills (safehouse count, girls supported, retention, etc.) |
+| GET | `/api/public/donations` | None | Total raised + breakdown by top campaigns for the landing donut chart |
+| GET | `/api/public/care-story` | None | Aggregated care metrics (counseling sessions, home visits, outcomes) |
+| GET | `/api/public/safehouses` | None | Minimal safehouse list (name, city, capacity, active count — no resident identity) |
+| POST | `/api/public/donate` | None | Self-service donation intake used by the public Donate page |
+
+**POST `/api/public/donate` request:**
+```json
+{
+  "firstName": "Sarah",
+  "lastName": "Chen",
+  "email": "sarah@example.com",
+  "amount": 50.00,
+  "monthly": true,
+  "isAnonymous": false,
+  "campaignName": null
+}
+```
+- If `isAnonymous` is `true`, the other PII fields are ignored and a synthetic `anonymous-<guid>@ember.local` supporter row is created with `status = "Anonymous"`.
+- If `isAnonymous` is `false`, `email` is required. A supporter row is looked up by email and reused if found; otherwise a new `MonetaryDonor` row is created. This means a donor who later registers with the same email will see all of their prior gifts automatically in the donor portal.
+- `amount` must be greater than zero.
+
+**POST `/api/public/donate` response:**
+```json
+{
+  "donationId": 1234,
+  "supporterId": 567,
+  "email": "sarah@example.com",
+  "createdNewSupporter": true,
+  "isAnonymous": false
+}
+```
+No real payment processing happens — this is a capstone demo. The `Donation` row is recorded with `donation_type = "Monetary"`, `channel_source = "Website"`, `currency_code = "USD"`, and `campaign_name` defaults to `"General Fund"` if not provided.
+
 ---
 
 ## Dashboard (Admin/Staff)
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/dashboard/stats` | Admin, Staff | Aggregated KPIs for the admin dashboard |
+| GET | `/api/dashboard/stats` | Admin, Staff | Aggregated KPIs for the admin dashboard. Numbers are filtered to the caller's region (Founder = company-wide). Staff receives all-zero monetary KPIs because Staff is not allowed to see donor or donation totals. |
 
 **GET `/api/dashboard/stats` response:**
 ```json
@@ -185,6 +435,68 @@ Active donors falls back to total supporter count when the `status` column is no
 
 ---
 
+## Reports & Analytics (Admin/Staff)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/reports/summary?start=YYYY-MM-DD&end=YYYY-MM-DD` | Admin, Staff | Full Reports page payload: donation trends, resident outcomes, safehouse performance, reintegration rates, Annual Accomplishment Report (caring/healing/teaching). Scope-aware. |
+
+`start` and `end` are optional; default is the trailing 12 months ending today. Numbers are scoped to the caller's region/city, matching the rules in `UserScope`. Staff callers get `staffView: true` and empty `donations` sections so the page still renders without leaking monetary data.
+
+**GET `/api/reports/summary` response (abridged):**
+```json
+{
+  "period": { "start": "2025-04-08T00:00:00Z", "end": "2026-04-08T00:00:00Z" },
+  "staffView": false,
+  "caring": {
+    "residentsServed": 47,
+    "activeResidents": 31,
+    "totalClosed": 12,
+    "caseStatusBreakdown": [{ "status": "Active", "count": 31 }],
+    "caseCategoryBreakdown": [{ "category": "Trafficked", "count": 18 }],
+    "subCategoryBreakdown": [{ "label": "Trafficked", "count": 18 }]
+  },
+  "healing": { "counselingSessions": 184, "homeVisits": 42, "riskImproved": 9 },
+  "reintegration": {
+    "totalClosed": 12,
+    "reintegratedSuccess": 9,
+    "reintegrationRate": 0.75,
+    "reintegrationTypes": [{ "type": "Family", "count": 7 }]
+  },
+  "safehousePerformance": [
+    {
+      "safehouseId": 1,
+      "name": "Lighthouse Safehouse 1",
+      "city": "Quezon City",
+      "region": "NCR",
+      "capacity": 10,
+      "active": 8,
+      "closedInWindow": 3,
+      "totalServed": 11,
+      "utilization": 0.8
+    }
+  ],
+  "donations": {
+    "total": 24350,
+    "count": 58,
+    "trend": [{ "month": "2025-10", "total": 2400, "count": 6 }],
+    "byType": [{ "type": "Cash", "total": 18200, "count": 40 }],
+    "byCampaign": [{ "campaign": "Spring Hope Drive", "total": 9400, "count": 22 }],
+    "bySafehouse": [
+      { "safehouseId": 1, "name": "Lighthouse Safehouse 1", "share": 0.33, "allocated": 8035.5 }
+    ]
+  },
+  "annualAccomplishment": {
+    "caring":  { "girlsServed": 47, "activeNow": 31, "closedInWindow": 12 },
+    "healing": { "counselingSessions": 184, "homeVisits": 42, "riskImproved": 9 },
+    "teaching": { "successfulReintegrations": 9, "reintegrationRate": 0.75 }
+  }
+}
+```
+Because there is no first-class donation→safehouse link in the schema, `donations.bySafehouse` is computed by weighting each safehouse's share of the period's donation pool by the number of residents it served during the window.
+
+---
+
 ## Campaigns
 
 | Method | Endpoint | Auth | Description |
@@ -204,177 +516,84 @@ Active donors falls back to total supporter count when the `status` column is no
   }
 ]
 ```
-There is no dedicated campaigns table in the current schema, so this endpoint groups donations by `campaign_name`, sums `amount` (or `estimated_value` as fallback), and synthesizes a display-only goal (1.5× raised, rounded up to the nearest $5k) and an end date (3 months after the most recent donation to that campaign). Returns the top 10 campaigns by raised amount.
-
+There is no dedicated campaigns table in the current schema, so this endpoint groups donati
 ---
 
 ## Safehouses
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/safehouses` | Admin, Staff | List all safehouses with live resident counts |
-| GET | `/api/safehouses/{id}` | Admin, Staff | Get a single safehouse |
-| POST | `/api/safehouses` | Admin, Staff | Create a new safehouse |
-| PUT | `/api/safehouses/{id}` | Admin, Staff | Update a safehouse |
-| DELETE | `/api/safehouses/{id}` | Admin | Delete a safehouse |
+| GET | `/api/safehouses` | Admin, Staff | List safehouses in the caller's scope, with live occupancy counts |
+| GET | `/api/safehouses/{id}` | Admin, Staff | Get safehouse by ID; `403` if outside scope |
+| POST | `/api/safehouses` | Founder | Create a new safehouse (structural change) |
+| PUT | `/api/safehouses/{id}` | Admin | Update a safehouse. Region/City cannot be moved out of caller's scope. |
+| DELETE | `/api/safehouses/{id}` | Founder | Delete a safehouse |
 
-**GET response shape (list):**
-```json
-[
-  {
-    "safehouseId": 1,
-    "safehouseCode": "SH-001",
-    "name": "Casa Esperanza",
-    "region": "Central Visayas",
-    "province": "Cebu",
-    "city": "Cebu City",
-    "country": "Philippines",
-    "status": "Active",
-    "openDate": "2022-01-15",
-    "capacityGirls": 12,
-    "capacityStaff": 4,
-    "storedOccupancy": 9,
-    "activeResidents": 9
-  }
-]
-```
-`activeResidents` is a LEFT JOIN count of residents whose `case_status` is `Active`/`Open` or whose `date_closed` is null. `storedOccupancy` mirrors the `current_occupancy` column on the safehouses table as a fallback.
-
----
-
-## Admin Users (Admin only)
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/adminusers` | Admin | List every ASP.NET Identity account with role membership |
-
-**Response:**
-```json
-[
-  {
-    "id": "b3d0...",
-    "email": "admin@ember.org",
-    "emailConfirmed": true,
-    "lockedOut": false,
-    "roles": ["Admin"]
-  }
-]
-```
-
----
-
-## Public (anonymous) endpoints
-
-These power the marketing landing page. They return aggregated, non-sensitive data only — no resident identifiers are ever exposed.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/public/stats` | None | Headline numbers for the hero pills |
-| GET | `/api/public/safehouses` | None | Minimal safehouse list (name, city, capacity, active count) |
-
-**GET `/api/public/stats` response:**
-```json
-{
-  "safehouseCount": 4,
-  "girlsSupported": 247,
-  "activeGirls": 36,
-  "retentionRate": 0.87
-}
-```
-
-**GET `/api/public/safehouses` response:**
-```json
-[
-  {
-    "safehouseId": 1,
-    "name": "Casa Esperanza",
-    "city": "Cebu City",
-    "region": "Central Visayas",
-    "capacity": 12,
-    "activeResidents": 9
-  }
-]
-```
-
----
-
-## Endpoints still needed
-
-These controllers do not exist yet. When building them, follow the CRUD pattern in `SupportersController.cs`.
-
-| Resource | Route | Priority | Schema table |
-|---|---|---|---|
-| Donations (CRUD) | `/api/donations` | Must | donations |
-| Donation Allocations | `/api/donationallocations` | Should | donation_allocations |
-| In-Kind Items | `/api/inkinditems` | Should | in_kind_donation_items |
-| Partners | `/api/partners` | Should | partners |
-| Partner Assignments | `/api/partnerassignments` | Could | partner_assignments |
-| Process Recordings | `/api/processrecordings` | Must | process_recordings |
-| Home Visitations | `/api/homevisitations` | Must | home_visitations |
-| Education Records | `/api/educationrecords` | Must | education_records |
-| Health Records | `/api/healthrecords` | Must | health_wellbeing_records |
-| Intervention Plans | `/api/interventionplans` | Must | intervention_plans |
-| Incident Reports | `/api/incidentreports` | Should | incident_reports |
-| Social Media Posts | `/api/socialmediaposts` | Must | social_media_posts |
-| Monthly Metrics | `/api/monthlymetrics` | Should | safehouse_monthly_metrics |
-| Impact Snapshots | `/api/impactsnapshots` | Must | public_impact_snapshots |
-| Auth | `/api/auth/login`, `/register`, `/logout` | Must | ASP.NET Identity tables |
-
----
-
-## Auth
-
-ASP.NET Identity + JWT. Register and Login are `[AllowAnonymous]`; `/me` requires a valid token.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/api/auth/register` | None | Create new user account, returns JWT |
-| POST | `/api/auth/login` | None | Authenticate, returns JWT + email + roles |
-| POST | `/api/auth/logout` | None | Stateless — instructs client to discard token |
-| GET | `/api/auth/me` | Any role | Returns current user email and roles |
-
-**POST `/api/auth/login` response:**
-```json
-{
-  "token": "eyJhbG...",
-  "email": "donor@ember.org",
-  "roles": ["Donor"]
-}
-```
+**Occupancy note:** Each row in the `GET /api/safehouses` response includes both `storedOccupancy` (the `safehouses.current_occupancy` column) and `activeResidents` (a live `COUNT(*)` over residents with `case_status = 'Active'` joined by `safehouse_id`). These two values are kept in sync automatically — `ResidentsController` recomputes `current_occupancy` after every resident insert, update, or delete, and `Program.cs` runs a one-time backfill on startup to reconcile any drift inherited from the seed CSVs.
 
 ---
 
 ## Process Recordings
 
-Counseling session notes per resident. IS 413 requirement.
-
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| GET | `/api/processrecordings` | Admin, Staff | List all recordings; supports optional `?residentId=#` filter. Sorted by `sessionDate` desc. `notesRestricted` returned only for Admin. |
-| GET | `/api/processrecordings/{id}` | Admin, Staff | Single recording. |
-| POST | `/api/processrecordings` | Admin, Staff | Create a new recording (server generates `recordingId`). |
-| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording. |
-| DELETE | `/api/processrecordings/{id}` | Admin | Delete a recording. |
+| GET | `/api/processrecordings?residentId=N` | Admin, Staff | List recordings whose resident is in scope. Ordered newest-first. |
+| GET | `/api/processrecordings/{id}` | Admin, Staff | Get single recording. `403` if the resident is outside scope. |
+| POST | `/api/processrecordings` | Admin, Staff | Create a recording. Resident must be in scope. |
+| PUT | `/api/processrecordings/{id}` | Admin, Staff | Update a recording. Both old and new resident must be in scope. |
+| DELETE | `/api/processrecordings/{id}` | Founder | Delete a recording. |
 
-## Home Visitations
-
-Home visits, field assessments, and case conferences per resident. IS 413 requirement.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/api/homevisitations` | Admin, Staff | List all visits; supports optional `?residentId=#` filter. Sorted by `visitDate` desc. |
-| GET | `/api/homevisitations/{id}` | Admin, Staff | Single visit. |
-| POST | `/api/homevisitations` | Admin, Staff | Create a new visit (server generates `visitationId`). |
-| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visit. |
-| DELETE | `/api/homevisitations/{id}` | Admin | Delete a visit. |
+**Security note:** `notesRestricted` is stripped from responses for non-Admin callers.
 
 ---
 
-## Conventions for new endpoints
+## Home Visitations
 
-- Route: `api/[controller]` (auto from controller name)
-- Return `ActionResult<T>` for single items, `ActionResult<IEnumerable<T>>` for lists
-- Use `async/await` throughout
-- Return `201 CreatedAtAction` for POST, `204 NoContent` for PUT/DELETE
-- Return `404 NotFound` when resource doesn't exist
-- Add `[Authorize]` attributes per IS 414 security requirements
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/homevisitations?residentId=N` | Admin, Staff | List visitations whose resident is in scope. |
+| GET | `/api/homevisitations/{id}` | Admin, Staff | Get single visitation. `403` if the resident is outside scope. |
+| POST | `/api/homevisitations` | Admin, Staff | Create a visitation record. Resident must be in scope. |
+| PUT | `/api/homevisitations/{id}` | Admin, Staff | Update a visitation. Both old and new resident must be in scope. |
+| DELETE | `/api/homevisitations/{id}` | Founder | Delete a visitation record. |
+
+## Intervention Plans (Case Conferences)
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/interventionplans?residentId=N` | Admin, Staff | List intervention plans whose resident is in scope. Optional resident filter. Ordered by `case_conference_date` descending. |
+| GET | `/api/interventionplans/{id}` | Admin, Staff | Get single plan. `403` if the resident is outside scope. |
+| POST | `/api/interventionplans` | Admin, Staff | Create a plan. Resident must be in scope. Non-identity PK generated via MaxAsync+1. |
+| PUT | `/api/interventionplans/{id}` | Admin, Staff | Update a plan. Staff can only update if they created the plan. |
+| DELETE | `/api/interventionplans/{id}` | Admin, Staff | Delete a plan. Staff can only delete if they created it; Admin can delete any in scope. |
+
+**GET `/api/interventionplans` response:**
+```json
+[
+  {
+    "planId": 1,
+    "residentId": 5,
+    "planCategory": "Mental Health Support",
+    "planDescription": "Twice-weekly trauma-informed counseling",
+    "servicesProvided": "Therapy; support groups",
+    "targetValue": 1500.00,
+    "targetDate": "2026-06-30",
+    "status": "In Progress",
+    "caseCconferenceDate": "2026-04-08T10:30:00Z",
+    "createdAt": "2026-04-08T00:00:00Z",
+    "updatedAt": "2026-04-08T00:00:00Z",
+    "createdByUserId": "user-guid",
+    "canModify": true
+  }
+]
+```
+
+---
+
+## Password Reset Requests
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/password-reset/request` | None | Submit a forgot-password request for an email. Always returns 200 to avoid email enumeration. Creates a `password_reset_requests` row only when the email is found. |
+| GET | `/api/password-reset/requests` | Admin | List all pending password reset requests. |
+| POST | `/api/password-reset/requests/{id}/resolve` | Admin | Generate a one-time temp password, reset the user's password, set `MustChangePassword = true`, mark request resolved. Returns `{ requestId, email, tempPassword }` — shown once only. |
