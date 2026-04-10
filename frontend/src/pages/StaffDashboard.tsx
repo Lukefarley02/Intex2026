@@ -327,7 +327,7 @@ const StaffDashboard = () => {
     <DashboardLayout title="Staff Dashboard" fitViewport>
       <div className="flex flex-col h-full gap-3">
       {/* Greeting */}
-      <div className="flex items-start justify-between gap-3 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold">
             Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""}.
@@ -487,7 +487,7 @@ const StaffDashboard = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 pt-2 border-t">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t">
                   <div>
                     <p className="text-[10px] text-muted-foreground">Code</p>
                     <p className="text-xs font-medium">

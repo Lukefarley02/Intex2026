@@ -16,7 +16,7 @@ const Privacy = () => (
       </div>
 
       <Card className="border-0 shadow-md rounded-xl">
-        <CardContent className="p-8 space-y-6 text-sm leading-relaxed text-foreground/90">
+        <CardContent className="p-5 sm:p-8 space-y-6 text-sm leading-relaxed text-foreground/90">
           <section className="space-y-2">
             <h2 className="text-lg font-semibold">What we collect</h2>
             <p>

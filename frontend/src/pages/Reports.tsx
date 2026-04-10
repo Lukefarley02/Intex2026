@@ -278,15 +278,15 @@ const Reports = () => {
                 </div>
 
                 {/* Inline monthly bar chart */}
-                <div className="space-y-1">
+                <div className="space-y-1 overflow-x-auto">
                   {data.donations.trend.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                       No donations in this window.
                     </p>
                   )}
                   {data.donations.trend.map((t) => (
-                    <div key={t.month} className="flex items-center gap-3 text-sm">
-                      <span className="w-16 text-muted-foreground">{t.month}</span>
+                    <div key={t.month} className="flex items-center gap-3 text-xs sm:text-sm">
+                      <span className="w-16 text-muted-foreground flex-shrink-0">{t.month}</span>
                       <div className="flex-1 h-4 bg-muted rounded overflow-hidden">
                         <div
                           className="h-full bg-primary"
@@ -295,10 +295,10 @@ const Reports = () => {
                           }}
                         />
                       </div>
-                      <span className="w-24 text-right tabular-nums">
+                      <span className="w-24 text-right tabular-nums flex-shrink-0">
                         {fmtMoney(t.total)}
                       </span>
-                      <span className="w-10 text-right text-xs text-muted-foreground">
+                      <span className="w-10 text-right text-xs text-muted-foreground flex-shrink-0">
                         {t.count}
                       </span>
                     </div>

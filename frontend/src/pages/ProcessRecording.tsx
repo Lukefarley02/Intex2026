@@ -379,7 +379,7 @@ const ProcessRecording = () => {
                 <Plus className="w-4 h-4" /> New Recording
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Edit Process Recording" : "New Process Recording"}
@@ -401,7 +401,7 @@ const ProcessRecording = () => {
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label>Session Date</Label>
                     <Input
@@ -433,7 +433,7 @@ const ProcessRecording = () => {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Emotional state at start</Label>
                     <Input
@@ -476,7 +476,7 @@ const ProcessRecording = () => {
                     onChange={(e) => setForm({ ...form, followUpActions: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Social worker</Label>
                     <Input

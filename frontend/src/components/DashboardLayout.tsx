@@ -282,7 +282,7 @@ const DashboardLayout = ({
   return (
     <div className="min-h-screen flex bg-background">
       {/* Desktop sidebar */}
-      <aside aria-label="Main sidebar" className={`hidden lg:flex w-60 flex-col bg-sidebar fixed inset-y-0 left-0 z-30 print:hidden ${sidebarThemeClass}`}>
+      <aside aria-label="Main sidebar" className={`hidden lg:flex w-[min(15rem,80vw)] flex-col bg-sidebar fixed inset-y-0 left-0 z-30 print:hidden ${sidebarThemeClass}`}>
         <SidebarContent />
       </aside>
 
@@ -290,7 +290,7 @@ const DashboardLayout = ({
       {sidebarOpen && (
         <div className="lg:hidden print:hidden fixed inset-0 z-40">
           <div role="presentation" className="absolute inset-0 bg-foreground/40" onClick={() => setSidebarOpen(false)} />
-          <aside className={`relative w-60 h-full bg-sidebar flex flex-col ${sidebarThemeClass}`}>
+          <aside className={`relative w-[min(15rem,80vw)] h-full bg-sidebar flex flex-col ${sidebarThemeClass}`}>
             <button
               className="absolute top-4 right-3 text-sidebar-foreground"
               onClick={() => setSidebarOpen(false)}
@@ -309,7 +309,7 @@ const DashboardLayout = ({
           overflow-x-hidden is the belt-and-braces guarantee that no page
           inside the layout can produce a horizontal scrollbar. */}
       <div className="flex-1 lg:ml-60 print:ml-0 min-w-0 overflow-x-hidden">
-        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-6 gap-4 print:hidden">
+        <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b h-14 flex items-center px-3 sm:px-6 gap-4 print:hidden">
           <button className="lg:hidden" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
             <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -333,8 +333,8 @@ const DashboardLayout = ({
           data-main-content
           className={
             fitViewport
-              ? "p-4 h-[calc(100vh-3.5rem)] overflow-hidden print:h-auto print:overflow-visible"
-              : "p-6 print:p-0"
+              ? "p-2 sm:p-4 h-[calc(100vh-3.5rem)] overflow-hidden print:h-auto print:overflow-visible"
+              : "p-3 sm:p-6 print:p-0"
           }
         >
           {children}

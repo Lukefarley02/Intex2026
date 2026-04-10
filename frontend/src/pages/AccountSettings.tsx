@@ -17,7 +17,7 @@ import { Sun, Moon, Monitor, Mail, KeyRound, Trash2, ShieldAlert } from "lucide-
 // "Current password is incorrect." inline on the form.
 const API_BASE =
   import.meta.env.VITE_API_URL ??
-  "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net";
+  (import.meta.env.DEV ? "" : "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net");
 
 type Status = { kind: "idle" } | { kind: "success"; message: string } | { kind: "error"; message: string };
 

@@ -204,7 +204,7 @@ const Index = () => {
             girls who have experienced trafficking, abuse, and exploitation. We believe every girl
             deserves safety, dignity, and a future full of possibility.
           </p>
-          <div className="grid sm:grid-cols-3 gap-8 pt-6 text-left">
+          <div className="grid sm:grid-cols-3 gap-8 pt-6 px-6 md:px-12 text-left">
             <FlipCard
               icon={<Heart className="w-5 h-5 text-primary" />}
               title="Protect"
@@ -238,9 +238,9 @@ const Index = () => {
     </section>
 
     {/* Image + Donation side-by-side */}
-    <section className="relative z-10 grid md:grid-cols-2" style={{ minHeight: "480px" }}>
+    <section className="relative z-10 grid md:grid-cols-2 min-h-[320px] md:min-h-[480px]">
       {/* Left: photo */}
-      <div className="overflow-hidden" style={{ minHeight: "480px" }}>
+      <div className="overflow-hidden min-h-[320px] md:min-h-[480px]">
         <img
           src={handsImage}
           alt="Team joining hands in solidarity"

@@ -387,7 +387,7 @@ const Safehouses = () => {
 
       {/* ---- Create / Edit dialog ---- */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {isEditing ? "Edit safehouse" : "New safehouse"}
@@ -400,7 +400,7 @@ const Safehouses = () => {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sh-name">Name *</Label>
                 <Input
@@ -423,7 +423,7 @@ const Safehouses = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sh-city">City</Label>
                 <Input
@@ -444,7 +444,7 @@ const Safehouses = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sh-region">Region</Label>
                 <Input
@@ -468,7 +468,7 @@ const Safehouses = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sh-status">Status</Label>
                 <select
@@ -497,7 +497,7 @@ const Safehouses = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sh-cap-girls">Capacity (girls)</Label>
                 <Input

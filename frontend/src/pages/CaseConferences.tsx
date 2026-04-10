@@ -182,7 +182,7 @@ const toFormState = (ip: InterventionPlanRow): FormState => ({
 // ---- Detail row helper ----
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[160px_1fr] gap-2 py-2">
+    <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] gap-1 sm:gap-2 py-2">
       <span className="text-sm font-medium text-muted-foreground">{label}</span>
       <span className="text-sm">
         {value ?? <span className="text-muted-foreground/40">—</span>}
@@ -590,7 +590,7 @@ const CaseConferences = () => {
                 <Plus className="w-4 h-4" /> New Plan
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Edit Intervention Plan" : "New Intervention Plan"}
@@ -615,7 +615,7 @@ const CaseConferences = () => {
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Conference Date</Label>
                     <Input
@@ -641,7 +641,7 @@ const CaseConferences = () => {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Status</Label>
                     <select

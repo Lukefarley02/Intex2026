@@ -406,8 +406,9 @@ const Donate = () => {
       // "Donor" role. DonorPortalController matches the supporter row by
       // email, so the donation we just saved will appear automatically in
       // the donor portal as soon as they land on it.
+      const apiBase = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? "" : "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net");
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL ?? "https://ember-api-frbhh6fka2anfnac.francecentral-01.azurewebsites.net"}/api/auth/register`,
+        `${apiBase}/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -416,11 +417,17 @@ const Donate = () => {
       );
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const messages = Object.values(body)
-          .flat()
-          .filter((v): v is string => typeof v === "string");
-        throw new Error(messages.join(" ") || "Registration failed.");
+        const body = await res.json().catch(() => null);
+        let msg = "Registration failed.";
+        if (Array.isArray(body)) {
+          // ASP.NET Identity returns [{code, description}, ...]
+          msg = body.map((e: { description?: string }) => e.description).filter(Boolean).join(" ") || msg;
+        } else if (body && typeof body === "object") {
+          // Fallback: {message: "..."} or validation dict {field: ["err"]}
+          const flat = Object.values(body).flat().filter((v): v is string => typeof v === "string");
+          if (flat.length > 0) msg = flat.join(" ");
+        }
+        throw new Error(msg);
       }
 
       // Auto-login so the donor portal authorizes on the next navigation.
@@ -509,7 +516,7 @@ const Donate = () => {
             {/* Amount selector */}
             <div className="space-y-3">
               <Label className="text-base font-semibold" id="amount-label">Choose an amount</Label>
-              <div className="grid grid-cols-4 gap-3" role="group" aria-labelledby="amount-label">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" role="group" aria-labelledby="amount-label">
                 {presets.map((p) => (
                   <button
                     key={p}

@@ -292,7 +292,7 @@ const Admin = () => {
   return (
     <DashboardLayout title="Admin Panel">
       {/* KPIs */}
-      <div className="grid sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {kpis.map((k) => (
           <Card key={k.label} className="rounded-xl shadow-sm">
             <CardContent className="p-5 space-y-3">
@@ -486,7 +486,7 @@ const Admin = () => {
             </div>
 
             {/* Scope fields */}
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t">
               <div className="space-y-1">
                 <Label htmlFor="edit-region">Region</Label>
                 <Input

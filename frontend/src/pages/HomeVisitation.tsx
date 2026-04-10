@@ -405,7 +405,7 @@ const HomeVisitation = () => {
                   <Plus className="w-4 h-4" /> Log Visit
                 </Button>
               </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingId ? "Edit Home Visit" : "Log a Home Visit"}
@@ -427,7 +427,7 @@ const HomeVisitation = () => {
                     ))}
                   </select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Visit date</Label>
                     <Input
@@ -454,7 +454,7 @@ const HomeVisitation = () => {
                     onChange={(e) => setForm({ ...form, purpose: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Location visited</Label>
                     <Input
@@ -522,7 +522,7 @@ const HomeVisitation = () => {
                     onChange={(e) => setForm({ ...form, followUpNotes: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Visit outcome</Label>
                     <Input

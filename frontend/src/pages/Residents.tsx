@@ -272,7 +272,7 @@ function DetailSection({
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-2 py-1.5 text-sm border-b border-border/50 last:border-0">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 py-1.5 text-sm border-b border-border/50 last:border-0">
       <span className="text-muted-foreground">{label}</span>
       <span className="text-foreground font-medium break-words">{value || "—"}</span>
     </div>
@@ -719,7 +719,7 @@ const Residents = () => {
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex gap-2 px-6 py-3 border-b bg-muted/30">
+                <div className="flex flex-wrap gap-2 px-6 py-3 border-b bg-muted/30">
                   {canWrite && (
                     <Button size="sm" variant="outline" onClick={() => { setDetailOpen(false); openEdit(d as unknown as ResidentRow); }}>
                       <Pencil className="w-3.5 h-3.5 mr-1" /> Edit record
@@ -835,7 +835,7 @@ const Residents = () => {
 
       {/* ── Create / Edit dialog ── */}
       <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isEditing ? "Edit resident" : "New resident"}</DialogTitle>
             <DialogDescription>Fill in the case details. All fields except Safehouse are optional.</DialogDescription>
@@ -844,7 +844,7 @@ const Residents = () => {
           <form onSubmit={handleSubmit} className="space-y-5 py-2">
 
             {/* Core identifiers */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-control">Case control #</Label><Input id="r-control" value={entity.caseControlNo ?? ""} onChange={(e) => setField("caseControlNo", e.target.value)} placeholder="e.g. 2026-0042" /></div>
               <div><Label htmlFor="r-code">Internal code</Label><Input id="r-code" value={entity.internalCode ?? ""} onChange={(e) => setField("internalCode", e.target.value)} placeholder="e.g. LHS2-07" /></div>
             </div>
@@ -857,7 +857,7 @@ const Residents = () => {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="r-status">Program stage</Label>
                 <select id="r-status" className="w-full border rounded-md h-10 px-3 bg-background" value={entity.caseStatus ?? "Intake"} onChange={(e) => setField("caseStatus", e.target.value)}>
@@ -879,11 +879,11 @@ const Residents = () => {
 
             {/* Demographics */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Demographics</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-sex">Sex</Label><Input id="r-sex" value={entity.sex ?? ""} onChange={(e) => setField("sex", e.target.value)} /></div>
               <div><Label htmlFor="r-dob">Date of birth</Label><Input id="r-dob" type="date" value={toDateInput(entity.dateOfBirth)} onChange={(e) => setField("dateOfBirth", e.target.value ? new Date(e.target.value).toISOString() : null)} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-religion">Religion</Label><Input id="r-religion" value={entity.religion ?? ""} onChange={(e) => setField("religion", e.target.value)} /></div>
               <div><Label htmlFor="r-pob">Place of birth</Label><Input id="r-pob" value={entity.placeOfBirth ?? ""} onChange={(e) => setField("placeOfBirth", e.target.value)} /></div>
             </div>
@@ -894,7 +894,7 @@ const Residents = () => {
 
             <div>
               <Label className="mb-2 block">Sub-categories (check all that apply)</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {([
                   ["subCatTrafficked", "Trafficked"],
                   ["subCatPhysicalAbuse", "Physical abuse"],
@@ -924,7 +924,7 @@ const Residents = () => {
 
             {/* Disability */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Disability</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Person with disability (PWD)</Label>
                 <select className="w-full border rounded-md h-10 px-3 bg-background mt-1" value={entity.isPwd === null ? "" : entity.isPwd ? "yes" : "no"} onChange={(e) => setField("isPwd", e.target.value === "" ? null : e.target.value === "yes")}>
@@ -933,7 +933,7 @@ const Residents = () => {
               </div>
               <div><Label htmlFor="r-pwdtype">PWD type</Label><Input id="r-pwdtype" value={entity.pwdType ?? ""} onChange={(e) => setField("pwdType", e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>Has special needs</Label>
                 <select className="w-full border rounded-md h-10 px-3 bg-background mt-1" value={entity.hasSpecialNeeds === null ? "" : entity.hasSpecialNeeds ? "yes" : "no"} onChange={(e) => setField("hasSpecialNeeds", e.target.value === "" ? null : e.target.value === "yes")}>
@@ -945,7 +945,7 @@ const Residents = () => {
 
             {/* Family socio-demographic */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Family Socio-Demographic Profile</p>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {([
                 ["familyIs4ps", "4Ps beneficiary"],
                 ["familySoloParent", "Solo parent household"],
@@ -962,11 +962,11 @@ const Residents = () => {
 
             {/* Admission & Referral */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Admission & Referral</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-admission">Date of admission</Label><Input id="r-admission" type="date" value={toDateInput(entity.dateOfAdmission)} onChange={(e) => setField("dateOfAdmission", e.target.value ? new Date(e.target.value).toISOString() : null)} /></div>
               <div><Label htmlFor="r-enrolled">Date enrolled</Label><Input id="r-enrolled" type="date" value={toDateInput(entity.dateEnrolled)} onChange={(e) => setField("dateEnrolled", e.target.value ? new Date(e.target.value).toISOString() : null)} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-refsource">Referral source</Label><Input id="r-refsource" value={entity.referralSource ?? ""} onChange={(e) => setField("referralSource", e.target.value)} /></div>
               <div><Label htmlFor="r-refagency">Referring agency / person</Label><Input id="r-refagency" value={entity.referringAgencyPerson ?? ""} onChange={(e) => setField("referringAgencyPerson", e.target.value)} /></div>
             </div>
@@ -974,7 +974,7 @@ const Residents = () => {
 
             {/* Reintegration */}
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide pt-2">Reintegration</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="r-reint-status">Reintegration status</Label>
                 <select id="r-reint-status" className="w-full border rounded-md h-10 px-3 bg-background" value={entity.reintegrationStatus ?? ""} onChange={(e) => setField("reintegrationStatus", e.target.value || null)}>
@@ -988,7 +988,7 @@ const Residents = () => {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label htmlFor="r-dateclosed">Date closed</Label><Input id="r-dateclosed" type="date" value={toDateInput(entity.dateClosed)} onChange={(e) => setField("dateClosed", e.target.value ? new Date(e.target.value).toISOString() : null)} /></div>
             </div>
 

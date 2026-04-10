@@ -258,7 +258,7 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 overflow-y-auto">
-            <div className="grid grid-cols-3 gap-3 pb-3 mb-3 border-b text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pb-3 mb-3 border-b text-center">
               <div>
                 <p className="text-xl font-bold text-secondary">
                   {socialData

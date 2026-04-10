@@ -289,7 +289,7 @@ const TaxReceipt = () => {
           ) : (
             <>
               {cashDonations.length > 0 && (
-                <div>
+                <div className="overflow-x-auto">
                   <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold mb-2">
                     Cash contributions ({cashDonations.length})
                   </p>
@@ -334,7 +334,7 @@ const TaxReceipt = () => {
                   "donor estimate" column but the acknowledgment body makes
                   clear that this value is not certified by the charity. */}
               {nonCashDonations.length > 0 && (
-                <div>
+                <div className="overflow-x-auto">
                   <p className="text-sm text-gray-600 uppercase tracking-wide font-semibold mb-2">
                     Non-cash (in-kind) contributions ({nonCashCount})
                   </p>

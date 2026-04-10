@@ -39,6 +39,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireNonAlphanumeric = true;
     options.Password.RequiredLength = 14;
     options.Password.RequiredUniqueChars = 6;
+
+    // Since UserName = email, allow all characters that are valid in email
+    // addresses. The default set rejects chars like ! # $ % & ' * / = ? ^
+    // ` { | } ~ which are legal per RFC 5321.
+    options.User.AllowedUserNameCharacters =
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+!#$%&'*/=?^`{|}~";
 })
 .AddEntityFrameworkStores<IdentityContext>()
 .AddDefaultTokenProviders();

@@ -48,6 +48,23 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        // If the email is already registered, treat it as a login attempt
+        // so the donate-flow "create account" step doesn't fail when the
+        // donor already has an account from a previous donation.
+        var existing = await _userManager.FindByEmailAsync(request.Email);
+        if (existing != null)
+        {
+            var pwCheck = await _signInManager.CheckPasswordSignInAsync(existing, request.Password, lockoutOnFailure: false);
+            if (pwCheck.Succeeded)
+            {
+                var existingRoles = await _userManager.GetRolesAsync(existing);
+                var existingToken = GenerateJwt(existing, existingRoles);
+                return Ok(new AuthResponse(existingToken, existing.Email!, existingRoles, existing.Region, existing.City, existing.MustChangePassword));
+            }
+            // Password doesn't match the existing account — return a helpful error
+            return BadRequest(new[] { new { code = "DuplicateEmail", description = "An account with this email already exists. Please log in instead." } });
+        }
+
         var user = new ApplicationUser
         {
             UserName = request.Email,

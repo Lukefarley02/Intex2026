@@ -286,7 +286,7 @@ const DonorPortal = () => {
 
         {/* Stat cards — ultra-compact single row (3-col because Total
             Given is already in the hero, so we drop that card here). */}
-        <div className="grid grid-cols-3 gap-3 flex-shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-shrink-0">
           <Card className="rounded-xl shadow-sm">
             <CardContent className="p-3">
               <div className="flex items-center gap-2.5">
@@ -352,7 +352,7 @@ const DonorPortal = () => {
         {/* Inline safehouse designation — collapsed from a full card into
             a single-row strip (icon + dropdown + button) so it takes
             ~48px of vertical space instead of ~140px. */}
-        <div className="flex items-center gap-2 rounded-xl border bg-card px-3 py-2 shadow-sm flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card px-3 py-2 shadow-sm flex-shrink-0">
           <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-sm font-medium flex-shrink-0 hidden sm:inline">
             Donate to a safehouse:
@@ -552,7 +552,7 @@ const DonorPortal = () => {
               <CardTitle className="text-lg">Donation History</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 min-h-0 overflow-y-auto">
-              <div className="grid grid-cols-[1fr_1.4fr_auto] gap-4 pb-2 mb-1 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide sticky top-0 bg-card">
+              <div className="grid grid-cols-[1fr_1.4fr_auto] gap-2 sm:gap-4 pb-2 mb-1 border-b text-[11px] font-semibold text-muted-foreground uppercase tracking-wide sticky top-0 bg-card">
                 <span>Date</span>
                 <span>Campaign</span>
                 <span className="text-right">Amount</span>
@@ -601,7 +601,7 @@ const DonorPortal = () => {
                 return (
                   <div
                     key={d.donationId}
-                    className="grid grid-cols-[1fr_1.4fr_auto] gap-4 py-2.5 items-start text-sm"
+                    className="grid grid-cols-[1fr_1.4fr_auto] gap-2 sm:gap-4 py-2.5 items-start text-sm"
                   >
                     <span className="text-muted-foreground">
                       {formatDate(d.donationDate)}

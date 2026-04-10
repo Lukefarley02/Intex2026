@@ -53,7 +53,7 @@ const Login = () => {
       </div>
 
       {/* Right: login form */}
-      <div className="flex items-center justify-center p-8 bg-background">
+      <div className="flex items-center justify-center p-5 sm:p-8 bg-background">
         <div className="w-full max-w-sm space-y-8">
           <div className="lg:hidden flex items-center gap-2 text-primary font-bold text-2xl mb-4">
             <Flame className="w-8 h-8" aria-hidden="true" /> Ember
