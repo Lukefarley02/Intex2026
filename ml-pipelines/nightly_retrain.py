@@ -340,10 +340,13 @@ def run_resident_outcomes() -> None:
         pct_progress_noted=("progress_noted", "mean"),
         pct_concerns_flagged=("concerns_flagged", "mean"),
     ).reset_index()
-    edu_latest = (education_records.sort_values("record_date").groupby("resident_id").tail(1)
-                  [["resident_id", "attendance_rate", "progress_percent", "gpa_like_score"]])
-    health_latest = (health_wellbeing.sort_values("record_date").groupby("resident_id").tail(1)
-                     [["resident_id", "nutrition_score", "sleep_score", "energy_score", "general_health_score"]])
+    # Select only columns that exist in the live DB (gpa_like_score may be absent)
+    _edu_cols = [c for c in ["resident_id", "attendance_rate", "progress_percent", "gpa_like_score"]
+                 if c in education_records.columns]
+    edu_latest = education_records.sort_values("record_date").groupby("resident_id").tail(1)[_edu_cols]
+    _health_cols = [c for c in ["resident_id", "nutrition_score", "sleep_score", "energy_score", "general_health_score"]
+                    if c in health_wellbeing.columns]
+    health_latest = health_wellbeing.sort_values("record_date").groupby("resident_id").tail(1)[_health_cols]
     visits = home_visitations.groupby("resident_id").agg(
         visitations_count=("visitation_id", "count"),
         pct_favorable_outcomes=("visit_outcome", lambda x: (x == "Favorable").sum() / max(len(x), 1)),
@@ -369,13 +372,14 @@ def run_resident_outcomes() -> None:
         df = df.merge(feat_df, on="resident_id", how="left")
     df = df.fillna(0)
 
-    feat = ["days_in_program", "sessions_count", "avg_duration", "pct_progress_noted",
-            "attendance_rate", "progress_percent", "gpa_like_score",
-            "nutrition_score", "sleep_score", "energy_score", "general_health_score",
-            "visitations_count", "pct_favorable_outcomes", "pct_safety_concerns",
-            "n_plans", "pct_achieved", "n_safety_plans", "n_psychosocial_plans",
-            "n_education_plans", "incident_count", "pct_resolved"]
+    _all_feat = ["days_in_program", "sessions_count", "avg_duration", "pct_progress_noted",
+                 "attendance_rate", "progress_percent", "gpa_like_score",
+                 "nutrition_score", "sleep_score", "energy_score", "general_health_score",
+                 "visitations_count", "pct_favorable_outcomes", "pct_safety_concerns",
+                 "n_plans", "pct_achieved", "n_safety_plans", "n_psychosocial_plans",
+                 "n_education_plans", "incident_count", "pct_resolved"]
     cats = ["case_category", "initial_risk_level", "current_risk_level"]
+    feat = [f for f in _all_feat if f in df.columns]
 
     X = _encode_cats(df[feat + cats].copy(), cats).fillna(0)
     y = df["reintegration_success"].copy()
