@@ -344,11 +344,6 @@ const Admin = () => {
           <div className="space-y-2">
             {users.map((u) => {
               const primaryRole = u.roles[0] ?? "User";
-              const status = u.lockedOut
-                ? "Locked"
-                : u.emailConfirmed
-                  ? "Active"
-                  : "Pending";
               return (
                 <div
                   key={u.id}
@@ -384,18 +379,14 @@ const Admin = () => {
                     >
                       {primaryRole}
                     </Badge>
-                    <Badge
-                      variant={status === "Active" ? "outline" : "secondary"}
-                      className={
-                        status === "Active"
-                          ? "bg-success/10 text-success border-success/20"
-                          : status === "Locked"
-                            ? "bg-destructive/10 text-destructive border-destructive/20"
-                            : ""
-                      }
-                    >
-                      {status}
-                    </Badge>
+                    {u.lockedOut && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-destructive/10 text-destructive border-destructive/20"
+                      >
+                        Locked
+                      </Badge>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"

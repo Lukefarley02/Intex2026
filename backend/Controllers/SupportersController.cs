@@ -160,7 +160,7 @@ public class SupportersController : ControllerBase
         if (id != supporter.SupporterId) return BadRequest();
         var scope = await UserScope.FromPrincipalAsync(User, _users);
 
-        var existing = await _context.Supporters.AsNoTracking()
+        var existing = await _context.Supporters
             .FirstOrDefaultAsync(s => s.SupporterId == id);
         if (existing == null) return NotFound();
 
@@ -173,12 +173,35 @@ public class SupportersController : ControllerBase
         if (!IsVisibleTo(existing, scope)) return Forbid();
         if (!IsVisibleTo(supporter, scope)) return Forbid(); // can't move out of scope
 
-        _context.Entry(supporter).State = EntityState.Modified;
+        // Copy updatable fields onto the tracked entity so EF Core doesn't
+        // choke on a detached instance with the same PK.
+        existing.SupporterType = supporter.SupporterType;
+        existing.DisplayName = supporter.DisplayName;
+        existing.OrganizationName = supporter.OrganizationName;
+        existing.FirstName = supporter.FirstName;
+        existing.LastName = supporter.LastName;
+        existing.Email = supporter.Email;
+        existing.Phone = supporter.Phone;
+        existing.Country = supporter.Country;
+        existing.Region = supporter.Region;
+        existing.RelationshipType = supporter.RelationshipType;
+        existing.AcquisitionChannel = supporter.AcquisitionChannel;
+        existing.FirstDonationDate = supporter.FirstDonationDate;
+        existing.Status = supporter.Status;
+
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
     // DELETE /api/supporters/{id}  — Founders only.
+    //
+    // Donations linked to this supporter are anonymized rather than
+    // cascade-deleted — the donation rows stay intact for financial
+    // records / tax history, but their supporter_id is reassigned to a
+    // system-wide "Anonymous (Deleted)" placeholder supporter.
+    //
+    // Uses raw SQL for the reassignment so EF Core's change tracker and
+    // convention-based cascade behaviour can't interfere.
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteSupporter(int id)
@@ -186,11 +209,65 @@ public class SupportersController : ControllerBase
         var scope = await UserScope.FromPrincipalAsync(User, _users);
         if (!scope.IsFounder) return Forbid();
 
-        var supporter = await _context.Supporters.FindAsync(id);
+        var supporter = await _context.Supporters
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.SupporterId == id);
         if (supporter == null) return NotFound();
-        _context.Supporters.Remove(supporter);
-        await _context.SaveChangesAsync();
+
+        // ── Step 1: Ensure the anonymous placeholder exists ──
+        var anonId = await EnsureAnonymousDeletedSupporterAsync();
+
+        // ── Step 2: Reassign donations + messages via raw SQL ──
+        // Raw SQL executes immediately against the DB, completely outside
+        // the EF change tracker, so there's zero risk of cascade conflicts.
+        await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE donations SET supporter_id = {0} WHERE supporter_id = {1}",
+            anonId, id);
+
+        await _context.Database.ExecuteSqlRawAsync(
+            "UPDATE donor_messages SET supporter_id = {0} WHERE supporter_id = {1}",
+            anonId, id);
+
+        // ── Step 3: Delete the supporter via raw SQL ──
+        await _context.Database.ExecuteSqlRawAsync(
+            "DELETE FROM supporters WHERE supporter_id = {0}", id);
+
         return NoContent();
+    }
+
+    /// <summary>
+    /// Ensures the system-wide "Anonymous (Deleted)" supporter row exists
+    /// and returns its ID.  Uses raw SQL to avoid EF change-tracker issues.
+    /// </summary>
+    private async Task<int> EnsureAnonymousDeletedSupporterAsync()
+    {
+        // Try to find an existing placeholder (match on email since it's unique
+        // and won't vary if display_name was created with a slightly different format).
+        var existing = await _context.Supporters
+            .AsNoTracking()
+            .Where(s => s.Email == "deleted@system.local" ||
+                        (s.DisplayName == "Anonymous (Deleted)" && s.Status == "System"))
+            .Select(s => (int?)s.SupporterId)
+            .FirstOrDefaultAsync();
+
+        if (existing.HasValue) return existing.Value;
+
+        // Generate a new PK.
+        var maxId = await _context.Supporters.AnyAsync()
+            ? await _context.Supporters.MaxAsync(s => s.SupporterId)
+            : 0;
+        var newId = maxId + 1;
+
+        await _context.Database.ExecuteSqlRawAsync(@"
+            INSERT INTO supporters
+                (supporter_id, supporter_type, display_name, first_name, last_name,
+                 email, region, country, status, acquisition_channel, relationship_type)
+            VALUES
+                ({0}, 'MonetaryDonor', 'Anonymous (Deleted)', 'Anonymous', '(Deleted)',
+                 'deleted@system.local', 'System', 'System', 'System', 'System', 'System')",
+            newId);
+
+        return newId;
     }
 
     // ── Visibility helper ─────────────────────────────────────────────────────
