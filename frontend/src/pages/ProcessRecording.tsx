@@ -38,12 +38,15 @@ import {
   Pencil,
   Trash2,
   Search,
+  Printer,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/api/client";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/api/AuthContext";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import PrintReportHeader from "@/components/PrintReportHeader";
+import PrintTable from "@/components/PrintTable";
 
 // ---- Types ----
 interface ResidentRow {
@@ -312,12 +315,21 @@ const ProcessRecording = () => {
   const detailResident = selected ? residentLookup.get(selected.residentId) : undefined;
   const sheetOpen = selected !== null;
 
+  const printFilters = [
+    ...(sessionTypeFilter !== "__any__" ? [{ label: "Session Type", value: sessionTypeFilter }] : []),
+    ...(dateFrom ? [{ label: "From", value: dateFrom }] : []),
+    ...(dateTo ? [{ label: "To", value: dateTo }] : []),
+    ...(search.trim() ? [{ label: "Search", value: search.trim() }] : []),
+    ...(selectedResident !== "all" && scopedResidentName ? [{ label: "Resident", value: scopedResidentName }] : []),
+  ];
+
   return (
     <DashboardLayout title="Process Recording">
-      <div className="max-w-6xl space-y-6">
+      <PrintReportHeader title="Process Recording Report" filters={printFilters} count={filteredRecordings.length} />
+      <div className="space-y-6">
 
         {/* Header */}
-        <div>
+        <div className="print:hidden">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <ClipboardList className="w-6 h-6 text-primary" /> Counseling Session Notes
           </h2>
@@ -328,7 +340,7 @@ const ProcessRecording = () => {
 
         {/* Resident scope banner */}
         {scopedResidentName && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2 print:hidden">
             <span>Showing recordings for</span>
             <Badge variant="secondary">{scopedResidentName}</Badge>
             <button
@@ -341,7 +353,7 @@ const ProcessRecording = () => {
         )}
 
         {/* Top bar: search + new button */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -351,6 +363,10 @@ const ProcessRecording = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> Print Report
+          </Button>
           <Dialog
             open={open}
             onOpenChange={(o) => {
@@ -498,10 +514,11 @@ const ProcessRecording = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* Filter row */}
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3 print:hidden">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-muted-foreground font-medium">Session type</label>
             <Select value={sessionTypeFilter} onValueChange={setSessionTypeFilter}>
@@ -535,23 +552,23 @@ const ProcessRecording = () => {
         </div>
 
         {/* Recording list */}
-        {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+        {isLoading && <p className="text-muted-foreground text-sm print:hidden">Loading…</p>}
         {!isLoading && (recordings?.length ?? 0) === 0 && (
-          <Card>
+          <Card className="print:hidden">
             <CardContent className="p-8 text-center text-muted-foreground">
               No process recordings yet. Click "New Recording" to document a session.
             </CardContent>
           </Card>
         )}
         {!isLoading && (recordings?.length ?? 0) > 0 && filteredRecordings.length === 0 && (
-          <Card>
+          <Card className="print:hidden">
             <CardContent className="p-8 text-center text-muted-foreground">
               No recordings match the current filters.
             </CardContent>
           </Card>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-3 print:hidden">
           {filteredRecordings.map((p) => {
             const res = residentLookup.get(p.residentId);
             return (
@@ -614,6 +631,25 @@ const ProcessRecording = () => {
             );
           })}
         </div>
+
+        <PrintTable
+          columns={[
+            { header: "Date", accessor: (r: ProcessRecordingRow) => fmtDate(r.sessionDate) },
+            { header: "Type", accessor: (r: ProcessRecordingRow) => r.sessionType ?? "" },
+            { header: "Resident", accessor: (r: ProcessRecordingRow) => {
+              const res = residentLookup.get(r.residentId);
+              return res ? displayName(res) : `#${r.residentId}`;
+            }},
+            { header: "Social Worker", accessor: (r: ProcessRecordingRow) => r.socialWorker ?? "" },
+            { header: "Duration", accessor: (r: ProcessRecordingRow) => r.sessionDurationMinutes ? `${r.sessionDurationMinutes} min` : "", align: "right" as const },
+            { header: "Mood Start", accessor: (r: ProcessRecordingRow) => r.emotionalStateObserved ?? "" },
+            { header: "Mood End", accessor: (r: ProcessRecordingRow) => r.emotionalStateEnd ?? "" },
+            { header: "Progress", accessor: (r: ProcessRecordingRow) => r.progressNoted ? "Yes" : "No" },
+            { header: "Concerns", accessor: (r: ProcessRecordingRow) => r.concernsFlagged ? "Yes" : "No" },
+          ]}
+          data={filteredRecordings}
+          keyAccessor={(r: ProcessRecordingRow) => r.recordingId}
+        />
       </div>
 
       {/* ── Detail sheet ── */}
